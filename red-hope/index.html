@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Blood Donation Portal - Save lives by connecting donors with hospitals in need. Join our community today.">
+    <meta name="keywords" content="blood donation, donate blood, blood bank, hospital, donor, save lives">
+    <title>REDHOPE - Blood Donation Portal</title>
+    <!-- Open Graph tags for social media -->
+    <meta property="og:title" content="REDHOPE - Blood Donation Portal">
+    <meta property="og:description" content="Connecting blood donors with hospitals to save lives. Every drop counts.">
+    <meta property="og:image" content="/redhope-banner.png">
+    <meta property="og:url" content="https://redhope.org">
+    <!-- Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="REDHOPE - Blood Donation Portal">
+    <meta name="twitter:description" content="Join our lifesaving community today.">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+  </head>
+  <body>
+    <!-- This is where React injects your entire app -->
+    <div id="root"></div>
+    
+    <!-- Noscript fallback for users without JavaScript -->
+    <noscript>
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #dc2626;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        z-index: 9999;
+      ">
+        <div>
+          <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">⚠️ JavaScript is Required</h1>
+          <p style="font-size: 1.25rem; margin-bottom: 2rem;">
+            The REDHOPE Blood Donation Portal requires JavaScript to function properly.
+            <br>Please enable JavaScript in your browser settings to continue.
+          </p>
+          <p style="font-size: 1rem; opacity: 0.9;">
+            For assistance, contact us at: <a href="mailto:support@redhope.org" style="color: #ffdddd; text-decoration: underline;">support@redhope.org</a>
+          </p>
+        </div>
+      </div>
+    </noscript>
+    
+    <!-- Loading spinner (shown until React loads) -->
+    <div id="loading" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s;
+    ">
+      <div style="
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #dc2626;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      "></div>
+      <p style="color: #374151; font-size: 1rem;">Loading REDHOPE Portal...</p>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+    </style>
+    
+    <!-- Hide loading spinner when React mounts -->
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          var loading = document.getElementById('loading');
+          if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(function() {
+              loading.style.display = 'none';
+            }, 300);
+          }
+        }, 500);
+      });
+    </script>
+    
+    <!-- React entry point -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
