@@ -33,16 +33,6 @@ public class DonorController {
         return new ResponseEntity<>(donor, HttpStatus.OK);
     }
     
-    // 3. CREATE NEW DONOR (SIMPLIFIED FOR FRONTEND)
-    @PostMapping("/register")
-    public ResponseEntity<?> registerDonor(@Valid @RequestBody DonorRequest donorRequest) {
-        try {
-            Donor donor = donorService.createDonor(donorRequest);
-            return new ResponseEntity<>(donor, HttpStatus.CREATED);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
     
     // 4. UPDATE DONOR
     @PutMapping("/{id}")

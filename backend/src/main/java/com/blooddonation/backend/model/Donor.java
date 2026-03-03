@@ -36,6 +36,15 @@ public class Donor {
     @Column(name = "wants_sms_alerts")
     private Boolean wantsSmsAlerts = false;
     
+    // authentication-related columns
+    @NotBlank(message = "Password is required")
+    @Column(nullable = false)
+    private String password;
+
+    @NotBlank(message = "Role is required")
+    @Column(nullable = false)
+    private String role;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
