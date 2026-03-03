@@ -23,4 +23,11 @@ public class DonorRequest {
     private String location;
     
     private Boolean wantsSmsAlerts = false;
+    
+    // authentication fields coming from frontend form
+    @NotBlank(message = "Password is required")
+    private String password;
+
+    @NotBlank(message = "Role is required")
+    private String role;
 }

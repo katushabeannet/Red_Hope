@@ -8,5 +8,9 @@ import java.util.List;
 @Repository
 public interface DonorRepository extends JpaRepository<Donor, Long> {
     List<Donor> findByBloodGroup(String bloodGroup);
-    // Spring Data JPA will provide CRUD methods automatically
+    
+    // helper for registration/login
+    boolean existsByEmailIgnoreCase(String email);
+    
+    java.util.Optional<Donor> findByEmailIgnoreCase(String email);
 }
