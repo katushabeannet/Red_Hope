@@ -1,0 +1,14 @@
+Metric,Value
+Total rows,3429.0
+Total columns,7.0
+Unique questions,3376.0
+Unique answers,3416.0
+Fully duplicated rows,13.0
+Duplicated questions,53.0
+Duplicated answers,13.0
+Average question words,19.58
+Average answer words,40.7
+Min question words,6.0
+Max question words,54.0
+Min answer words,9.0
+Max answer words,139.0
