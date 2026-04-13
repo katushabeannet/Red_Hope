@@ -1,0 +1,3 @@
+Metric,MiniLM Test,MPNet Test,Improvement
+Semantic Accuracy >= 0.85,80.77,85.5,4.730000000000004
+Strict Semantic Accuracy >= 0.90,54.44,59.47,5.030000000000001
