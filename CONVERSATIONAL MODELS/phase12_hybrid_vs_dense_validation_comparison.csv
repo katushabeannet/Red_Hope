@@ -1,0 +1,3 @@
+Metric,Fine-Tuned Dense Only,Hybrid Retrieval,Improvement
+Semantic Accuracy >= 0.85,83.14,80.18,-2.9599999999999937
+Strict Semantic Accuracy >= 0.90,77.81,76.04,-1.769999999999996
