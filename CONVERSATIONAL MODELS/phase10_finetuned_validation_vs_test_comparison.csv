@@ -1,0 +1,3 @@
+Metric,Fine-Tuned Validation,Fine-Tuned Test,Difference
+Semantic Accuracy >= 0.85,83.14,79.59,-3.549999999999997
+Strict Semantic Accuracy >= 0.90,77.81,75.15,-2.6599999999999966
