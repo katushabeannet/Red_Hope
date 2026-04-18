@@ -1,0 +1,3 @@
+Metric,Baseline MPNet,Fine-Tuned MPNet,Improvement
+Semantic Accuracy >= 0.85,83.73,83.14,-0.5900000000000034
+Strict Semantic Accuracy >= 0.90,62.72,77.81,15.090000000000003

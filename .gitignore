@@ -1,0 +1,16 @@
+# Trained embedding models
+CONVERSATIONAL MODELS/mpnet_donor_finetuned/
+
+# Large model artifacts
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# Notebook checkpoint files
+.ipynb_checkpoints/
+
+# Optional: large generated CSV artifacts
+CONVERSATIONAL MODELS/phase7_full_hard_negative_pool.csv
+CONVERSATIONAL MODELS/phase7_top_hard_negatives.csv
+CONVERSATIONAL MODELS/phase7_training_triples.csv
