@@ -53,3 +53,20 @@ class DonorMedicalRecord(models.Model):
 
     def __str__(self):
         return f"Medical record for {self.donor.user.email}"
+    
+    
+    
+class EligibilityAssessment(models.Model):
+    donor = models.ForeignKey(
+        DonorProfile,
+        on_delete=models.CASCADE,
+        related_name="eligibility_assessments"
+    )
+    is_eligible = models.BooleanField()
+    age = models.IntegerField(null=True, blank=True)
+    reasons = models.JSONField(default=list)
+    summary = models.TextField()
+    assessed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Eligibility for {self.donor.user.email} - {self.is_eligible}"
