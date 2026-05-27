@@ -70,3 +70,19 @@ class EligibilityAssessment(models.Model):
 
     def __str__(self):
         return f"Eligibility for {self.donor.user.email} - {self.is_eligible}"
+    
+    
+class AvailabilityAssessment(models.Model):
+    donor = models.ForeignKey(
+        DonorProfile,
+        on_delete=models.CASCADE,
+        related_name="availability_assessments"
+    )
+    is_available = models.BooleanField()
+    availability_probability = models.FloatField()
+    reasons = models.JSONField(default=list)
+    summary = models.TextField()
+    assessed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Availability for {self.donor.user.email} - {self.availability_probability}"

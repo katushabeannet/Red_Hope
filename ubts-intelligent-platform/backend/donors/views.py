@@ -3,9 +3,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment
-from .serializers import DonorProfileSerializer, DonorMedicalRecordSerializer, EligibilityAssessmentSerializer
+from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment,  AvailabilityAssessment
+from .serializers import DonorProfileSerializer, DonorMedicalRecordSerializer, EligibilityAssessmentSerializer,  AvailabilityAssessmentSerializer
+
 from ai_modules.eligibility_engine import check_donor_eligibility
+from ai_modules.availability_engine import predict_donor_availability
 
 @api_view(["GET", "POST", "PUT"])
 @permission_classes([IsAuthenticated])
@@ -115,6 +117,43 @@ def eligibility_check_view(request):
         {
             "message": "Eligibility assessment completed.",
             "assessment": EligibilityAssessmentSerializer(assessment).data,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+    
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def availability_check_view(request):
+    profile = DonorProfile.objects.filter(user=request.user).first()
+
+    if not profile:
+        return Response(
+            {"error": "Create donor profile before checking availability."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    medical_record = DonorMedicalRecord.objects.filter(donor=profile).first()
+
+    if not medical_record:
+        return Response(
+            {"error": "Create donor medical record before checking availability."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = predict_donor_availability(profile, medical_record)
+
+    assessment = AvailabilityAssessment.objects.create(
+        donor=profile,
+        is_available=result["is_available"],
+        availability_probability=result["availability_probability"],
+        reasons=result["reasons"],
+        summary=result["summary"],
+    )
+
+    return Response(
+        {
+            "message": "Availability assessment completed.",
+            "assessment": AvailabilityAssessmentSerializer(assessment).data,
         },
         status=status.HTTP_201_CREATED,
     )
