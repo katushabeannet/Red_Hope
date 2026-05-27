@@ -130,6 +130,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
+AUTH_USER_MODEL = "accounts.User"
 
 NEO4J_URI = config("NEO4J_URI", default="bolt://localhost:7687")
 NEO4J_USERNAME = config("NEO4J_USERNAME", default="neo4j")
