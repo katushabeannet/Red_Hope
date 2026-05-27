@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DonorProfile, DonorMedicalRecord
+from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment
 
 
 @admin.register(DonorProfile)
@@ -33,3 +33,10 @@ class DonorMedicalRecordAdmin(admin.ModelAdmin):
         "is_pregnant",
         "is_on_medication",
     ]
+    
+    
+@admin.register(EligibilityAssessment)
+class EligibilityAssessmentAdmin(admin.ModelAdmin):
+    list_display = ["donor", "is_eligible", "age", "assessed_at"]
+    list_filter = ["is_eligible", "assessed_at"]
+    search_fields = ["donor__user__email"]

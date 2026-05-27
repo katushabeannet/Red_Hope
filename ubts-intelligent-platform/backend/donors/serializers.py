@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import DonorProfile, DonorMedicalRecord
+from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment
 
 
 class DonorMedicalRecordSerializer(serializers.ModelSerializer):
@@ -16,3 +16,10 @@ class DonorProfileSerializer(serializers.ModelSerializer):
         model = DonorProfile
         fields = "__all__"
         read_only_fields = ["user", "created_at"]
+        
+        
+class EligibilityAssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EligibilityAssessment
+        fields = "__all__"
+        read_only_fields = ["donor", "assessed_at"]
