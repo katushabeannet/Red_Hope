@@ -6,6 +6,8 @@ from rest_framework import status
 from .models import DonationCamp
 from .serializers import DonationCampSerializer
 from ai_modules.geo_recommender import find_nearest_camp
+from ai_modules.gpt_response_generator import format_verified_response
+from neo4j_service.neo4j_client import Neo4jClient
 
 
 @api_view(["GET"])
@@ -28,7 +30,9 @@ def nearest_camp_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    active_camps = DonationCamp.objects.filter(status=DonationCamp.CampStatus.ACTIVE)
+    active_camps = DonationCamp.objects.filter(
+        status=DonationCamp.CampStatus.ACTIVE
+    )
 
     result = find_nearest_camp(latitude, longitude, active_camps)
 
@@ -38,12 +42,51 @@ def nearest_camp_view(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    camp_data = DonationCampSerializer(result["camp"]).data
+    nearest_camp = result["camp"]
+    distance_km = result["distance_km"]
+    camp_data = DonationCampSerializer(nearest_camp).data
+
+    if request.user.is_authenticated:
+        user_identifier = request.user.email
+        user_type = getattr(request.user, "role", "AUTHENTICATED")
+    else:
+        user_identifier = "guest-user"
+        user_type = "GUEST"
+
+    try:
+        neo4j_client = Neo4jClient()
+        neo4j_client.create_nearest_camp_trace(
+            user_identifier=user_identifier,
+            user_type=user_type,
+            latitude=float(latitude),
+            longitude=float(longitude),
+            camp_id=nearest_camp.id,
+            camp_name=nearest_camp.name,
+            district=nearest_camp.district,
+            venue=nearest_camp.venue,
+            camp_latitude=nearest_camp.latitude,
+            camp_longitude=nearest_camp.longitude,
+            distance_km=distance_km,
+        )
+        neo4j_client.close()
+    except Exception as e:
+        print("Neo4j nearest camp trace failed:", e)
+
+    verified_data = {
+        "nearest_camp": camp_data,
+        "distance_km": distance_km,
+    }
+
+    assistant_response = format_verified_response(
+        "nearest_camp",
+        verified_data,
+    )
 
     return Response(
         {
             "nearest_camp": camp_data,
-            "distance_km": result["distance_km"],
+            "distance_km": distance_km,
+            "assistant_response": assistant_response,
         }
     )
 
