@@ -1,65 +1,55 @@
-import math
-import pandas as pd
+from math import radians, sin, cos, sqrt, atan2
 
 
-def haversine_distance(lat1, lon1, lat2, lon2):
+def haversine_distance_km(lat1, lon1, lat2, lon2):
     """
-    Calculates distance between two GPS points in kilometers.
+    Calculates distance between two points on earth using the Haversine formula.
+    Returns distance in kilometers.
     """
-
     earth_radius_km = 6371
 
-    lat1 = math.radians(lat1)
-    lon1 = math.radians(lon1)
-    lat2 = math.radians(lat2)
-    lon2 = math.radians(lon2)
+    lat1 = radians(float(lat1))
+    lon1 = radians(float(lon1))
+    lat2 = radians(float(lat2))
+    lon2 = radians(float(lon2))
 
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
+    diff_lat = lat2 - lat1
+    diff_lon = lon2 - lon1
 
     a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+        sin(diff_lat / 2) ** 2
+        + cos(lat1) * cos(lat2) * sin(diff_lon / 2) ** 2
     )
 
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
     return earth_radius_km * c
 
 
-def recommend_nearest_camp(user_lat, user_lon, camps_df):
+def find_nearest_camp(user_latitude, user_longitude, camps):
     """
-    camps_df must contain:
-    camp_name, venue_name, district, latitude, longitude, status
+    Receives user coordinates and active camps.
+    Returns nearest camp plus distance.
     """
+    nearest_camp = None
+    shortest_distance = None
 
-    active_camps = camps_df[camps_df["status"] == "Active"].copy()
+    for camp in camps:
+        distance = haversine_distance_km(
+            user_latitude,
+            user_longitude,
+            camp.latitude,
+            camp.longitude,
+        )
 
-    if active_camps.empty:
-        return {
-            "found": False,
-            "message": "No active donation camps are currently available."
-        }
+        if shortest_distance is None or distance < shortest_distance:
+            shortest_distance = distance
+            nearest_camp = camp
 
-    active_camps["distance_km"] = active_camps.apply(
-        lambda row: haversine_distance(
-            user_lat,
-            user_lon,
-            row["latitude"],
-            row["longitude"]
-        ),
-        axis=1
-    )
-
-    nearest = active_camps.sort_values("distance_km").iloc[0]
+    if nearest_camp is None:
+        return None
 
     return {
-        "found": True,
-        "camp_id": nearest["camp_id"],
-        "camp_name": nearest["camp_name"],
-        "venue_name": nearest["venue_name"],
-        "district": nearest["district"],
-        "distance_km": round(nearest["distance_km"], 2),
-        "latitude": nearest["latitude"],
-        "longitude": nearest["longitude"]
+        "camp": nearest_camp,
+        "distance_km": round(shortest_distance, 2),
     }
