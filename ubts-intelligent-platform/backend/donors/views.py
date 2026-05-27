@@ -3,9 +3,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import DonorProfile, DonorMedicalRecord
-from .serializers import DonorProfileSerializer, DonorMedicalRecordSerializer
-
+from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment
+from .serializers import DonorProfileSerializer, DonorMedicalRecordSerializer, EligibilityAssessmentSerializer
+from ai_modules.eligibility_engine import check_donor_eligibility
 
 @api_view(["GET", "POST", "PUT"])
 @permission_classes([IsAuthenticated])
@@ -80,3 +80,41 @@ def donor_medical_record_view(request):
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def eligibility_check_view(request):
+    profile = DonorProfile.objects.filter(user=request.user).first()
+
+    if not profile:
+        return Response(
+            {"error": "Create donor profile before checking eligibility."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    medical_record = DonorMedicalRecord.objects.filter(donor=profile).first()
+
+    if not medical_record:
+        return Response(
+            {"error": "Create donor medical record before checking eligibility."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = check_donor_eligibility(profile, medical_record)
+
+    assessment = EligibilityAssessment.objects.create(
+        donor=profile,
+        is_eligible=result["is_eligible"],
+        age=result["age"],
+        reasons=result["reasons"],
+        summary=result["summary"],
+    )
+
+    return Response(
+        {
+            "message": "Eligibility assessment completed.",
+            "assessment": EligibilityAssessmentSerializer(assessment).data,
+        },
+        status=status.HTTP_201_CREATED,
+    )
