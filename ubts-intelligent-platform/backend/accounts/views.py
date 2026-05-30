@@ -3,11 +3,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django.views.decorators.csrf import csrf_exempt
 
 from .serializers import RegisterSerializer, UserSerializer
 
 
 @api_view(["POST"])
+@csrf_exempt
 @permission_classes([AllowAny])
 def register_view(request):
     serializer = RegisterSerializer(data=request.data)
@@ -26,7 +28,7 @@ def register_view(request):
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+@csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_view(request):

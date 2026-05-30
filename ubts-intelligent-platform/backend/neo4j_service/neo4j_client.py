@@ -12,7 +12,14 @@ class Neo4jClient:
     def close(self):
         self.driver.close()
 
-    def create_eligibility_trace(self, donor_email, full_name, is_eligible, summary, reasons):
+    def create_eligibility_trace(
+        self,
+        donor_email,
+        full_name,
+        is_eligible,
+        summary,
+        reasons,
+    ):
         query = """
         MERGE (d:DonorUser {email: $donor_email})
         SET d.full_name = $full_name
@@ -37,7 +44,15 @@ class Neo4jClient:
                 reasons=reasons,
             )
 
-    def create_availability_trace(self, donor_email, full_name, is_available, probability, summary, reasons):
+    def create_availability_trace(
+        self,
+        donor_email,
+        full_name,
+        is_available,
+        probability,
+        summary,
+        reasons,
+    ):
         query = """
         MERGE (d:DonorUser {email: $donor_email})
         SET d.full_name = $full_name
@@ -114,4 +129,47 @@ class Neo4jClient:
                 camp_latitude=camp_latitude,
                 camp_longitude=camp_longitude,
                 distance_km=distance_km,
+            )
+
+    def create_chatbot_trace(
+        self,
+        user_identifier,
+        user_type,
+        user_query,
+        matched_question,
+        answer,
+        similarity_score,
+        confidence,
+    ):
+        query = """
+        MERGE (u:PlatformUser {identifier: $user_identifier})
+        SET u.user_type = $user_type
+
+        CREATE (q:Question {
+            text: $user_query,
+            created_at: datetime()
+        })
+
+        CREATE (r:RetrievalResult {
+            matched_question: $matched_question,
+            answer: $answer,
+            similarity_score: $similarity_score,
+            confidence: $confidence,
+            created_at: datetime()
+        })
+
+        MERGE (u)-[:ASKED_QUESTION]->(q)
+        MERGE (q)-[:MATCHED_QA]->(r)
+        """
+
+        with self.driver.session() as session:
+            session.run(
+                query,
+                user_identifier=user_identifier,
+                user_type=user_type,
+                user_query=user_query,
+                matched_question=matched_question,
+                answer=answer,
+                similarity_score=similarity_score,
+                confidence=confidence,
             )
