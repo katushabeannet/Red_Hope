@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment
+from .models import DonorProfile, DonorMedicalRecord, EligibilityAssessment, AvailabilityAssessment
 
 
 @admin.register(DonorProfile)
@@ -39,4 +39,16 @@ class DonorMedicalRecordAdmin(admin.ModelAdmin):
 class EligibilityAssessmentAdmin(admin.ModelAdmin):
     list_display = ["donor", "is_eligible", "age", "assessed_at"]
     list_filter = ["is_eligible", "assessed_at"]
+    search_fields = ["donor__user__email"]
+    
+    
+@admin.register(AvailabilityAssessment)
+class AvailabilityAssessmentAdmin(admin.ModelAdmin):
+    list_display = [
+        "donor",
+        "is_available",
+        "availability_probability",
+        "assessed_at",
+    ]
+    list_filter = ["is_available", "assessed_at"]
     search_fields = ["donor__user__email"]

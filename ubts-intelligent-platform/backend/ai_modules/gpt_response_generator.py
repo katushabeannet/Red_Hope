@@ -1,38 +1,49 @@
-from openai import OpenAI
-import json
-
-client = OpenAI()
-
-
-def generate_human_response(user_query, system_result, user_mode="donor"):
+def format_verified_response(result_type, verified_data):
     """
-    GPT only converts verified system results into natural language.
-    It must not create new eligibility, availability, or location decisions.
+    Formats verified backend results into user-friendly responses.
+
+    IMPORTANT:
+    This formatter does not make medical, eligibility, availability,
+    or nearest-camp decisions. It only explains results that have already
+    been produced by trusted backend modules.
     """
 
-    instructions = """
-You are a friendly UBTS blood donation assistant.
+    if result_type == "eligibility":
+        reasons = verified_data.get("reasons", [])
 
-Use only the verified system result provided.
-Do not invent medical facts, eligibility decisions, probabilities, donor records, or locations.
-If the system result is missing personal data, ask the user to sign in or provide temporary details.
-If the user is a guest, do not claim to know their donor record.
-If the response involves eligibility, explain it gently and clearly.
-If a donation camp is provided, mention it clearly.
-If location permission is missing, ask the user to turn on location for live directions.
-Keep the response natural, supportive, and concise.
-"""
+        if reasons:
+            reason_text = " ".join([f"- {reason}" for reason in reasons])
+        else:
+            reason_text = "No blocking reason was found."
 
-    input_payload = {
-        "user_mode": user_mode,
-        "user_query": user_query,
-        "verified_system_result": system_result
-    }
+        return (
+            f"{verified_data.get('summary', 'Eligibility assessment completed.')} "
+            f"{reason_text}"
+        )
 
-    response = client.responses.create(
-        model="gpt-5.5",
-        instructions=instructions,
-        input=json.dumps(input_payload, indent=2)
-    )
+    if result_type == "availability":
+        reasons = verified_data.get("reasons", [])
 
-    return response.output_text
+        if reasons:
+            reason_text = " ".join([f"- {reason}" for reason in reasons])
+        else:
+            reason_text = "No major availability concern was found."
+
+        return (
+            f"{verified_data.get('summary', 'Availability assessment completed.')} "
+            f"The estimated availability probability is "
+            f"{verified_data.get('availability_probability')}. "
+            f"{reason_text}"
+        )
+
+    if result_type == "nearest_camp":
+        camp = verified_data.get("nearest_camp", {})
+        distance = verified_data.get("distance_km")
+
+        return (
+            f"The nearest active blood donation camp is {camp.get('name')} "
+            f"at {camp.get('venue')}, {camp.get('district')}. "
+            f"It is approximately {distance} km from your current location."
+        )
+
+    return "Your request has been processed using verified UBTS system data."
