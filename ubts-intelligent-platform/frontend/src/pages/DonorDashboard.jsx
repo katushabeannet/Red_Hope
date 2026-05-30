@@ -6,6 +6,7 @@ import {
   checkAvailability,
   findNearestCamp,
 } from "../services/donorService";
+import NearestCampMap from "../components/NearestCampMap";
 
 function DonorDashboard() {
   const [profile, setProfile] = useState(null);
@@ -198,11 +199,62 @@ function DonorDashboard() {
       )}
 
       {nearestCamp && (
-        <section className="rounded-2xl bg-white p-6 shadow">
-          <h3 className="mb-2 text-lg font-semibold text-slate-900">
-            Nearest Camp
-          </h3>
-          <p className="text-slate-700">{nearestCamp.assistant_response}</p>
+        <section className="space-y-5 rounded-2xl bg-white p-6 shadow">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">
+              Nearest Donation Camp
+            </h3>
+
+            <p className="mt-2 text-slate-700">
+              {nearestCamp.assistant_response}
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Camp Name</p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {nearestCamp.nearest_camp?.name}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Distance</p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {nearestCamp.distance_km} km away
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Venue</p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {nearestCamp.nearest_camp?.venue}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">District</p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {nearestCamp.nearest_camp?.district}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Region</p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {nearestCamp.nearest_camp?.region}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Contact</p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {nearestCamp.nearest_camp?.contact_phone || "Not provided"}
+              </p>
+            </div>
+          </div>
+
+          <NearestCampMap camp={nearestCamp.nearest_camp} />
         </section>
       )}
     </div>
