@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function MainLayout() {
@@ -10,10 +10,15 @@ function MainLayout() {
     navigate("/login");
   };
 
+  const navClass = ({ isActive }) =>
+    isActive
+      ? "rounded-lg bg-white px-3 py-2 font-semibold text-red-700"
+      : "rounded-lg px-3 py-2 hover:bg-red-600 hover:text-white";
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-red-700 text-white shadow">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-xl font-bold">UBTS Intelligent Platform</h1>
             <p className="text-sm text-red-100">
@@ -21,35 +26,41 @@ function MainLayout() {
             </p>
           </div>
 
-          <nav className="flex items-center gap-4 text-sm font-medium">
-            <Link to="/" className="hover:text-red-200">
+          <nav className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            <NavLink to="/" className={navClass}>
               Home
-            </Link>
+            </NavLink>
 
-            <Link to="/chatbot" className="hover:text-red-200">
+            <NavLink to="/chatbot" className={navClass}>
               Chatbot
-            </Link>
+            </NavLink>
 
             {user?.role === "DONOR" && (
-              <Link to="/donor-dashboard" className="hover:text-red-200">
+              <NavLink to="/donor-dashboard" className={navClass}>
                 Donor Dashboard
-              </Link>
+              </NavLink>
             )}
 
             {user?.role === "ADMIN" && (
-              <Link to="/admin-dashboard" className="hover:text-red-200">
-                Admin Dashboard
-              </Link>
+              <>
+                <NavLink to="/admin-dashboard" className={navClass}>
+                  Admin Dashboard
+                </NavLink>
+
+                <NavLink to="/admin-camps" className={navClass}>
+                  Camps
+                </NavLink>
+              </>
             )}
 
             {!user ? (
-              <Link to="/login" className="hover:text-red-200">
+              <NavLink to="/login" className={navClass}>
                 Login
-              </Link>
+              </NavLink>
             ) : (
               <button
                 onClick={handleLogout}
-                className="rounded-lg bg-white px-3 py-1 text-red-700 hover:bg-red-100"
+                className="rounded-lg bg-white px-3 py-2 font-semibold text-red-700 hover:bg-red-100"
               >
                 Logout
               </button>

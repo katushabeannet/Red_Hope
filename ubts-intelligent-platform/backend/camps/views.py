@@ -91,7 +91,7 @@ def nearest_camp_view(request):
     )
 
 
-@api_view(["GET", "POST"])
+@api_view(["GET", "POST", "PUT", "DELETE"])
 @permission_classes([IsAdminUser])
 def admin_camps_view(request):
     if request.method == "GET":
@@ -99,12 +99,40 @@ def admin_camps_view(request):
         serializer = DonationCampSerializer(camps, many=True)
         return Response(serializer.data)
 
-    serializer = DonationCampSerializer(data=request.data)
-    if serializer.is_valid():
-        camp = serializer.save()
+    if request.method == "POST":
+        serializer = DonationCampSerializer(data=request.data)
+        if serializer.is_valid():
+            camp = serializer.save()
+            return Response(
+                DonationCampSerializer(camp).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    camp_id = request.data.get("id")
+
+    if not camp_id:
         return Response(
-            DonationCampSerializer(camp).data,
-            status=status.HTTP_201_CREATED,
+            {"error": "Camp ID is required."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        camp = DonationCamp.objects.get(id=camp_id)
+    except DonationCamp.DoesNotExist:
+        return Response(
+            {"error": "Donation camp not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if request.method == "PUT":
+        serializer = DonationCampSerializer(camp, data=request.data, partial=True)
+        if serializer.is_valid():
+            camp = serializer.save()
+            return Response(DonationCampSerializer(camp).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == "DELETE":
+        camp.delete()
+        return Response({"message": "Donation camp deleted successfully."})
