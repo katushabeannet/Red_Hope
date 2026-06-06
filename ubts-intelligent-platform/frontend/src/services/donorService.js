@@ -5,6 +5,11 @@ export const getDonorProfile = async () => {
   return response.data;
 };
 
+export const createDonorProfile = async (profileData) => {
+  const response = await api.post("/donors/profile/", profileData);
+  return response.data;
+};
+
 export const getDonorMedicalRecord = async () => {
   const response = await api.get("/donors/medical-record/");
   return response.data;
@@ -22,5 +27,23 @@ export const checkAvailability = async () => {
 
 export const findNearestCamp = async (coordinates) => {
   const response = await api.post("/camps/nearest/", coordinates);
+  return response.data;
+};
+
+// export const updateDonorProfile = async (profileData) => {
+//   const response = await api.put(
+//     "/donors/profile/update/",
+//     profileData
+//   );
+
+//   return response.data;
+// };
+
+export const updateDonorProfile = async (data) => {
+  const response = await api.put(
+    "/donors/profile/update/",
+    data
+  );
+
   return response.data;
 };
