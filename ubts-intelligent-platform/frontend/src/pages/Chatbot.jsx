@@ -1,8 +1,19 @@
 import { useState } from "react";
 import {
+  RiMapPinLine,
+  RiRobot2Line,
+  RiSendPlaneLine,
+  RiUser3Line,
+} from "react-icons/ri";
+
+import {
   askChatbot,
   findNearestCampFromChatbot,
 } from "../services/chatbotService";
+
+import Card from "../components/common/Card";
+import Button from "../components/common/Button";
+import Badge from "../components/common/Badge";
 import NearestCampMap from "../components/NearestCampMap";
 
 function Chatbot() {
@@ -75,22 +86,84 @@ function Chatbot() {
     );
   };
 
+  const quickPrompts = [
+    "Is blood donation safe?",
+    "Who can donate blood?",
+    "How often can I donate blood?",
+    "Where can I donate blood near me?",
+  ];
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="rounded-2xl bg-white shadow">
-        <div className="border-b border-slate-200 p-6">
-          <h2 className="text-2xl font-bold text-slate-900">UBTS Chatbot</h2>
-          <p className="mt-2 text-slate-600">
-            Ask about blood donation, eligibility, availability, or nearest
-            donation camps.
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        <div>
+          <p className="text-sm font-medium text-[var(--crimson)]">
+            Conversational Assistant
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
+            UBTS Intelligent Chatbot
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
+            Ask general blood donation questions or request nearby donation camp
+            recommendations using location intelligence.
           </p>
         </div>
 
-        <div className="h-[420px] space-y-4 overflow-y-auto p-6">
+        <Badge label="MPNet + Action Router" variant="donor" />
+      </div>
+
+      {error && (
+        <Card className="border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20">
+          {error}
+        </Card>
+      )}
+
+      <Card noPad className="overflow-hidden">
+        <div className="border-b border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--crimson-light)] text-[var(--crimson)]">
+              <RiRobot2Line size={22} />
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-[var(--text-primary)]">
+                Blood Donation Assistant
+              </h2>
+              <p className="text-xs text-[var(--text-muted)]">
+                Retrieval answers, role-aware routing, and nearest-camp actions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-[460px] space-y-5 overflow-y-auto bg-[var(--surface-2)] p-5">
           {messages.length === 0 ? (
-            <div className="rounded-xl bg-slate-50 p-4 text-slate-600">
-              Try asking: “Is blood donation safe?” or “Where can I donate blood
-              near me?”
+            <div className="flex h-full items-center justify-center">
+              <div className="max-w-md text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--crimson-light)] text-[var(--crimson)]">
+                  <RiRobot2Line size={28} />
+                </div>
+
+                <h3 className="font-semibold text-[var(--text-primary)]">
+                  Start a conversation
+                </h3>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  Try asking about donation safety, eligibility, donation
+                  frequency, or nearby donation camps.
+                </p>
+
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  {quickPrompts.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => setQuery(prompt)}
+                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:border-[var(--crimson)] hover:text-[var(--crimson)]"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             messages.map((message, index) => (
@@ -101,68 +174,113 @@ function Chatbot() {
                 }`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-                    message.sender === "user"
-                      ? "bg-red-700 text-white"
-                      : "bg-slate-100 text-slate-800"
+                  className={`flex max-w-[85%] gap-3 ${
+                    message.sender === "user" ? "flex-row-reverse" : ""
                   }`}
                 >
-                  {message.text}
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      message.sender === "user"
+                        ? "bg-[var(--crimson)] text-white"
+                        : "bg-[var(--surface)] text-[var(--crimson)]"
+                    }`}
+                  >
+                    {message.sender === "user" ? (
+                      <RiUser3Line size={16} />
+                    ) : (
+                      <RiRobot2Line size={16} />
+                    )}
+                  </div>
+
+                  <div
+                    className={`rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
+                      message.sender === "user"
+                        ? "bg-[var(--crimson)] text-white"
+                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {message.text}
+                  </div>
                 </div>
               </div>
             ))
           )}
 
           {loading && (
-            <div className="text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
               Assistant is thinking...
             </div>
           )}
 
           {locationLoading && (
-            <div className="text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+              <RiMapPinLine />
               Getting your location and finding nearest camp...
             </div>
           )}
         </div>
 
-        {error && (
-          <div className="mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex gap-3 border-t p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-3 border-t border-[var(--border)] bg-[var(--surface)] p-4 sm:flex-row"
+        >
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type your question..."
-            className="flex-1 rounded-lg border border-slate-300 p-3 outline-none focus:border-red-500"
+            className="min-h-[46px] flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
           />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-lg bg-red-700 px-5 py-3 font-medium text-white hover:bg-red-800 disabled:bg-red-400"
-          >
+          <Button type="submit" loading={loading}>
+            <RiSendPlaneLine />
             Send
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
 
       {nearestCamp && (
-        <section className="space-y-4 rounded-2xl bg-white p-6 shadow">
-          <div>
-            <h3 className="mb-2 text-lg font-semibold text-slate-900">
-              Nearest Donation Camp Map
-            </h3>
+        <Card className="space-y-5">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+            <div>
+              <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                Nearest Donation Camp
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                {nearestCamp.assistant_response}
+              </p>
+            </div>
 
-            <p className="text-slate-700">{nearestCamp.assistant_response}</p>
+            <Badge label={`${nearestCamp.distance_km} km away`} variant="active" />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <CampDetail label="Camp" value={nearestCamp.nearest_camp?.name} />
+            <CampDetail label="Venue" value={nearestCamp.nearest_camp?.venue} />
+            <CampDetail
+              label="District"
+              value={nearestCamp.nearest_camp?.district}
+            />
+            <CampDetail
+              label="Contact"
+              value={nearestCamp.nearest_camp?.contact_phone || "Not provided"}
+            />
           </div>
 
           <NearestCampMap camp={nearestCamp.nearest_camp} />
-        </section>
+        </Card>
       )}
+    </div>
+  );
+}
+
+function CampDetail({ label, value }) {
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+      <p className="text-xs text-[var(--text-muted)]">{label}</p>
+      <p className="mt-1 font-semibold text-[var(--text-primary)]">
+        {value || "Not available"}
+      </p>
     </div>
   );
 }
