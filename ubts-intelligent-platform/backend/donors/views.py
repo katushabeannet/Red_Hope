@@ -270,3 +270,71 @@ def campaign_ready_donors_view(request):
             "ready_donors": ready_donors,
         }
     )
+    
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_donors_list_view(request):
+    donors = DonorProfile.objects.select_related("user").all()
+    serializer = DonorProfileSerializer(donors, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST", "PUT"])
+@permission_classes([IsAdminUser])
+def admin_medical_record_manage_view(request):
+    donor_id = request.data.get("donor_id")
+
+    if not donor_id:
+        return Response(
+            {"error": "Donor ID is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        profile = DonorProfile.objects.get(id=donor_id)
+    except DonorProfile.DoesNotExist:
+        return Response(
+            {"error": "Donor profile not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    blood_group = request.data.get("blood_group")
+    if blood_group:
+        profile.blood_group = blood_group
+        profile.save()
+
+    record = DonorMedicalRecord.objects.filter(donor=profile).first()
+
+    if request.method == "POST" and record:
+        return Response(
+            {"error": "Medical record already exists for this donor."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    serializer = DonorMedicalRecordSerializer(
+        record,
+        data=request.data,
+        partial=True,
+    ) if record else DonorMedicalRecordSerializer(data=request.data)
+
+    if serializer.is_valid():
+        saved_record = serializer.save(donor=profile)
+        return Response(DonorMedicalRecordSerializer(saved_record).data)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def update_profile_view(request):
+    profile = request.user.donor_profile
+
+    serializer = DonorProfileSerializer(
+        profile,
+        data=request.data,
+        partial=True,
+    )
+
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response(serializer.data)

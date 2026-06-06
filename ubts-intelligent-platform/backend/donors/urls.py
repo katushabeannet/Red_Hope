@@ -5,6 +5,9 @@ from .views import (
     eligibility_check_view,
     availability_check_view,
     campaign_ready_donors_view,
+    admin_donors_list_view,
+    admin_medical_record_manage_view,
+    update_profile_view,
 )
 
 urlpatterns = [
@@ -13,4 +16,10 @@ urlpatterns = [
     path("eligibility-check/", eligibility_check_view),
     path("availability-check/", availability_check_view),
     path("admin/campaign-ready/", campaign_ready_donors_view),
+    path("admin/donors/", admin_donors_list_view),
+    path("admin/medical-record/", admin_medical_record_manage_view),
+    path(
+    "profile/update/",
+    update_profile_view,
+),
 ]

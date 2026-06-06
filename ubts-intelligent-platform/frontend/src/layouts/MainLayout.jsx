@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   RiDashboardLine,
   RiDropLine,
+  RiGroupLine,
   RiLogoutBoxLine,
   RiMapPinLine,
   RiMoonLine,
@@ -11,6 +12,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import FloatingChatbot from "../components/chatbot/FloatingChatbot";
+import { RiUserLine } from "react-icons/ri";
 
 function MainLayout() {
   const { user, logout } = useAuth();
@@ -111,6 +113,13 @@ function MainLayout() {
               </button>
 
               <NavLink
+                to="/register"
+                className="hidden rounded-xl border border-red-700 px-4 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 dark:text-red-400 lg:inline-flex"
+              >
+                Register
+              </NavLink>
+
+              <NavLink
                 to="/login"
                 className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800"
               >
@@ -138,6 +147,12 @@ function MainLayout() {
             label: "Dashboard",
             icon: RiDashboardLine,
           },
+
+          {
+            to: "/admin-donors",
+            label: "Donor Management",
+            icon: RiGroupLine,
+          }, 
           {
             to: "/admin-camps",
             label: "Manage Camps",
@@ -149,6 +164,11 @@ function MainLayout() {
             to: "/donor-dashboard",
             label: "Dashboard",
             icon: RiDashboardLine,
+          },
+          {
+            to: "/my-profile",
+            label: "My Profile",
+            icon: RiUserLine,
           },
         ];
 

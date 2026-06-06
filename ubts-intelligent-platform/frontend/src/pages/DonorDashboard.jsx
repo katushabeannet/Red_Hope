@@ -37,11 +37,20 @@ function DonorDashboard() {
   const loadDonorData = async () => {
     try {
       setError("");
-      const profileData = await getDonorProfile();
-      const medicalData = await getDonorMedicalRecord();
 
+      const profileData = await getDonorProfile();
       setProfile(profileData);
-      setMedicalRecord(medicalData);
+
+      try {
+        const medicalData = await getDonorMedicalRecord();
+        setMedicalRecord(medicalData);
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setMedicalRecord(null);
+        } else {
+          throw err;
+        }
+      }
     } catch {
       setError("Failed to load donor information.");
     }
@@ -54,7 +63,9 @@ function DonorDashboard() {
       const data = await checkEligibility();
       setEligibilityResult(data);
     } catch {
-      setError("Failed to check eligibility.");
+      setError(
+        "Eligibility check failed. UBTS may need to add your medical record first."
+      );
     } finally {
       setLoading(false);
     }
@@ -67,7 +78,9 @@ function DonorDashboard() {
       const data = await checkAvailability();
       setAvailabilityResult(data);
     } catch {
-      setError("Failed to check availability.");
+      setError(
+        "Availability check failed. UBTS may need to add your medical record first."
+      );
     } finally {
       setLoading(false);
     }
@@ -116,27 +129,39 @@ function DonorDashboard() {
             Donor Workspace
           </p>
           <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
-            Welcome, {profile?.user?.full_name || "Sample Donor"}
+            Welcome, {profile?.full_name || "Donor"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
-            Check donation eligibility, estimate availability, and locate the
-            nearest active blood donation camp.
+            View your donor profile, check eligibility after UBTS records your
+            medical details, estimate availability, and locate nearby donation
+            camps.
           </p>
         </div>
 
-        {profile?.blood_group && (
-          <div className="rounded-2xl bg-[var(--crimson)] px-6 py-4 text-white">
-            <p className="text-xs uppercase tracking-wide text-red-100">
-              Blood Group
-            </p>
-            <p className="text-3xl font-bold">{profile.blood_group}</p>
-          </div>
-        )}
+        <div className="rounded-2xl bg-[var(--crimson)] px-6 py-4 text-white">
+          <p className="text-xs uppercase tracking-wide text-red-100">
+            Donor Status
+          </p>
+          <p className="text-2xl font-bold">
+            {medicalRecord ? "Profile Ready" : "Awaiting Medical Record"}
+          </p>
+        </div>
       </div>
 
       {error && (
         <Card className="border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20">
           {error}
+        </Card>
+      )}
+
+      {!medicalRecord && (
+        <Card className="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <h3 className="font-semibold">Medical information not yet available</h3>
+          <p className="mt-2 text-sm leading-6">
+            Your medical information will be filled by UBTS staff after your
+            donation or medical screening. This card will remain visible until
+            UBTS records your health details.
+          </p>
         </Card>
       )}
 
@@ -160,12 +185,10 @@ function DonorDashboard() {
           </div>
           <p className="text-sm text-[var(--text-muted)]">Medical Readiness</p>
           <h3 className="mt-1 font-semibold text-[var(--text-primary)]">
-            {medicalRecord?.weight_kg
-              ? `${medicalRecord.weight_kg} kg`
-              : "No weight record"}
+            {medicalRecord ? "Recorded by UBTS" : "Pending UBTS Entry"}
           </h3>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Hemoglobin: {medicalRecord?.hemoglobin_level || "N/A"} g/dL
+            Hemoglobin: {medicalRecord?.hemoglobin_level || "Not recorded"}
           </p>
         </Card>
 
@@ -183,57 +206,7 @@ function DonorDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
-            Profile Details
-          </h3>
 
-          <div className="space-y-3 text-sm">
-            <InfoRow label="Blood Group" value={profile?.blood_group} />
-            <InfoRow label="Phone" value={profile?.phone_number} />
-            <InfoRow label="Gender" value={profile?.gender} />
-            <InfoRow label="Address" value={profile?.address} />
-          </div>
-        </Card>
-
-        <Card>
-          <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
-            Medical Record
-          </h3>
-
-          <div className="space-y-3 text-sm">
-            <InfoRow
-              label="Weight"
-              value={
-                medicalRecord?.weight_kg
-                  ? `${medicalRecord.weight_kg} kg`
-                  : null
-              }
-            />
-            <InfoRow
-              label="Hemoglobin"
-              value={
-                medicalRecord?.hemoglobin_level
-                  ? `${medicalRecord.hemoglobin_level} g/dL`
-                  : null
-              }
-            />
-            <InfoRow
-              label="Recent Illness"
-              value={medicalRecord?.has_recent_illness ? "Yes" : "No"}
-            />
-            <InfoRow
-              label="Chronic Condition"
-              value={medicalRecord?.has_chronic_condition ? "Yes" : "No"}
-            />
-            <InfoRow
-              label="On Medication"
-              value={medicalRecord?.is_on_medication ? "Yes" : "No"}
-            />
-          </div>
-        </Card>
-      </div>
 
       <Card>
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
@@ -242,13 +215,17 @@ function DonorDashboard() {
               Donor Intelligence Tools
             </h3>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Run verified backend checks using your stored donor and medical
-              data.
+              Eligibility and availability checks require UBTS medical
+              information. Camp recommendations can be used anytime.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handleEligibilityCheck} loading={loading}>
+            <Button
+              onClick={handleEligibilityCheck}
+              loading={loading}
+              disabled={!medicalRecord}
+            >
               <RiShieldCheckLine />
               Check Eligibility
             </Button>
@@ -257,6 +234,7 @@ function DonorDashboard() {
               variant="secondary"
               onClick={handleAvailabilityCheck}
               loading={loading}
+              disabled={!medicalRecord}
             >
               <RiHeartPulseLine />
               Check Availability
@@ -317,12 +295,6 @@ function DonorDashboard() {
           <p className="text-sm leading-6 text-[var(--text-secondary)]">
             {availabilityResult.assistant_response}
           </p>
-
-          {availabilityAssessment?.availability_probability !== undefined && (
-            <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">
-              Probability: {availabilityAssessment.availability_probability}
-            </p>
-          )}
         </Card>
       )}
 
@@ -339,7 +311,10 @@ function DonorDashboard() {
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <CampDetail label="Camp Name" value={camp?.name} />
-            <CampDetail label="Distance" value={`${nearestCamp.distance_km} km away`} />
+            <CampDetail
+              label="Distance"
+              value={`${nearestCamp.distance_km} km away`}
+            />
             <CampDetail label="Venue" value={camp?.venue} />
             <CampDetail label="District" value={camp?.district} />
             <CampDetail label="Region" value={camp?.region} />
@@ -360,7 +335,7 @@ function InfoRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] pb-2 last:border-0">
       <span className="text-[var(--text-muted)]">{label}</span>
-      <span className="font-medium text-[var(--text-primary)]">
+      <span className="text-right font-medium text-[var(--text-primary)]">
         {value || "Not available"}
       </span>
     </div>
