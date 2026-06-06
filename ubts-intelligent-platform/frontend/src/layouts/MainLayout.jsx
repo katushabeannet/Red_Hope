@@ -7,20 +7,29 @@ import {
   RiMapPinLine,
   RiMoonLine,
   RiSunLine,
+  RiUserLine,
 } from "react-icons/ri";
 
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useToast } from "../context/ToastContext";
 import FloatingChatbot from "../components/chatbot/FloatingChatbot";
-import { RiUserLine } from "react-icons/ri";
 
 function MainLayout() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
+
+    showToast({
+      type: "info",
+      title: "Logged Out",
+      message: "You have successfully signed out.",
+    });
+
     navigate("/login");
   };
 
@@ -147,12 +156,11 @@ function MainLayout() {
             label: "Dashboard",
             icon: RiDashboardLine,
           },
-
           {
             to: "/admin-donors",
             label: "Donor Management",
             icon: RiGroupLine,
-          }, 
+          },
           {
             to: "/admin-camps",
             label: "Manage Camps",

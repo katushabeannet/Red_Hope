@@ -10,15 +10,16 @@ import {
 
 import { loginUser } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -29,22 +30,30 @@ function Login() {
 
     try {
       setLoading(true);
-      setError("");
 
       const data = await loginUser(formData);
       const loggedInUser = data.user || data;
 
       login(loggedInUser);
 
+      showToast({
+        type: "success",
+        title: "Login Successful",
+        message: `Welcome back, ${loggedInUser.full_name || loggedInUser.email}.`,
+      });
+
       navigate(
         loggedInUser.role === "ADMIN" ? "/admin-dashboard" : "/donor-dashboard"
       );
     } catch (err) {
-      setError(
-        err.response?.data?.detail ||
+      showToast({
+        type: "error",
+        title: "Login Failed",
+        message:
+          err.response?.data?.detail ||
           err.response?.data?.error ||
-          "Login failed. Please check your credentials."
-      );
+          "Please check your email and password, then try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -77,7 +86,10 @@ function Login() {
             ["KG", "Neo4j traceability"],
             ["Geo", "Nearest camp finder"],
           ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl bg-white/10 p-4 backdrop-blur">
+            <div
+              key={title}
+              className="rounded-2xl bg-white/10 p-4 backdrop-blur"
+            >
               <p className="text-2xl font-bold">{title}</p>
               <p className="mt-1 text-xs text-white/75">{text}</p>
             </div>
@@ -95,12 +107,6 @@ function Login() {
               Enter your credentials to access your workspace.
             </p>
           </div>
-
-          {error && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -153,14 +159,6 @@ function Login() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
-          <div className="mt-6 rounded-xl bg-slate-50 p-4 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-            <p className="font-semibold text-slate-900 dark:text-slate-50">
-              Sample Accounts
-            </p>
-            <p className="mt-2">Admin: admin@ubts.test / admin123</p>
-            <p>Donor: donor@ubts.test / donor123</p>
-          </div>
 
           <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
             New donor?{" "}
