@@ -163,12 +163,12 @@ function Login() {
           </div>
 
           <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-            New to the platform?{" "}
+            New donor?{" "}
             <Link
-              to="/login"
+              to="/register"
               className="font-semibold text-red-700 hover:text-red-800 dark:text-red-400"
             >
-              Contact UBTS admin for registration
+              Create donor account
             </Link>
           </p>
         </div>
