@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
 import {
+  RiCalendarCheckLine,
+  RiDashboardLine,
+  RiGroupLine,
+  RiHeartPulseLine,
+  RiMapPinLine,
+  RiRefreshLine,
+  RiShieldCheckLine,
+} from "react-icons/ri";
+
+import {
   getDashboardSummary,
   getRecentAssessments,
   getCampStatistics,
   getCampaignReadyDonors,
 } from "../services/adminService";
+
+import Card from "../components/common/Card";
+import Button from "../components/common/Button";
+import Badge from "../components/common/Badge";
 
 function AdminDashboard() {
   const [summary, setSummary] = useState(null);
@@ -57,155 +71,172 @@ function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white p-8 text-center shadow">
-        <p className="text-slate-600">Loading admin dashboard...</p>
-      </div>
+      <Card className="text-center">
+        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
+        <p className="text-sm text-[var(--text-secondary)]">
+          Loading admin intelligence dashboard...
+        </p>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-white p-6 shadow">
-        <h2 className="text-2xl font-bold text-slate-900">Admin Dashboard</h2>
-        <p className="mt-2 text-slate-600">
-          Monitor donors, assessments, donation camps, and campaign-ready donor
-          intelligence.
-        </p>
-      </section>
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        <div>
+          <p className="text-sm font-medium text-[var(--crimson)]">
+            Admin Intelligence
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
+            Dashboard Overview
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
+            Monitor donor records, assessment activity, donation camps, and
+            campaign-ready donor intelligence.
+          </p>
+        </div>
+
+        <Button variant="secondary" onClick={loadAdminData}>
+          <RiRefreshLine />
+          Refresh
+        </Button>
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+        <Card className="border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20">
           {error}
-        </div>
+        </Card>
       )}
 
       {summary && (
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Total Donors</p>
-            <h3 className="mt-2 text-3xl font-bold text-red-700">
-              {summary.total_donors}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Medical Records</p>
-            <h3 className="mt-2 text-3xl font-bold text-red-700">
-              {summary.total_medical_records}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Active Camps</p>
-            <h3 className="mt-2 text-3xl font-bold text-red-700">
-              {summary.active_camps}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Total Camps</p>
-            <h3 className="mt-2 text-3xl font-bold text-slate-800">
-              {summary.total_camps}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Eligible Assessments</p>
-            <h3 className="mt-2 text-3xl font-bold text-green-700">
-              {summary.eligible_assessments}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Available Assessments</p>
-            <h3 className="mt-2 text-3xl font-bold text-green-700">
-              {summary.available_assessments}
-            </h3>
-          </div>
-        </section>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <MetricCard
+            icon={RiGroupLine}
+            label="Total Donors"
+            value={summary.total_donors}
+            tone="red"
+          />
+          <MetricCard
+            icon={RiHeartPulseLine}
+            label="Medical Records"
+            value={summary.total_medical_records}
+            tone="emerald"
+          />
+          <MetricCard
+            icon={RiMapPinLine}
+            label="Active Camps"
+            value={summary.active_camps}
+            tone="blue"
+          />
+          <MetricCard
+            icon={RiCalendarCheckLine}
+            label="Total Camps"
+            value={summary.total_camps}
+            tone="amber"
+          />
+          <MetricCard
+            icon={RiShieldCheckLine}
+            label="Eligible Assessments"
+            value={summary.eligible_assessments}
+            tone="emerald"
+          />
+          <MetricCard
+            icon={RiDashboardLine}
+            label="Available Assessments"
+            value={summary.available_assessments}
+            tone="blue"
+          />
+        </div>
       )}
 
       {campStats && (
-        <section className="rounded-2xl bg-white p-6 shadow">
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">
-            Camp Statistics
-          </h3>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Inactive Camps</p>
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {campStats.inactive_camps}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Completed Camps</p>
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {campStats.completed_camps}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Total Camps</p>
-              <p className="mt-1 text-2xl font-bold text-slate-800">
-                {campStats.total_camps}
+        <Card>
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                Camp Statistics
+              </h3>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Summary of donation camp statuses.
               </p>
             </div>
           </div>
-        </section>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <StatusBox label="Active" value={campStats.active_camps} variant="active" />
+            <StatusBox
+              label="Inactive"
+              value={campStats.inactive_camps}
+              variant="inactive"
+            />
+            <StatusBox
+              label="Completed"
+              value={campStats.completed_camps}
+              variant="completed"
+            />
+          </div>
+        </Card>
       )}
 
-      <section className="rounded-2xl bg-white p-6 shadow">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <Card>
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
               Campaign-Ready Donor Scan
             </h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Scan donors who are both eligible and likely available for a
-              campaign.
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Find donors who are both eligible and likely available for a blood
+              donation campaign.
             </p>
           </div>
 
-          <button
-            onClick={handleCampaignReadyScan}
-            disabled={scanLoading}
-            className="rounded-lg bg-red-700 px-4 py-2 text-white hover:bg-red-800 disabled:bg-red-400"
-          >
-            {scanLoading ? "Scanning..." : "Run Scan"}
-          </button>
+          <Button onClick={handleCampaignReadyScan} loading={scanLoading}>
+            <RiShieldCheckLine />
+            Run Intelligent Scan
+          </Button>
         </div>
 
         {readyDonors && (
           <div className="mt-6">
-            <p className="mb-3 font-medium text-slate-800">
-              Total Ready Donors: {readyDonors.total_ready_donors}
-            </p>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                Total Ready Donors: {readyDonors.total_ready_donors}
+              </p>
+              <Badge label="Verified scan" variant="eligible" />
+            </div>
 
             {readyDonors.ready_donors.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-[var(--border)]">
                 <table className="w-full border-collapse text-left text-sm">
-                  <thead>
-                    <tr className="border-b bg-slate-50">
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Email</th>
-                      <th className="p-3">Phone</th>
-                      <th className="p-3">Blood Group</th>
-                      <th className="p-3">Availability</th>
+                  <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+                    <tr>
+                      <th className="p-3 font-medium">Name</th>
+                      <th className="p-3 font-medium">Email</th>
+                      <th className="p-3 font-medium">Phone</th>
+                      <th className="p-3 font-medium">Blood Group</th>
+                      <th className="p-3 font-medium">Availability</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {readyDonors.ready_donors.map((donor) => (
-                      <tr key={donor.donor_id} className="border-b">
-                        <td className="p-3">{donor.full_name}</td>
-                        <td className="p-3">{donor.email}</td>
-                        <td className="p-3">{donor.phone_number}</td>
-                        <td className="p-3 font-semibold">
-                          {donor.blood_group}
+                      <tr
+                        key={donor.donor_id}
+                        className="border-t border-[var(--border)]"
+                      >
+                        <td className="p-3 font-medium text-[var(--text-primary)]">
+                          {donor.full_name}
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
+                          {donor.email}
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
+                          {donor.phone_number}
                         </td>
                         <td className="p-3">
+                          <Badge label={donor.blood_group} variant="donor" />
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
                           {donor.availability_probability}
                         </td>
                       </tr>
@@ -214,75 +245,124 @@ function AdminDashboard() {
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-slate-500">
+              <p className="rounded-xl bg-[var(--surface-2)] p-4 text-sm text-[var(--text-secondary)]">
                 No campaign-ready donors found yet.
               </p>
             )}
           </div>
         )}
-      </section>
+      </Card>
 
       {recentAssessments && (
-        <section className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <h3 className="mb-4 text-lg font-semibold text-slate-900">
-              Recent Eligibility Assessments
-            </h3>
+        <section className="grid gap-6 lg:grid-cols-2">
+          <AssessmentList
+            title="Recent Eligibility Assessments"
+            items={recentAssessments.recent_eligibility}
+            type="eligibility"
+          />
 
-            {recentAssessments.recent_eligibility.length > 0 ? (
-              <div className="space-y-3">
-                {recentAssessments.recent_eligibility.map((item, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-slate-200 p-3"
-                  >
-                    <p className="font-medium text-slate-800">{item.donor}</p>
-                    <p className="text-sm text-slate-500">{item.email}</p>
-                    <p className="mt-1 text-sm">
-                      Eligible: {item.is_eligible ? "Yes" : "No"}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">
-                No eligibility assessments yet.
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <h3 className="mb-4 text-lg font-semibold text-slate-900">
-              Recent Availability Assessments
-            </h3>
-
-            {recentAssessments.recent_availability.length > 0 ? (
-              <div className="space-y-3">
-                {recentAssessments.recent_availability.map((item, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-slate-200 p-3"
-                  >
-                    <p className="font-medium text-slate-800">{item.donor}</p>
-                    <p className="text-sm text-slate-500">{item.email}</p>
-                    <p className="mt-1 text-sm">
-                      Available: {item.is_available ? "Yes" : "No"}
-                    </p>
-                    <p className="text-sm">
-                      Probability: {item.availability_probability}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">
-                No availability assessments yet.
-              </p>
-            )}
-          </div>
+          <AssessmentList
+            title="Recent Availability Assessments"
+            items={recentAssessments.recent_availability}
+            type="availability"
+          />
         </section>
       )}
     </div>
+  );
+}
+
+function MetricCard({ icon: Icon, label, value, tone }) {
+  const tones = {
+    red: "bg-red-50 text-red-600 dark:bg-red-900/20",
+    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20",
+    amber: "bg-amber-50 text-amber-600 dark:bg-amber-900/20",
+  };
+
+  return (
+    <Card>
+      <div
+        className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${
+          tones[tone] || tones.red
+        }`}
+      >
+        <Icon size={22} />
+      </div>
+
+      <p className="text-sm text-[var(--text-muted)]">{label}</p>
+      <p className="mt-2 text-3xl font-bold text-[var(--text-primary)]">
+        {value}
+      </p>
+    </Card>
+  );
+}
+
+function StatusBox({ label, value, variant }) {
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-sm text-[var(--text-secondary)]">{label}</span>
+        <Badge label={label} variant={variant} />
+      </div>
+      <p className="text-2xl font-bold text-[var(--text-primary)]">{value}</p>
+    </div>
+  );
+}
+
+function AssessmentList({ title, items, type }) {
+  return (
+    <Card>
+      <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
+        {title}
+      </h3>
+
+      {items?.length > 0 ? (
+        <div className="space-y-3">
+          {items.map((item, index) => {
+            const isPositive =
+              type === "eligibility" ? item.is_eligible : item.is_available;
+
+            return (
+              <div
+                key={index}
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
+              >
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-[var(--text-primary)]">
+                      {item.donor || "Unknown donor"}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {item.email}
+                    </p>
+                  </div>
+
+                  <Badge
+                    label={isPositive ? "Positive" : "Negative"}
+                    variant={isPositive ? "eligible" : "ineligible"}
+                  />
+                </div>
+
+                {type === "availability" && (
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Probability: {item.availability_probability}
+                  </p>
+                )}
+
+                <p className="mt-2 line-clamp-2 text-sm text-[var(--text-secondary)]">
+                  {item.summary}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="rounded-xl bg-[var(--surface-2)] p-4 text-sm text-[var(--text-secondary)]">
+          No records found.
+        </p>
+      )}
+    </Card>
   );
 }
 
