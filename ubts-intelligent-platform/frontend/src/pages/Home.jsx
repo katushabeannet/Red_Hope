@@ -1,92 +1,296 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  RiRobot2Line,
-  RiMapPinLine,
+  RiArrowRightLine,
+  RiBrainLine,
+  RiCalendarLine,
+  RiDropLine,
+  RiGroupLine,
   RiHeartPulseLine,
+  RiMapPinLine,
   RiShieldCheckLine,
 } from "react-icons/ri";
 
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-
 function Home() {
+  const activeCamps = 2;
+
   return (
-    <div className="space-y-12">
-      <section className="grid items-center gap-10 py-10 lg:grid-cols-2">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <span className="inline-flex rounded-full bg-[var(--crimson-light)] px-4 py-2 text-sm font-semibold text-[var(--crimson)]">
-            Intelligent Blood Donation Support
-          </span>
+    <div className="bg-white dark:bg-slate-900">
+      <section
+        id="hero"
+        className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800"
+      >
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute right-1/4 top-0 h-96 w-96 rounded-full bg-red-100/40 blur-3xl dark:bg-red-950/20" />
+          <div className="absolute bottom-0 left-1/4 h-96 w-96 rounded-full bg-red-100/30 blur-3xl dark:bg-red-950/20" />
+        </div>
 
-          <h1 className="text-4xl font-bold tracking-tight text-[var(--text-primary)] md:text-6xl">
-            Smarter donor assistance for UBTS operations.
-          </h1>
+        <div className="relative mx-auto max-w-6xl px-6 py-20 lg:px-12 lg:py-28">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 px-4 py-2 dark:border-emerald-800 dark:bg-emerald-950">
+                <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                  AI-Powered Blood Mobilization
+                </span>
+              </div>
 
-          <p className="max-w-xl text-lg text-[var(--text-secondary)]">
-            A sample intelligent platform for donor eligibility checks,
-            availability prediction, nearest camp recommendation, chatbot
-            support, and campaign-ready donor planning.
-          </p>
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 dark:text-slate-50 lg:text-6xl">
+                Save Lives Across Uganda.{" "}
+                <span className="text-red-700 dark:text-red-500">
+                  Your Next Donation Matters.
+                </span>
+              </h1>
 
-          <div className="flex flex-wrap gap-3">
-            <Link to="/chatbot">
-              <Button size="lg">Ask the Chatbot</Button>
-            </Link>
+              <p className="max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+                Experience intelligent blood donation management powered by AI.
+                Check eligibility in seconds, discover nearby camps, and make a
+                real impact on saving lives.
+              </p>
 
-            <Link to="/login">
-              <Button size="lg" variant="outline">
-                Login
-              </Button>
-            </Link>
+              <div className="flex flex-wrap items-center gap-3 pt-4">
+                <button
+                  onClick={() =>
+                    document
+                      .getElementById("camps")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-6 py-3.5 font-semibold text-white shadow-lg transition-colors hover:bg-red-800"
+                >
+                  Find Nearest Camp
+                  <RiArrowRightLine size={18} />
+                </button>
+
+                <button
+                  onClick={() =>
+                    document
+                      .getElementById("about")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-200 px-6 py-3 font-semibold text-slate-900 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-50 dark:hover:bg-slate-800"
+                >
+                  Learn Eligibility
+                </button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="grid grid-cols-2 gap-4"
+            >
+              <div className="col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                    Active Camps Today
+                  </h3>
+                  <RiMapPinLine size={18} className="text-red-700" />
+                </div>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+                  {activeCamps}
+                </p>
+                <p className="mt-2 text-xs text-slate-500">Across Uganda</p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    URGENT DEMANDS
+                  </h3>
+                  <RiDropLine size={16} className="text-red-700" />
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                  O+
+                </p>
+                <p className="mt-2 text-xs text-slate-500">Most Needed</p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    UNITS NEEDED
+                  </h3>
+                  <RiHeartPulseLine size={16} className="text-red-700" />
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                  500+
+                </p>
+                <p className="mt-2 text-xs text-slate-500">Daily</p>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
+      </section>
 
-        <Card className="relative overflow-hidden">
-          <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-red-100 blur-3xl dark:bg-red-900/30" />
-
-          <div className="relative space-y-5">
+      <section className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+        <div className="mx-auto max-w-6xl px-6 py-8 lg:px-12">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {[
-              ["Eligibility Engine", "Rule-based donor safety checks"],
-              ["Availability Model", "Predict likely donor response"],
-              ["Neo4j Traceability", "Explainable reasoning records"],
-              ["Geospatial Camps", "Nearest active donation camp"],
+              [RiGroupLine, "1,284", "Registered Donors"],
+              [RiCalendarLine, activeCamps, "Active Camps"],
+              [RiDropLine, "500+", "Units Needed Daily"],
+              [RiShieldCheckLine, "12,000+", "Lives Saved"],
+            ].map(([Icon, value, label]) => (
+              <div key={label} className="text-center">
+                <div className="mb-3 flex justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-950">
+                    <Icon size={20} className="text-red-700 dark:text-red-400" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 lg:text-3xl">
+                  {value}
+                </p>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 lg:text-sm">
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="bg-white px-6 py-16 dark:bg-slate-900 lg:px-12 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
+              Check Your Eligibility
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-slate-600 dark:text-slate-400">
+              Review the major blood donation requirements before visiting a
+              donation camp.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-4">
+            {[
+              ["Age", "17 years and above"],
+              ["Weight", "At least 50 kg"],
+              ["Hemoglobin", "Healthy blood level"],
+              ["Health Status", "No recent illness"],
             ].map(([title, text]) => (
               <div
                 key={title}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-800"
               >
-                <h3 className="font-semibold text-[var(--text-primary)]">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 dark:bg-red-950">
+                  <RiShieldCheckLine className="text-red-700 dark:text-red-400" size={24} />
+                </div>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-50">
                   {title}
                 </h3>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                   {text}
                 </p>
               </div>
             ))}
           </div>
-        </Card>
+        </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-4">
-        {[
-          [RiHeartPulseLine, "Donor Support", "Eligibility and availability tools"],
-          [RiMapPinLine, "Camp Finder", "Location-based camp recommendation"],
-          [RiRobot2Line, "AI Chatbot", "Blood donation Q&A assistance"],
-          [RiShieldCheckLine, "Traceability", "Neo4j reasoning audit trails"],
-        ].map(([Icon, title, text]) => (
-          <Card key={title}>
-            <Icon className="mb-4 text-[var(--crimson)]" size={28} />
-            <h3 className="font-semibold text-[var(--text-primary)]">
-              {title}
+      <section id="camps" className="bg-slate-50 px-6 py-16 dark:bg-slate-800 lg:px-12 lg:py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
+          <div>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
+              Find Donation Camps Near You
+            </h2>
+            <p className="mt-4 text-slate-600 dark:text-slate-400">
+              The platform uses browser location, active camp records, and
+              distance calculation to recommend the nearest available blood
+              donation camp.
+            </p>
+            <Link
+              to="/login"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-red-700 px-6 py-3 font-semibold text-white hover:bg-red-800"
+            >
+              Login to Find Camp <RiArrowRightLine />
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <RiMapPinLine className="mb-4 text-red-700" size={36} />
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+              Location-Based Recommendation
             </h3>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">{text}</p>
-          </Card>
-        ))}
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Donors and guests can ask for nearby donation locations. The
+              system calculates the nearest active camp and displays it on an
+              interactive map.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-6 py-16 dark:bg-slate-900 lg:px-12 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
+              Why Choose UBTS Platform?
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-slate-600 dark:text-slate-400">
+              Our AI-powered platform simplifies donation support with
+              intelligent screening and real-time insights.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              [RiHeartPulseLine, "Instant Eligibility Screening", "Get assessment results based on your health profile."],
+              [RiMapPinLine, "Real-Time Camp Locator", "Find active donation camps near you."],
+              [RiBrainLine, "Smart Availability Prediction", "Personalized availability insights for donors."],
+            ].map(([Icon, title, desc]) => (
+              <div
+                key={title}
+                className="group rounded-2xl border border-slate-200 bg-slate-50 p-6 transition-all hover:border-red-700 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 transition-colors group-hover:bg-red-700 dark:bg-red-950">
+                  <Icon
+                    size={24}
+                    className="text-red-700 transition-colors group-hover:text-white dark:text-red-400"
+                  />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                  {title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="border-t border-slate-200 bg-gradient-to-r from-red-700 to-red-600 px-6 py-16 dark:border-slate-700 dark:from-red-600 dark:to-red-500 lg:px-12"
+      >
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="mb-3 text-3xl font-bold text-white lg:text-4xl">
+            Ready to Save Lives?
+          </h2>
+          <p className="mb-8 text-lg text-white/90">
+            Join donors across Uganda. Your contribution matters.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 font-bold text-red-700 shadow-lg transition-colors hover:bg-slate-50"
+            >
+              Get Started <RiArrowRightLine size={18} />
+            </Link>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-white px-8 py-3.5 font-bold text-white transition-colors hover:bg-white/10"
+            >
+              Already a Member? Sign In
+            </Link>
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -1,13 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
-@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --crimson: #c0162c;
   --crimson-dark: #990000;
   --crimson-light: #f5e6e9;
-  --surface: #f8fafc;
-  --surface-2: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
   --border: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -25,6 +26,13 @@
   --crimson-light: #1f0a0e;
 }
 
+body {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -33,12 +41,12 @@ html {
   font-family: "Sora", sans-serif;
 }
 
-body {
+/* body {
   margin: 0;
   background: var(--surface);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
-}
+} */
 
 ::-webkit-scrollbar {
   width: 5px;
