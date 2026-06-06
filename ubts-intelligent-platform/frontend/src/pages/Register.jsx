@@ -11,10 +11,12 @@ import {
 import { registerUser } from "../services/authService";
 import { createDonorProfile } from "../services/donorService";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -27,7 +29,6 @@ function Register() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -41,7 +42,6 @@ function Register() {
 
     try {
       setLoading(true);
-      setError("");
 
       const registerData = await registerUser({
         email: formData.email,
@@ -62,15 +62,24 @@ function Register() {
         address: formData.address,
       });
 
+      showToast({
+        type: "success",
+        title: "Registration Successful",
+        message: "Your donor account has been created successfully.",
+      });
+
       navigate("/donor-dashboard");
     } catch (err) {
-      setError(
-        err.response?.data?.email?.[0] ||
+      showToast({
+        type: "error",
+        title: "Registration Failed",
+        message:
+          err.response?.data?.email?.[0] ||
           err.response?.data?.username?.[0] ||
           err.response?.data?.error ||
           err.response?.data?.detail ||
-          "Registration failed. Please check your details."
-      );
+          "Registration failed. Please check your details.",
+      });
     } finally {
       setLoading(false);
     }
@@ -137,12 +146,6 @@ function Register() {
               Enter your personal details to register as a donor.
             </p>
           </div>
-
-          {error && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field
