@@ -1,6 +1,6 @@
 # Trained embedding models
 CONVERSATIONAL MODELS/mpnet_donor_finetuned/
-ubts-intelligent-platform\backend\ai_modules\mpnet_donor_finetuned/
+ubts-intelligent-platform\backend\ai_modules\conversational\mpnet_donor_finetuned/
 
 # Large model artifacts
 *.safetensors

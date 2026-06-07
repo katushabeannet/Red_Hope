@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   RiCloseLine,
+  RiMapPinLine,
   RiMessage3Line,
   RiRobot2Line,
   RiSendPlaneLine,
@@ -12,38 +13,132 @@ import {
   askChatbot,
   findNearestCampFromChatbot,
 } from "../../services/chatbotService";
+import { useToast } from "../../context/ToastContext";
 
 const WELCOME =
-  "Hello! I'm the UBTS Assistant. Ask me anything about blood donation — eligibility, safety, locations, or preparation.";
+  "Hello! I'm the UBTS Assistant. Ask me about eligibility, availability, blood donation questions, or nearby donation camps.";
 
 const QUICK_REPLIES = [
   "Is blood donation safe?",
-  "Who can donate blood?",
-  "Where can I donate?",
+  "Am I eligible to donate blood?",
+  "Can I donate again?",
+  "Where can I donate blood near me?",
 ];
 
 function FloatingChatbot() {
+  const { showToast } = useToast();
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ from: "bot", text: WELCOME }]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+
   const endRef = useRef(null);
 
   useEffect(() => {
     if (open && endRef.current) {
       endRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, open]);
+  }, [messages, open, isTyping, locationLoading]);
 
-  const addBotMessage = (text) => {
-    setMessages((prev) => [...prev, { from: "bot", text }]);
+  const addBotMessage = (text, meta = null) => {
+    setMessages((prev) => [...prev, { from: "bot", text, meta }]);
+  };
+
+  const addUserMessage = (text) => {
+    setMessages((prev) => [...prev, { from: "user", text }]);
+  };
+
+  const formatBackendResponse = (data) => {
+    if (data.mode === "ELIGIBILITY" && data.eligibility_result) {
+      const result = data.eligibility_result;
+
+      return {
+        text: data.assistant_response,
+        meta: {
+          title: "Eligibility Result",
+          status: result.is_eligible ? "Eligible" : "Not Eligible",
+          statusType: result.is_eligible ? "success" : "error",
+          reasons: result.reasons || [],
+        },
+      };
+    }
+
+    if (data.mode === "AVAILABILITY" && data.availability_result) {
+      const result = data.availability_result;
+
+      return {
+        text: data.assistant_response,
+        meta: {
+          title: "Availability Prediction",
+          items: [
+            ["Status", result.is_available ? "Available" : "Not Available"],
+            [
+              "Probability",
+              result.availability_probability !== null &&
+              result.availability_probability !== undefined
+                ? result.availability_probability
+                : "Not provided",
+            ],
+          ],
+        },
+      };
+    }
+
+    if (data.mode === "COMBINED") {
+      return {
+        text: data.assistant_response,
+        meta: {
+          title: "Donor Readiness Check",
+          items: [
+            [
+              "Eligibility",
+              data.eligibility_result?.is_eligible ? "Eligible" : "Not Eligible",
+            ],
+            [
+              "Availability",
+              data.availability_result?.is_available
+                ? "Available"
+                : "Not Available",
+            ],
+            [
+              "Campaign Ready",
+              data.is_campaign_ready ? "Yes" : "No",
+            ],
+          ],
+        },
+      };
+    }
+
+    if (data.mode === "CONVERSATIONAL" && data.retriever_result) {
+    return {
+      text: data.assistant_response,
+      meta: null,
+    };
+  }
+
+    return {
+      text:
+        data.assistant_response ||
+        data.message ||
+        "I received a response from the backend.",
+      meta: null,
+    };
   };
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
       addBotMessage("Geolocation is not supported by this browser.");
+      showToast({
+        type: "error",
+        title: "Location Unsupported",
+        message: "Your browser does not support geolocation.",
+      });
       return;
     }
+
+    setLocationLoading(true);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -53,35 +148,86 @@ function FloatingChatbot() {
             longitude: position.coords.longitude,
           });
 
-          addBotMessage(data.assistant_response);
+          const camp = data.nearest_camp;
+
+          const responseText = camp
+            ? `The nearest active donation camp is ${camp.name}, located at ${camp.venue} in ${camp.district}. It is about ${data.distance_km} km away from your current location.`
+            : "I could not find an active donation camp near your location.";
+
+          addBotMessage(responseText, {
+            title: "Nearest Donation Camp",
+            status: camp?.status || "Active",
+            statusType: "success",
+            items: [
+              ["Camp", camp?.name],
+              ["Venue", camp?.venue],
+              ["District", camp?.district],
+              ["Region", camp?.region],
+              ["Distance", `${data.distance_km} km away`],
+              ["Contact", camp?.contact_phone],
+            ],
+          });
+
+          showToast({
+            type: "success",
+            title: "Nearest Camp Found",
+            message: data.nearest_camp?.name || "A nearby camp was found.",
+          });
         } catch {
           addBotMessage("Sorry, I could not find the nearest donation camp.");
+
+          showToast({
+            type: "error",
+            title: "Camp Search Failed",
+            message: "Unable to find the nearest donation camp.",
+          });
+        } finally {
+          setLocationLoading(false);
         }
       },
       () => {
         addBotMessage("Location access was denied.");
+        setLocationLoading(false);
+
+        showToast({
+          type: "error",
+          title: "Location Denied",
+          message: "Please allow location access to find nearby donation camps.",
+        });
       }
     );
   };
 
   const send = async (text = null) => {
     const messageText = (text || input).trim();
-    if (!messageText) return;
+    if (!messageText || isTyping) return;
 
-    setMessages((prev) => [...prev, { from: "user", text: messageText }]);
+    addUserMessage(messageText);
     setInput("");
     setIsTyping(true);
 
     try {
       const data = await askChatbot(messageText);
 
-      addBotMessage(data.assistant_response || data.message);
-
-      if (data.action_type === "REQUEST_LOCATION") {
+      if (data.action_type === "REQUEST_LOCATION" || data.mode === "GEOSPATIAL") {
+        addBotMessage(data.assistant_response);
         requestLocation();
+        return;
       }
-    } catch {
-      addBotMessage("Sorry, I failed to get a response.");
+
+      const formatted = formatBackendResponse(data);
+      addBotMessage(formatted.text, formatted.meta);
+    } catch (err) {
+      addBotMessage("Sorry, I failed to get a response from the backend.");
+
+      showToast({
+        type: "error",
+        title: "Chatbot Error",
+        message:
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          "The chatbot backend could not process your request.",
+      });
     } finally {
       setIsTyping(false);
     }
@@ -112,7 +258,7 @@ function FloatingChatbot() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed bottom-6 right-6 z-50 flex max-h-[520px] w-[380px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+            className="fixed bottom-6 right-6 z-50 flex max-h-[560px] w-[400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
           >
             <div className="flex items-center justify-between bg-gradient-to-r from-red-700 to-red-600 px-4 py-4">
               <div className="flex items-center gap-3">
@@ -125,7 +271,7 @@ function FloatingChatbot() {
                   </p>
                   <p className="flex items-center gap-1 text-xs text-white/80">
                     <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    Online
+                    Connected to AI backend
                   </p>
                 </div>
               </div>
@@ -161,26 +307,84 @@ function FloatingChatbot() {
                   </div>
 
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm font-medium leading-relaxed ${
+                    className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm font-medium leading-relaxed ${
                       message.from === "user"
                         ? "rounded-br-none bg-red-700 text-white"
                         : "rounded-bl-none border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-50"
                     }`}
                   >
-                    {message.text}
+                    <p>{message.text}</p>
+
+                    {message.meta && (
+                      <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-900">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <p className="font-semibold text-slate-800 dark:text-slate-100">
+                            {message.meta.title}
+                          </p>
+
+                          {message.meta.status && (
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                message.meta.statusType === "success"
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                              }`}
+                            >
+                              {message.meta.status}
+                            </span>
+                          )}
+                        </div>
+
+                        {message.meta.reasons ? (
+                          <div>
+                            <p className="mb-2 font-medium text-slate-500 dark:text-slate-400">
+                              Reasons
+                            </p>
+
+                            <ul className="space-y-2">
+                              {message.meta.reasons.map((reason, index) => (
+                                <li
+                                  key={index}
+                                  className="rounded-lg border border-slate-200 bg-white p-2 leading-5 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                >
+                                  {reason}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : (
+                        <div className="space-y-2">
+                          {message.meta.items.map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800"
+                            >
+                              <p className="text-[11px] font-medium text-slate-500">{label}</p>
+                              <p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">
+                                {value || "N/A"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
 
-              {isTyping && (
+              {(isTyping || locationLoading) && (
                 <div className="flex gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">
-                    <RiRobot2Line size={14} />
+                    {locationLoading ? (
+                      <RiMapPinLine size={14} />
+                    ) : (
+                      <RiRobot2Line size={14} />
+                    )}
                   </div>
-                  <div className="flex gap-1.5 rounded-2xl rounded-bl-none border border-slate-200 bg-white px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:0.15s]" />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:0.3s]" />
+
+                  <div className="rounded-2xl rounded-bl-none border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    {locationLoading ? "Finding nearest camp..." : "Thinking..."}
                   </div>
                 </div>
               )}
@@ -207,7 +411,7 @@ function FloatingChatbot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask about blood donation..."
+                placeholder="Ask about donation..."
                 className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-red-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               />
 
