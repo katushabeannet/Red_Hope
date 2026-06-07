@@ -15,3 +15,7 @@ ubts-intelligent-platform\backend\ai_modules\conversational\mpnet_donor_finetune
 CONVERSATIONAL MODELS/phase7_full_hard_negative_pool.csv
 CONVERSATIONAL MODELS/phase7_top_hard_negatives.csv
 CONVERSATIONAL MODELS/phase7_training_triples.csv
+
+.env
+*.env
+ubts-intelligent-platform/backend/.env
