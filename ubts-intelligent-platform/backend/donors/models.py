@@ -86,3 +86,19 @@ class AvailabilityAssessment(models.Model):
 
     def __str__(self):
         return f"Availability for {self.donor.user.email} - {self.availability_probability}"
+    
+class DonorBadge(models.Model):
+    donor = models.ForeignKey(
+        DonorProfile,
+        on_delete=models.CASCADE,
+        related_name="badges",
+    )
+
+    badge_name = models.CharField(max_length=100)
+
+    badge_description = models.TextField()
+
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.donor.user.full_name} - {self.badge_name}"

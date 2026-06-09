@@ -47,3 +47,18 @@ export const updateDonorProfile = async (data) => {
 
   return response.data;
 };
+
+export const getDonorImpact = async () => {
+  const response = await api.get("/donors/impact/");
+  return response.data;
+};
+
+export const getDonorRetentionSummary = async () => {
+  const response = await api.get("/donors/retention-summary/");
+  return response.data;
+};
+
+export const getAdminRetentionReminders = async () => {
+  const response = await api.get("/donors/admin/retention-reminders/");
+  return response.data;
+};
