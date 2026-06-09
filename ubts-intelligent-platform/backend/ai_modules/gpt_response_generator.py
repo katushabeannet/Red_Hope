@@ -1,49 +1,178 @@
-def format_verified_response(result_type, verified_data):
+import os
+from openai import OpenAI
+
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+def generate_gpt_response(system_instruction, user_content):
+    try:
+        response = client.responses.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+            input=[
+                {
+                    "role": "system",
+                    "content": system_instruction,
+                },
+                {
+                    "role": "user",
+                    "content": user_content,
+                },
+            ],
+            temperature=0.4,
+            max_output_tokens=250,
+        )
+
+        return response.output_text.strip()
+
+    except Exception as error:
+        print("GPT response generation failed:", error)
+        return None
+
+
+def format_conversational_response(query, retriever_result):
+    system_instruction = """
+You are the UBTS Intelligent Blood Donation Assistant.
+You must only answer using the trusted retrieved blood donation answer.
+If confidence is Moderate or Blood Domain Low, answer cautiously and say the answer is based on the closest trusted UBTS knowledge match.
+Do not add medical claims that are not in the trusted answer.
+Keep the response friendly, clear, and concise.
+"""
+
+    user_content = f"""
+User question:
+{query}
+
+Trusted retrieved answer:
+{retriever_result.get("answer")}
+
+Confidence:
+{retriever_result.get("confidence")}
+
+Write a natural response for the user.
+"""
+
+    return generate_gpt_response(system_instruction, user_content)
+
+
+def format_safe_decline_response(query, role):
+    system_instruction = """
+You are the UBTS Intelligent Blood Donation Assistant.
+The user's question is outside the trusted blood donation knowledge base.
+Politely decline to answer the question directly.
+Do not give diagnosis, treatment, drug, legal, financial, or unrelated advice.
+Redirect the user to UBTS medical staff.
+Keep the response short and helpful.
+"""
+
+    user_content = f"""
+User role:
+{role}
+
+User question:
+{query}
+
+Write a natural safe decline response.
+"""
+
+    return generate_gpt_response(system_instruction, user_content)
+
+
+def format_eligibility_response(query, eligibility_result):
+    system_instruction = """
+You are the UBTS Intelligent Blood Donation Assistant.
+Explain the eligibility result using only the rule-engine output provided.
+Do not invent new medical rules.
+Do not override the eligibility result.
+Keep the response supportive and clear.
+"""
+
+    user_content = f"""
+User question:
+{query}
+
+Eligibility result:
+{eligibility_result}
+
+Write a natural response explaining the result.
+"""
+
+    return generate_gpt_response(system_instruction, user_content)
+
+
+def format_availability_response(query, availability_result):
+    system_instruction = """
+You are the UBTS Intelligent Blood Donation Assistant.
+Explain the availability prediction using only the model output provided.
+Do not invent model features.
+Do not override the prediction.
+Keep the response clear and simple.
+"""
+
+    user_content = f"""
+User question:
+{query}
+
+Availability result:
+{availability_result}
+
+Write a natural response explaining the prediction.
+"""
+
+    return generate_gpt_response(system_instruction, user_content)
+
+
+def format_combined_response(query, eligibility_result, availability_result, is_campaign_ready):
+    system_instruction = """
+You are the UBTS Intelligent Blood Donation Assistant.
+Explain donor readiness using the eligibility result and availability result only.
+Do not invent additional medical advice.
+Keep the response short, clear, and supportive.
+"""
+
+    user_content = f"""
+User question:
+{query}
+
+Eligibility result:
+{eligibility_result}
+
+Availability result:
+{availability_result}
+
+Campaign ready:
+{is_campaign_ready}
+
+Write a natural response explaining whether the donor appears ready to donate.
+"""
+
+    return generate_gpt_response(system_instruction, user_content)
+
+def format_verified_response(response_type, result):
     """
-    Formats verified backend results into user-friendly responses.
-
-    IMPORTANT:
-    This formatter does not make medical, eligibility, availability,
-    or nearest-camp decisions. It only explains results that have already
-    been produced by trusted backend modules.
+    Backward compatibility wrapper.
+    Existing donor APIs still call this function.
     """
 
-    if result_type == "eligibility":
-        reasons = verified_data.get("reasons", [])
+    try:
+        if response_type == "eligibility":
+            return format_eligibility_response(
+                "Check my eligibility",
+                result,
+            )
 
-        if reasons:
-            reason_text = " ".join([f"- {reason}" for reason in reasons])
-        else:
-            reason_text = "No blocking reason was found."
+        if response_type == "availability":
+            return format_availability_response(
+                "Check my availability",
+                result,
+            )
 
-        return (
-            f"{verified_data.get('summary', 'Eligibility assessment completed.')} "
-            f"{reason_text}"
+        return str(result)
+
+    except Exception as e:
+        print("format_verified_response error:", e)
+
+        return result.get(
+            "summary",
+            "Assessment completed successfully.",
         )
-
-    if result_type == "availability":
-        reasons = verified_data.get("reasons", [])
-
-        if reasons:
-            reason_text = " ".join([f"- {reason}" for reason in reasons])
-        else:
-            reason_text = "No major availability concern was found."
-
-        return (
-            f"{verified_data.get('summary', 'Availability assessment completed.')} "
-            f"The estimated availability probability is "
-            f"{verified_data.get('availability_probability')}. "
-            f"{reason_text}"
-        )
-
-    if result_type == "nearest_camp":
-        camp = verified_data.get("nearest_camp", {})
-        distance = verified_data.get("distance_km")
-
-        return (
-            f"The nearest active blood donation camp is {camp.get('name')} "
-            f"at {camp.get('venue')}, {camp.get('district')}. "
-            f"It is approximately {distance} km from your current location."
-        )
-
-    return "Your request has been processed using verified UBTS system data."

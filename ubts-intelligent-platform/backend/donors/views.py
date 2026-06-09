@@ -17,8 +17,9 @@ from .serializers import (
     AvailabilityAssessmentSerializer,
 )
 
-from ai_modules.eligibility_engine import check_donor_eligibility
-from ai_modules.availability_engine import predict_donor_availability
+from ai_modules.eligibility.eligibility_engine import run_eligibility_rules
+
+from ai_modules.availability.availability_engine import predict_availability
 from ai_modules.gpt_response_generator import format_verified_response
 from neo4j_service.neo4j_client import Neo4jClient
 
@@ -138,7 +139,7 @@ def eligibility_check_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = check_donor_eligibility(profile, medical_record)
+    result = run_eligibility_rules(profile, medical_record)
 
     assessment = EligibilityAssessment.objects.create(
         donor=profile,
@@ -192,7 +193,7 @@ def availability_check_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = predict_donor_availability(profile, medical_record)
+    result = predict_availability(profile, medical_record)
 
     assessment = AvailabilityAssessment.objects.create(
         donor=profile,
@@ -244,8 +245,8 @@ def campaign_ready_donors_view(request):
         except DonorMedicalRecord.DoesNotExist:
             continue
 
-        eligibility_result = check_donor_eligibility(profile, medical_record)
-        availability_result = predict_donor_availability(profile, medical_record)
+        eligibility_result = run_eligibility_rules(profile, medical_record)
+        availability_result = predict_availability(profile, medical_record)
 
         if eligibility_result["is_eligible"] and availability_result["is_available"]:
             ready_donors.append(
