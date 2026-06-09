@@ -1,0 +1,12 @@
+{
+  "min_weight_kg": 50,
+  "min_hemoglobin_g_dl": 12.5,
+  "disallowed_conditions": [
+    "HIV",
+    "Hepatitis B",
+    "Hepatitis C",
+    "Tuberculosis",
+    "Malaria",
+    "Cancer"
+  ]
+}
