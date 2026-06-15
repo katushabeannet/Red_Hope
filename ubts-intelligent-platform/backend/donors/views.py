@@ -17,7 +17,7 @@ from .serializers import (
     AvailabilityAssessmentSerializer,
 )
 
-from ai_modules.eligibility.eligibility_engine import run_eligibility_rules
+from ai_modules.eligibility.eligibility_engine import check_donor_eligibility
 
 from ai_modules.availability.availability_engine import predict_availability
 from ai_modules.gpt_response_generator import format_verified_response
@@ -139,7 +139,7 @@ def eligibility_check_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = run_eligibility_rules(profile, medical_record)
+    result = check_donor_eligibility(profile, medical_record)
 
     assessment = EligibilityAssessment.objects.create(
         donor=profile,
@@ -245,7 +245,7 @@ def campaign_ready_donors_view(request):
         except DonorMedicalRecord.DoesNotExist:
             continue
 
-        eligibility_result = run_eligibility_rules(profile, medical_record)
+        eligibility_result = check_donor_eligibility(profile, medical_record)
         availability_result = predict_availability(profile, medical_record)
 
         if eligibility_result["is_eligible"] and availability_result["is_available"]:
@@ -280,50 +280,64 @@ def admin_donors_list_view(request):
     return Response(serializer.data)
 
 
-@api_view(["POST", "PUT"])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
 def admin_medical_record_manage_view(request):
     donor_id = request.data.get("donor_id")
 
     if not donor_id:
         return Response(
-            {"error": "Donor ID is required."},
+            {"error": "donor_id is required."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     try:
-        profile = DonorProfile.objects.get(id=donor_id)
+        donor = DonorProfile.objects.get(id=donor_id)
     except DonorProfile.DoesNotExist:
         return Response(
             {"error": "Donor profile not found."},
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    blood_group = request.data.get("blood_group")
-    if blood_group:
-        profile.blood_group = blood_group
-        profile.save()
+    medical_record, created = DonorMedicalRecord.objects.update_or_create(
+        donor=donor,
+        defaults={
+            "weight_kg": request.data.get("weight_kg"),
+            "hemoglobin_level": request.data.get("hemoglobin_level"),
+            "has_recent_illness": request.data.get("has_recent_illness", False),
+            "has_chronic_condition": request.data.get(
+                "has_chronic_condition",
+                False,
+            ),
+            "last_donation_date": request.data.get("last_donation_date") or None,
+            "is_pregnant": request.data.get("is_pregnant", False),
+            "is_on_medication": request.data.get("is_on_medication", False),
+        },
+    )
 
-    record = DonorMedicalRecord.objects.filter(donor=profile).first()
-
-    if request.method == "POST" and record:
-        return Response(
-            {"error": "Medical record already exists for this donor."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    serializer = DonorMedicalRecordSerializer(
-        record,
-        data=request.data,
-        partial=True,
-    ) if record else DonorMedicalRecordSerializer(data=request.data)
-
-    if serializer.is_valid():
-        saved_record = serializer.save(donor=profile)
-        return Response(DonorMedicalRecordSerializer(saved_record).data)
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    return Response(
+        {
+            "message": (
+                "Medical record created successfully."
+                if created
+                else "Medical record updated successfully."
+            ),
+            "created": created,
+            "medical_record": {
+                "id": medical_record.id,
+                "donor_id": donor.id,
+                "weight_kg": medical_record.weight_kg,
+                "hemoglobin_level": medical_record.hemoglobin_level,
+                "has_recent_illness": medical_record.has_recent_illness,
+                "has_chronic_condition": medical_record.has_chronic_condition,
+                "last_donation_date": medical_record.last_donation_date,
+                "is_pregnant": medical_record.is_pregnant,
+                "is_on_medication": medical_record.is_on_medication,
+                "updated_at": medical_record.updated_at,
+            },
+        },
+        status=status.HTTP_200_OK,
+    )
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_profile_view(request):

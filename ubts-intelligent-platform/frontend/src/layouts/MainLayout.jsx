@@ -8,6 +8,7 @@ import {
   RiMoonLine,
   RiSunLine,
   RiUserLine,
+  RiMegaphoneLine,
 } from "react-icons/ri";
 
 import { useAuth } from "../context/AuthContext";
@@ -160,6 +161,11 @@ function MainLayout() {
             to: "/admin-donors",
             label: "Donor Management",
             icon: RiGroupLine,
+          },
+          {
+            to: "/personalized-campaign",
+            label: "Campaign Targeting",
+            icon: RiMegaphoneLine,
           },
           {
             to: "/admin-camps",

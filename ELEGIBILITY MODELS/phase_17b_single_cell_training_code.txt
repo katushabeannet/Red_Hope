@@ -1,0 +1,110 @@
+# PHASE 17B — Rebuild Better Availability Dataset + Retrain Availability Model
+# Run this as ONE CELL in your notebook.
+
+import pandas as pd
+import numpy as np
+import joblib
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+
+# 1. Load the rebuilt dataset
+df = pd.read_csv("availability_dataset_rebuilt.csv")
+
+print("Dataset shape:", df.shape)
+print("Columns:", df.columns.tolist())
+print("\nTarget distribution:")
+print(df["is_available"].value_counts())
+print(df["is_available"].value_counts(normalize=True))
+
+# 2. Production-aligned features
+features = [
+    "days_since_last_donation",
+    "total_donations",
+    "months_since_first_donation",
+]
+
+target = "is_available"
+
+X = df[features]
+y = df[target]
+
+# 3. Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y,
+)
+
+# 4. Train improved Logistic Regression pipeline
+# PolynomialFeatures helps Logistic Regression learn interactions such as:
+# high total donations + donation interval passed = stronger availability.
+availability_model = Pipeline(
+    steps=[
+        ("scaler", StandardScaler()),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+        (
+            "classifier",
+            LogisticRegression(
+                max_iter=2000,
+                class_weight="balanced",
+            ),
+        ),
+    ]
+)
+
+availability_model.fit(X_train, y_train)
+
+# 5. Evaluate
+y_proba = availability_model.predict_proba(X_test)[:, 1]
+y_pred = (y_proba >= 0.50).astype(int)
+
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+print("ROC-AUC:", roc_auc_score(y_test, y_proba))
+
+# 6. Test realistic donor cases
+test_cases = pd.DataFrame(
+    [
+        {
+            "days_since_last_donation": 91,
+            "total_donations": 19,
+            "months_since_first_donation": 36,
+        },
+        {
+            "days_since_last_donation": 400,
+            "total_donations": 28,
+            "months_since_first_donation": 60,
+        },
+        {
+            "days_since_last_donation": 20,
+            "total_donations": 25,
+            "months_since_first_donation": 60,
+        },
+        {
+            "days_since_last_donation": 120,
+            "total_donations": 2,
+            "months_since_first_donation": 8,
+        },
+    ]
+)
+
+test_probs = availability_model.predict_proba(test_cases)[:, 1]
+
+print("\nRealistic Donor Tests:")
+for row, probability in zip(test_cases.to_dict("records"), test_probs):
+    print(row, "=>", round(probability * 100, 2), "%")
+
+# 7. Save model
+joblib.dump(availability_model, "availability_logistic_model.pkl")
+
+print("\nModel saved as availability_logistic_model.pkl")
