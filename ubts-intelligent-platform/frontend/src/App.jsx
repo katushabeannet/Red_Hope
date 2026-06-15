@@ -13,6 +13,7 @@ import AdminCamps from "./pages/AdminCamps";
 import AdminDonors from "./pages/AdminDonors";
 import NotFound from "./pages/NotFound";
 import MyProfile from "./pages/MyProfile";
+import PersonalizedCampaign from "./pages/PersonalizedCampaign";
 
 function App() {
   return (
@@ -69,6 +70,14 @@ function App() {
         />        
 
         <Route path="*" element={<NotFound />} />
+        <Route
+          path="/personalized-campaign"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <PersonalizedCampaign />
+            </ProtectedRoute>
+          }
+        />
       </Route>
     </Routes>
   );

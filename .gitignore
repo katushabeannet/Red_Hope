@@ -19,3 +19,6 @@ CONVERSATIONAL MODELS/phase7_training_triples.csv
 .env
 *.env
 ubts-intelligent-platform/backend/.env
+
+__pycache__/
+*.pyc
