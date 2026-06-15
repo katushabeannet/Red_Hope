@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "campaigns",
     "chatbot",
     "neo4j_service",
+    "notifications",
 ]
 
 

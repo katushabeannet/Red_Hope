@@ -14,6 +14,7 @@ import AdminDonors from "./pages/AdminDonors";
 import NotFound from "./pages/NotFound";
 import MyProfile from "./pages/MyProfile";
 import PersonalizedCampaign from "./pages/PersonalizedCampaign";
+import Notifications from "./pages/Notifications";
 
 function App() {
   return (
@@ -75,6 +76,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
               <PersonalizedCampaign />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
+              <Notifications />
             </ProtectedRoute>
           }
         />

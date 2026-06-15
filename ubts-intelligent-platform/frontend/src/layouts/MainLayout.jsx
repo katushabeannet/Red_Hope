@@ -11,6 +11,15 @@ import {
   RiMegaphoneLine,
 } from "react-icons/ri";
 
+import { useEffect, useRef, useState } from "react";
+import { RiNotification3Line } from "react-icons/ri";
+import {
+  generateMyNotifications,
+  getMyNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "../services/notificationService";
+
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
@@ -53,6 +62,76 @@ function MainLayout() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [showNotifications, setShowNotifications] = useState(false);
+const notificationRef = useRef(null);
+
+const loadNotifications = async () => {
+  try {
+    await generateMyNotifications();
+    const data = await getMyNotifications();
+
+    setNotifications(data.notifications || []);
+    setUnreadCount(data.unread_count || 0);
+  } catch {
+    // Silent fail so layout does not break
+  }
+};
+
+useEffect(() => {
+  if (user) {
+    loadNotifications();
+  }
+}, [user]);
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      notificationRef.current &&
+      !notificationRef.current.contains(event.target)
+    ) {
+      setShowNotifications(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
+const handleNotificationClick = async (notification) => {
+  try {
+    if (!notification.is_read) {
+      await markNotificationAsRead(notification.id);
+      await loadNotifications();
+    }
+
+    if (notification.action_url) {
+      navigate(notification.action_url);
+      setShowNotifications(false);
+    }
+  } catch {
+    showToast({
+      type: "error",
+      title: "Notification Error",
+      message: "Unable to open notification.",
+    });
+  }
+};
+
+const handleMarkAllRead = async () => {
+  try {
+    await markAllNotificationsAsRead();
+    await loadNotifications();
+  } catch {
+    showToast({
+      type: "error",
+      title: "Notification Error",
+      message: "Unable to mark notifications as read.",
+    });
+  }
+};
 
   if (!user) {
     return (
@@ -172,6 +251,11 @@ function MainLayout() {
             label: "Manage Camps",
             icon: RiMapPinLine,
           },
+          {
+            to: "/notifications",
+            label: "Notifications",
+            icon: RiNotification3Line,
+          },
         ]
       : [
           {
@@ -183,6 +267,11 @@ function MainLayout() {
             to: "/my-profile",
             label: "My Profile",
             icon: RiUserLine,
+          },
+          {
+            to: "/notifications",
+            label: "Notifications",
+            icon: RiNotification3Line,
           },
         ];
 
@@ -250,6 +339,95 @@ function MainLayout() {
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Intelligent blood donation support system
             </p>
+          </div>
+
+          <div ref={notificationRef} className="relative">
+            <button
+              onClick={() => setShowNotifications((prev) => !prev)}
+              className="relative rounded-xl bg-slate-100 p-2.5 text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              title="Notifications"
+            >
+              <RiNotification3Line size={18} />
+
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 z-[9999] mt-3 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      Notifications
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {unreadCount} unread
+                    </p>
+                  </div>
+
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="text-xs font-semibold text-red-700 hover:underline dark:text-red-400"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <button
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
+                        className={`w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${
+                          !notification.is_read
+                            ? "bg-red-50/60 dark:bg-red-950/20"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                              notification.is_read ? "bg-slate-300" : "bg-red-700"
+                            }`}
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                              {notification.title}
+                            </p>
+
+                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                              {notification.message}
+                            </p>
+
+                            {notification.action_label && (
+                              <p className="mt-2 text-xs font-semibold text-red-700 dark:text-red-400">
+                                {notification.action_label}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        No notifications
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Retention alerts will appear here.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
