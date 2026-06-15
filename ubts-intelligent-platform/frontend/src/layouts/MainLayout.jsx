@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { RiNotification3Line } from "react-icons/ri";
 import {
   generateMyNotifications,
+  getAdminNotifications,
   getMyNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
@@ -70,8 +71,18 @@ const notificationRef = useRef(null);
 
 const loadNotifications = async () => {
   try {
-    await generateMyNotifications();
-    const data = await getMyNotifications();
+    let data;
+
+    if (user?.role === "ADMIN") {
+      data = await getAdminNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unread_notifications || 0);
+    } else {
+      await generateMyNotifications();
+      data = await getMyNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unread_count || 0);
+    }
 
     setNotifications(data.notifications || []);
     setUnreadCount(data.unread_count || 0);

@@ -5,9 +5,13 @@ from rest_framework.response import Response
 
 from donors.models import DonorProfile
 
-from .models import Notification
-from .serializers import NotificationSerializer
-from .services import generate_all_donor_notifications
+from .models import Notification, BloodDemandAlert
+from .serializers import NotificationSerializer, BloodDemandAlertSerializer
+from .services import (
+    generate_all_donor_notifications,
+    generate_nearby_camp_notifications,
+    generate_blood_demand_notifications,
+)
 
 
 @api_view(["GET"])
@@ -87,5 +91,92 @@ def admin_notifications_view(request):
             "total_notifications": notifications.count(),
             "unread_notifications": notifications.filter(is_read=False).count(),
             "notifications": serializer.data,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def generate_camp_proximity_alerts_view(request):
+    camp_id = request.data.get("camp_id")
+    radius_km = request.data.get("radius_km", 10)
+
+    if not camp_id:
+        return Response(
+            {"error": "camp_id is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = generate_nearby_camp_notifications(
+        camp_id=camp_id,
+        radius_km=radius_km,
+    )
+
+    if result.get("error"):
+        return Response(
+            {"error": result["error"]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response(
+        {
+            "message": "Camp proximity notifications generated successfully.",
+            "created_count": result["created_count"],
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def generate_blood_demand_alerts_view(request):
+    blood_group = request.data.get("blood_group")
+    title = request.data.get("title")
+    message = request.data.get("message")
+
+    if not blood_group:
+        return Response(
+            {"error": "blood_group is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not title:
+        return Response(
+            {"error": "title is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not message:
+        return Response(
+            {"error": "message is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    result = generate_blood_demand_notifications(
+        blood_group=blood_group,
+        title=title,
+        message=message,
+        created_by=request.user,
+    )
+
+    return Response(
+        {
+            "message": "Critical blood demand notifications generated successfully.",
+            "alert": BloodDemandAlertSerializer(result["alert"]).data,
+            "created_count": result["created_count"],
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def blood_demand_alerts_list_view(request):
+    alerts = BloodDemandAlert.objects.all()
+    serializer = BloodDemandAlertSerializer(alerts, many=True)
+
+    return Response(
+        {
+            "total_alerts": alerts.count(),
+            "alerts": serializer.data,
         }
     )

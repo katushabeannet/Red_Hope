@@ -10,11 +10,6 @@ class Notification(models.Model):
         BLOOD_DEMAND = "BLOOD_DEMAND", "Blood Demand"
         SYSTEM = "SYSTEM", "System"
 
-    class TargetRole(models.TextChoices):
-        DONOR = "DONOR", "Donor"
-        ADMIN = "ADMIN", "Admin"
-        BOTH = "BOTH", "Both"
-
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -22,7 +17,6 @@ class Notification(models.Model):
         null=True,
         blank=True,
     )
-
     title = models.CharField(max_length=150)
     message = models.TextField()
     notification_type = models.CharField(
@@ -30,16 +24,10 @@ class Notification(models.Model):
         choices=NotificationType.choices,
         default=NotificationType.SYSTEM,
     )
-    target_role = models.CharField(
-        max_length=20,
-        choices=TargetRole.choices,
-        default=TargetRole.DONOR,
-    )
-
+    target_role = models.CharField(max_length=20, default="DONOR")
     is_read = models.BooleanField(default=False)
     action_label = models.CharField(max_length=100, blank=True)
     action_url = models.CharField(max_length=255, blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -47,3 +35,32 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.recipient}"
+
+
+class BloodDemandAlert(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        RESOLVED = "RESOLVED", "Resolved"
+
+    blood_group = models.CharField(max_length=5)
+    title = models.CharField(max_length=150)
+    message = models.TextField()
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="blood_demand_alerts",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.blood_group} - {self.title}"

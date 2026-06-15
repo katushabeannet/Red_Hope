@@ -11,8 +11,11 @@ import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import { useToast } from "../context/ToastContext";
 
+import { useAuth } from "../context/AuthContext";
+
 import {
   generateMyNotifications,
+  getAdminNotifications,
   getMyNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
@@ -20,6 +23,7 @@ import {
 
 function Notifications() {
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -29,25 +33,32 @@ function Notifications() {
     loadNotifications();
   }, []);
 
-  const loadNotifications = async () => {
+    const loadNotifications = async () => {
     try {
-      setLoading(true);
-      await generateMyNotifications();
+        setLoading(true);
 
-      const data = await getMyNotifications();
+        let data;
 
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unread_count || 0);
+        if (user?.role === "ADMIN") {
+        data = await getAdminNotifications();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unread_notifications || 0);
+        } else {
+        await generateMyNotifications();
+        data = await getMyNotifications();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unread_count || 0);
+        }
     } catch {
-      showToast({
+        showToast({
         type: "error",
         title: "Notifications Failed",
         message: "Unable to load notifications.",
-      });
+        });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+    };
 
   const handleMarkOneRead = async (notificationId) => {
     try {
