@@ -10,6 +10,11 @@ export const generateMyNotifications = async () => {
   return response.data;
 };
 
+export const getAdminNotifications = async () => {
+  const response = await api.get("/notifications/admin/");
+  return response.data;
+};
+
 export const markNotificationAsRead = async (notificationId) => {
   const response = await api.post(`/notifications/${notificationId}/read/`);
   return response.data;
