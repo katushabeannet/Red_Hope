@@ -13,3 +13,8 @@ export const getCampaignCamps = async () => {
   const response = await api.get("/camps/admin/");
   return response.data;
 };
+
+export const getCampaignPerformanceAnalytics = async () => {
+  const response = await api.get("/admin/campaign-performance/");
+  return response.data;
+};

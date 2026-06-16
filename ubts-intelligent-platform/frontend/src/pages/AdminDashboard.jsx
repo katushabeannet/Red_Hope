@@ -19,6 +19,7 @@ import {
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
+import { getCampaignPerformanceAnalytics } from "../services/campaignService";
 
 function AdminDashboard() {
   const [summary, setSummary] = useState(null);
@@ -29,6 +30,7 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [scanLoading, setScanLoading] = useState(false);
   const [error, setError] = useState("");
+  const [campaignAnalytics, setCampaignAnalytics] = useState(null);
 
   useEffect(() => {
     loadAdminData();
@@ -39,15 +41,22 @@ function AdminDashboard() {
       setError("");
       setLoading(true);
 
-      const [summaryData, assessmentsData, campData] = await Promise.all([
+      const [
+        summaryData,
+        assessmentsData,
+        campData,
+        campaignAnalyticsData,
+      ] = await Promise.all([
         getDashboardSummary(),
         getRecentAssessments(),
         getCampStatistics(),
+        getCampaignPerformanceAnalytics(),
       ]);
 
       setSummary(summaryData);
       setRecentAssessments(assessmentsData);
       setCampStats(campData);
+      setCampaignAnalytics(campaignAnalyticsData);
     } catch {
       setError("Failed to load admin dashboard data.");
     } finally {
@@ -147,6 +156,151 @@ function AdminDashboard() {
             tone="blue"
           />
         </div>
+      )}
+
+      {campaignAnalytics && (
+        <Card>
+          <div className="mb-5">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              Campaign Performance Analytics
+            </h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Historical performance summary of personalized donor campaign scans.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              icon={RiDashboardLine}
+              label="Campaign Scans"
+              value={campaignAnalytics.total_campaign_scans}
+              tone="red"
+            />
+
+            <MetricCard
+              icon={RiGroupLine}
+              label="Targeted Donors"
+              value={campaignAnalytics.total_targeted_donors}
+              tone="blue"
+            />
+
+            <MetricCard
+              icon={RiHeartPulseLine}
+              label="Available Donors"
+              value={campaignAnalytics.total_available_donors}
+              tone="emerald"
+            />
+
+            <MetricCard
+              icon={RiShieldCheckLine}
+              label="High Priority"
+              value={campaignAnalytics.total_high_priority_donors}
+              tone="amber"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <StatusBox
+              label="Average Availability"
+              value={`${Math.round(
+                (campaignAnalytics.average_availability_score || 0) * 100
+              )}%`}
+              variant="active"
+            />
+
+            <StatusBox
+              label="Average Priority Score"
+              value={`${Math.round(
+                (campaignAnalytics.average_campaign_priority_score || 0) * 100
+              )}%`}
+              variant="completed"
+            />
+          </div>
+
+          {campaignAnalytics.blood_group_summary?.length > 0 && (
+            <div className="mt-6">
+              <h4 className="mb-3 font-semibold text-[var(--text-primary)]">
+                Blood Group Campaign Summary
+              </h4>
+
+              <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+                    <tr>
+                      <th className="p-3 font-medium">Blood Group</th>
+                      <th className="p-3 font-medium">Campaigns</th>
+                      <th className="p-3 font-medium">Matched</th>
+                      <th className="p-3 font-medium">Available</th>
+                      <th className="p-3 font-medium">Unavailable</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {campaignAnalytics.blood_group_summary.map((group) => (
+                      <tr
+                        key={group.blood_group}
+                        className="border-t border-[var(--border)]"
+                      >
+                        <td className="p-3">
+                          <Badge label={group.blood_group} variant="donor" />
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
+                          {group.campaigns}
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
+                          {group.matched}
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
+                          {group.available}
+                        </td>
+                        <td className="p-3 text-[var(--text-secondary)]">
+                          {group.unavailable}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {campaignAnalytics.recent_campaigns?.length > 0 && (
+            <div className="mt-6">
+              <h4 className="mb-3 font-semibold text-[var(--text-primary)]">
+                Recent Campaign Scans
+              </h4>
+
+              <div className="space-y-3">
+                {campaignAnalytics.recent_campaigns.map((campaign) => (
+                  <div
+                    key={campaign.id}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4"
+                  >
+                    <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                      <div>
+                        <p className="font-semibold text-[var(--text-primary)]">
+                          Blood Group: {campaign.blood_group}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                          Radius: {campaign.radius_km} km • Matched:{" "}
+                          {campaign.total_matches} • Available:{" "}
+                          {campaign.available_donors}
+                        </p>
+                      </div>
+
+                      <Badge
+                        label={`${Math.round(
+                          (campaign.average_availability_score || 0) * 100
+                        )}% Avg Availability`}
+                        variant="eligible"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
       )}
 
       {campStats && (
