@@ -12,6 +12,7 @@ from .models import Notification, BloodDemandAlert
 
 from django.conf import settings
 from django.core.mail import send_mail
+from .sms_service import send_sms_notification
 
 
 def create_notification(
@@ -48,6 +49,19 @@ def create_notification(
         title=title,
         message=message,
     )
+    
+    donor_profile = getattr(recipient, "donor_profile", None)
+
+    if donor_profile:
+        send_sms_notification(
+            phone_number=donor_profile.phone_number,
+            message=f"{title}: {message}",
+        )
+    
+    print("SMS RESULT:", send_sms_notification(
+        phone_number=donor_profile.phone_number,
+        message=f"{title}: {message}",
+    ))
 
     return notification, True
 

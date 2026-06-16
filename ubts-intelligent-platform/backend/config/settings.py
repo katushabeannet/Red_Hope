@@ -166,3 +166,8 @@ SEND_EMAIL_NOTIFICATIONS = config(
     default=False,
     cast=bool,
 )
+
+UGSMS_API_KEY = config("UGSMS_API_KEY", default="")
+UGSMS_SENDER_ID = config("UGSMS_SENDER_ID", default="UBTS")
+UGSMS_SANDBOX = config("UGSMS_SANDBOX", default=True, cast=bool)
+SEND_SMS_NOTIFICATIONS = config("SEND_SMS_NOTIFICATIONS", default=False, cast=bool)

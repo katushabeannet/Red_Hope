@@ -3,10 +3,12 @@ from .views import (
     admin_dashboard_summary_view,
     recent_assessments_view,
     camp_statistics_view,
+    campaign_performance_analytics_view,
 )
 
 urlpatterns = [
     path("dashboard-summary/", admin_dashboard_summary_view),
     path("recent-assessments/", recent_assessments_view),
     path("camp-statistics/", camp_statistics_view),
+    path("campaign-performance/", campaign_performance_analytics_view),
 ]
