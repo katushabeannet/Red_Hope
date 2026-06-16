@@ -10,6 +10,9 @@ from ai_modules.availability.availability_engine import predict_availability
 
 from .models import Notification, BloodDemandAlert
 
+from django.conf import settings
+from django.core.mail import send_mail
+
 
 def create_notification(
     recipient,
@@ -38,6 +41,12 @@ def create_notification(
         target_role=target_role,
         action_label=action_label,
         action_url=action_url,
+    )
+
+    send_email_notification(
+        recipient=recipient,
+        title=title,
+        message=message,
     )
 
     return notification, True
@@ -278,3 +287,24 @@ def generate_blood_demand_notifications(
         "created_count": len(created_notifications),
         "created_notifications": created_notifications,
     }
+    
+    
+def send_email_notification(recipient, title, message):
+    if not getattr(settings, "SEND_EMAIL_NOTIFICATIONS", False):
+        return False
+
+    if not recipient or not recipient.email:
+        return False
+
+    try:
+        send_mail(
+            subject=title,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[recipient.email],
+            fail_silently=True,
+        )
+        return True
+    except Exception as error:
+        print("Email notification failed:", error)
+        return False
