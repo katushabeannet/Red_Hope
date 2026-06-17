@@ -5,6 +5,7 @@ from .views import (
     recent_assessments_view,
     camp_statistics_view,
     campaign_performance_analytics_view,
+    admin_analytics_view,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path("recent-assessments/", recent_assessments_view),
     path("camp-statistics/", camp_statistics_view),
     path("campaign-performance/", campaign_performance_analytics_view),
+    path("analytics/", admin_analytics_view),
 ]

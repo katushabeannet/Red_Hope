@@ -11,6 +11,7 @@ from .views import (
     admin_medical_record_manage_view,
     update_profile_view,
     admin_record_donation_view,
+    admin_donors_export_view,
 )
 
 from .views_impact import donor_impact_view
@@ -36,6 +37,7 @@ urlpatterns = [
     path("admin/campaign-ready/", campaign_ready_donors_view),
     path("admin/donors/", admin_donors_list_view),
     path("admin/medical-record/", admin_medical_record_manage_view),
+    path("admin/donors/export/", admin_donors_export_view),
     path("admin/retention-reminders/", admin_retention_reminders_view),
     path("admin/personalized-campaign-scan/", personalized_campaign_scan_view),
 ]

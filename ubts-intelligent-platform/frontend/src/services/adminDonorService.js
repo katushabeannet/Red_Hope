@@ -17,6 +17,23 @@ export const recordDonation = async (donationData) => {
   return response.data;
 };
 
+export const exportDonorsCSV = async (search = "") => {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  const response = await api.get(
+    `/donors/admin/donors/export/?${params.toString()}`,
+    { responseType: "blob" }
+  );
+  const url = URL.createObjectURL(new Blob([response.data], { type: "text/csv" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "ubts_donors.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 export const saveDonorMedicalRecord = async (formData) => {
   const payload = {
     donor_id: Number(formData.donor_id),
