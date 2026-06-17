@@ -21,6 +21,8 @@ from .serializers import (
     AvailabilityAssessmentSerializer,
 )
 
+from datetime import timedelta
+
 from ai_modules.eligibility.eligibility_engine import check_donor_eligibility
 from ai_modules.availability.availability_engine import predict_availability
 from ai_modules.gpt_response_generator import format_verified_response
@@ -457,13 +459,81 @@ def admin_record_donation_view(request):
 
     award_badges(profile)
 
+    # Send donation confirmation + next eligible date to donor
+    next_eligible = record.donation_date + timedelta(days=90)
+    try:
+        from notifications.services import create_notification
+        create_notification(
+            recipient=profile.user,
+            title="Donation Recorded — Thank You!",
+            message=(
+                f"Your blood donation on {record.donation_date.strftime('%d %b %Y')} has been recorded. "
+                f"Your next eligible donation date is {next_eligible.strftime('%d %b %Y')}. "
+                "We will remind you as that date approaches."
+            ),
+            notification_type="SYSTEM",
+            action_label="View Dashboard",
+            action_url="/donor-dashboard",
+        )
+    except Exception:
+        pass
+
     return Response(
         {
             "message": "Donation recorded successfully.",
             "donor_name": profile.user.full_name,
             "total_donations": profile.total_donations,
             "donation_date": str(record.donation_date),
+            "next_eligible_date": str(next_eligible),
             "camp_name": record.camp_name,
         },
         status=status.HTTP_201_CREATED,
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_donors_export_view(request):
+    import csv
+    from django.http import HttpResponse
+
+    search = request.query_params.get("search", "").strip()
+    donors = DonorProfile.objects.select_related("user", "medical_record").all()
+
+    if search:
+        donors = donors.filter(
+            Q(user__full_name__icontains=search)
+            | Q(user__email__icontains=search)
+            | Q(phone_number__icontains=search)
+            | Q(address__icontains=search)
+        )
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="ubts_donors.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "Full Name", "Email", "Phone", "Gender", "Blood Group",
+        "Address", "Total Donations", "Medical Record", "Date of Birth",
+    ])
+
+    for donor in donors:
+        has_medical = False
+        try:
+            has_medical = donor.medical_record is not None
+        except Exception:
+            pass
+
+        writer.writerow([
+            donor.user.full_name,
+            donor.user.email,
+            donor.phone_number or "",
+            donor.gender or "",
+            donor.blood_group or "",
+            donor.address or "",
+            donor.total_donations,
+            "Yes" if has_medical else "No",
+            donor.date_of_birth or "",
+        ])
+
+    return response

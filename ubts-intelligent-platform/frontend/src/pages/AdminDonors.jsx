@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   RiArrowLeftLine,
   RiArrowRightLine,
+  RiDownloadLine,
   RiHeartPulseLine,
   RiRefreshLine,
   RiSearchLine,
@@ -9,6 +10,7 @@ import {
 } from "react-icons/ri";
 
 import {
+  exportDonorsCSV,
   getAdminDonors,
   recordDonation,
   saveAdminMedicalRecord,
@@ -350,7 +352,10 @@ function AdminDonors() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="secondary" onClick={async () => { try { await exportDonorsCSV(search); } catch { setError("Export failed. Please try again."); } }}>
+              <RiDownloadLine /> Export CSV
+            </Button>
             <Button variant="secondary" onClick={() => setShowDonationForm((v) => !v)}>
               <RiHeartPulseLine /> Record Donation
             </Button>

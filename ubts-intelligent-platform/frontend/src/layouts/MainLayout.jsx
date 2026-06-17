@@ -71,30 +71,26 @@ const notificationRef = useRef(null);
 
 const loadNotifications = async () => {
   try {
-    let data;
-
     if (user?.role === "ADMIN") {
-      data = await getAdminNotifications();
+      const data = await getAdminNotifications();
       setNotifications(data.notifications || []);
       setUnreadCount(data.unread_notifications || 0);
     } else {
       await generateMyNotifications();
-      data = await getMyNotifications();
+      const data = await getMyNotifications();
       setNotifications(data.notifications || []);
       setUnreadCount(data.unread_count || 0);
     }
-
-    setNotifications(data.notifications || []);
-    setUnreadCount(data.unread_count || 0);
   } catch {
     // Silent fail so layout does not break
   }
 };
 
 useEffect(() => {
-  if (user) {
-    loadNotifications();
-  }
+  if (!user) return;
+  loadNotifications();
+  const interval = setInterval(loadNotifications, 60000);
+  return () => clearInterval(interval);
 }, [user]);
 
 useEffect(() => {

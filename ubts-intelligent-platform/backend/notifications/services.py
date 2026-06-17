@@ -1,8 +1,9 @@
 import math
+from datetime import date, timedelta
 
 from django.apps import apps
 
-from donors.models import DonorProfile, DonorMedicalRecord
+from donors.models import DonorProfile, DonorMedicalRecord, DonationRecord
 from donors.retention_engine import get_donor_retention_summary
 from donors.impact_engine import get_donor_impact_summary
 from ai_modules.eligibility.eligibility_engine import check_donor_eligibility
@@ -99,6 +100,49 @@ def generate_badge_notification_for_donor(profile):
     )
 
 
+def generate_eligibility_reminder_for_donor(profile):
+    try:
+        latest = (
+            DonationRecord.objects.filter(donor=profile)
+            .order_by("-donation_date")
+            .first()
+        )
+    except Exception:
+        return None, False
+
+    if not latest:
+        return None, False
+
+    next_eligible = latest.donation_date + timedelta(days=90)
+    today = date.today()
+    days_until = (next_eligible - today).days
+
+    if days_until < 0 or days_until > 14:
+        return None, False
+
+    if days_until == 0:
+        message = "You are eligible to donate blood again today! Visit a nearby camp and help save lives."
+    elif days_until <= 7:
+        message = (
+            f"You will be eligible to donate blood again in {days_until} day(s) "
+            f"(on {next_eligible.strftime('%d %b %Y')}). Start planning your visit!"
+        )
+    else:
+        message = (
+            f"You will be eligible to donate blood again on {next_eligible.strftime('%d %b %Y')}. "
+            "We'll remind you as it gets closer."
+        )
+
+    return create_notification(
+        recipient=profile.user,
+        title="Upcoming Donation Eligibility",
+        message=message,
+        notification_type="RETENTION",
+        action_label="Find Nearby Camp",
+        action_url="/donor-dashboard",
+    )
+
+
 def generate_all_donor_notifications(profile):
     created_notifications = []
 
@@ -113,6 +157,11 @@ def generate_all_donor_notifications(profile):
 
     if badge_created and badge_notification:
         created_notifications.append(badge_notification)
+
+    eligibility_reminder, reminder_created = generate_eligibility_reminder_for_donor(profile)
+
+    if reminder_created and eligibility_reminder:
+        created_notifications.append(eligibility_reminder)
 
     return created_notifications
 

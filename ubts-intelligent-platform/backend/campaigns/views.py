@@ -1,4 +1,7 @@
-from django.db.models import Avg, Sum
+from datetime import date, timedelta
+
+from django.db.models import Avg, Count, Sum
+from django.db.models.functions import TruncMonth
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
@@ -6,6 +9,7 @@ from rest_framework.response import Response
 from donors.models import (
     DonorProfile,
     DonorMedicalRecord,
+    DonationRecord,
     EligibilityAssessment,
     AvailabilityAssessment,
 )
@@ -191,5 +195,66 @@ def campaign_performance_analytics_view(request):
                 }
                 for record in recent_campaigns
             ],
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_analytics_view(request):
+    six_months_ago = date.today() - timedelta(days=180)
+
+    # DonationRecord queries — guarded in case migration hasn't been applied yet
+    donations_by_month_data = []
+    top_camps_data = []
+    try:
+        donations_by_month_qs = (
+            DonationRecord.objects.filter(donation_date__gte=six_months_ago)
+            .annotate(month=TruncMonth("donation_date"))
+            .values("month")
+            .annotate(count=Count("id"))
+            .order_by("month")
+        )
+        donations_by_month_data = [
+            {"month": item["month"].strftime("%b %Y"), "donations": item["count"]}
+            for item in donations_by_month_qs
+        ]
+
+        top_camps_qs = (
+            DonationRecord.objects.exclude(camp_name="")
+            .values("camp_name")
+            .annotate(donations=Count("id"))
+            .order_by("-donations")[:5]
+        )
+        top_camps_data = [
+            {"camp": item["camp_name"], "donations": item["donations"]}
+            for item in top_camps_qs
+        ]
+    except Exception:
+        pass
+
+    blood_group_dist = (
+        DonorProfile.objects.exclude(blood_group="")
+        .exclude(blood_group__isnull=True)
+        .values("blood_group")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    eligible_count = EligibilityAssessment.objects.filter(is_eligible=True).count()
+    ineligible_count = EligibilityAssessment.objects.filter(is_eligible=False).count()
+
+    return Response(
+        {
+            "donations_by_month": donations_by_month_data,
+            "blood_group_distribution": [
+                {"blood_group": item["blood_group"], "count": item["count"]}
+                for item in blood_group_dist
+            ],
+            "eligibility_breakdown": [
+                {"name": "Eligible", "value": eligible_count},
+                {"name": "Ineligible", "value": ineligible_count},
+            ],
+            "top_camps": top_camps_data,
         }
     )

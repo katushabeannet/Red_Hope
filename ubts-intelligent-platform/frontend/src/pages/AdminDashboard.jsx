@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  RiBarChartLine,
   RiCalendarCheckLine,
   RiDashboardLine,
   RiGroupLine,
@@ -8,12 +9,26 @@ import {
   RiRefreshLine,
   RiShieldCheckLine,
 } from "react-icons/ri";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import {
   getDashboardSummary,
   getRecentAssessments,
   getCampStatistics,
   getCampaignReadyDonors,
+  getAdminAnalytics,
 } from "../services/adminService";
 
 import Card from "../components/common/Card";
@@ -26,6 +41,7 @@ function AdminDashboard() {
   const [recentAssessments, setRecentAssessments] = useState(null);
   const [campStats, setCampStats] = useState(null);
   const [readyDonors, setReadyDonors] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [scanLoading, setScanLoading] = useState(false);
@@ -46,17 +62,20 @@ function AdminDashboard() {
         assessmentsData,
         campData,
         campaignAnalyticsData,
+        analyticsData,
       ] = await Promise.all([
         getDashboardSummary(),
         getRecentAssessments(),
         getCampStatistics(),
         getCampaignPerformanceAnalytics(),
+        getAdminAnalytics(),
       ]);
 
       setSummary(summaryData);
       setRecentAssessments(assessmentsData);
       setCampStats(campData);
       setCampaignAnalytics(campaignAnalyticsData);
+      setAnalytics(analyticsData);
     } catch {
       setError("Failed to load admin dashboard data.");
     } finally {
@@ -157,6 +176,8 @@ function AdminDashboard() {
           />
         </div>
       )}
+
+      {analytics && <AnalyticsCharts analytics={analytics} />}
 
       {campaignAnalytics && (
         <Card>
@@ -423,6 +444,132 @@ function AdminDashboard() {
         </section>
       )}
     </div>
+  );
+}
+
+const PIE_COLORS = ["#b91c1c", "#ef4444", "#fca5a5", "#fecaca", "#fee2e2", "#dc2626", "#991b1b", "#7f1d1d"];
+
+function AnalyticsCharts({ analytics }) {
+  return (
+    <Card>
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20">
+          <RiBarChartLine size={22} />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Platform Analytics</h3>
+          <p className="text-sm text-[var(--text-secondary)]">Live charts — donations, blood groups, eligibility, top camps</p>
+        </div>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Donations per month */}
+        <div>
+          <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Donations per Month (last 6 months)</p>
+          {analytics.donations_by_month?.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={analytics.donations_by_month} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-muted)" }} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--text-muted)" }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}
+                  labelStyle={{ fontWeight: 600 }}
+                />
+                <Bar dataKey="donations" fill="#b91c1c" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[220px] items-center justify-center rounded-xl bg-[var(--surface-2)] text-sm text-[var(--text-muted)]">
+              No donation records yet
+            </div>
+          )}
+        </div>
+
+        {/* Blood group distribution */}
+        <div>
+          <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Blood Group Distribution</p>
+          {analytics.blood_group_distribution?.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={analytics.blood_group_distribution}
+                  dataKey="count"
+                  nameKey="blood_group"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ blood_group, percent }) =>
+                    `${blood_group} ${(percent * 100).toFixed(0)}%`
+                  }
+                  labelLine={false}
+                >
+                  {analytics.blood_group_distribution.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, name) => [value, name]}
+                  contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}
+                />
+                <Legend formatter={(value) => <span style={{ fontSize: 11 }}>{value}</span>} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[220px] items-center justify-center rounded-xl bg-[var(--surface-2)] text-sm text-[var(--text-muted)]">
+              No donors with blood group data
+            </div>
+          )}
+        </div>
+
+        {/* Eligibility breakdown */}
+        <div>
+          <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Eligibility Assessment Breakdown</p>
+          {(analytics.eligibility_breakdown?.[0]?.value + analytics.eligibility_breakdown?.[1]?.value) > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={analytics.eligibility_breakdown} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--text-muted)" }} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--text-muted)" }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}
+                />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Cell fill="#16a34a" />
+                  <Cell fill="#dc2626" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[220px] items-center justify-center rounded-xl bg-[var(--surface-2)] text-sm text-[var(--text-muted)]">
+              No eligibility assessments yet
+            </div>
+          )}
+        </div>
+
+        {/* Top camps */}
+        <div>
+          <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Top Donation Camps</p>
+          {analytics.top_camps?.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={analytics.top_camps} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "var(--text-muted)" }} allowDecimals={false} />
+                <YAxis dataKey="camp" type="category" tick={{ fontSize: 10, fill: "var(--text-muted)" }} width={110} />
+                <Tooltip
+                  contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}
+                />
+                <Bar dataKey="donations" fill="#b91c1c" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-[220px] items-center justify-center rounded-xl bg-[var(--surface-2)] text-sm text-[var(--text-muted)]">
+              No donation camp records yet
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
 
