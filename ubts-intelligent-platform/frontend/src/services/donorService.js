@@ -69,3 +69,31 @@ export const getDonorAssessmentHistory = async ({ page = 1, page_size = 5 } = {}
   );
   return response.data;
 };
+
+export const getDonationHistory = async ({ page = 1, page_size = 5 } = {}) => {
+  const response = await api.get(
+    `/donors/donation-history/?page=${page}&page_size=${page_size}`
+  );
+  return response.data;
+};
+
+export const downloadCertificate = async (donationId) => {
+  const response = await api.get(`/donors/certificate/${donationId}/`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(
+    new Blob([response.data], { type: "application/pdf" })
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `UBTS_Certificate_${donationId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export const getActiveCamps = async () => {
+  const response = await api.get("/camps/active/");
+  return response.data;
+};

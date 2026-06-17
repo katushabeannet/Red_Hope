@@ -14,7 +14,14 @@ function getNextLevel(nextMilestone) {
   return null;
 }
 
-function NextMilestoneCard({ totalDonations = 0, nextMilestone }) {
+const BADGE_NAMES = {
+  1: "First Life Saver",
+  5: "Regular Donor",
+  10: "Community Hero",
+  20: "Gold Donor",
+};
+
+function NextMilestoneCard({ totalDonations = 0, nextMilestone, nextBadge }) {
   const [showInfo, setShowInfo] = useState(false);
 
   const safeMilestone = nextMilestone || 5;
@@ -22,6 +29,7 @@ function NextMilestoneCard({ totalDonations = 0, nextMilestone }) {
   const remaining = Math.max(safeMilestone - totalDonations, 0);
   const progress = Math.min((totalDonations / safeMilestone) * 100, 100);
   const completed = totalDonations >= 20 && !nextMilestone;
+  const badgeName = nextBadge?.name || BADGE_NAMES[safeMilestone];
 
   return (
     <div
@@ -39,27 +47,36 @@ function NextMilestoneCard({ totalDonations = 0, nextMilestone }) {
           />
         </div>
 
-        <h3 className="mt-2 text-3xl font-bold text-emerald-600">
-          {completed ? "Completed" : `${safeMilestone} Donations`}
+        {!completed && badgeName && (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 dark:bg-emerald-900/20">
+            <RiMedalLine size={13} className="text-emerald-600" />
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+              Next: {badgeName}
+            </span>
+          </div>
+        )}
+
+        <h3 className="mt-3 text-3xl font-bold text-emerald-600">
+          {completed ? "All Earned!" : `${remaining} more`}
         </h3>
 
-        <p className="mt-3 text-sm text-[var(--text-secondary)]">
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
           {completed
             ? "Highest donor level achieved."
-            : `${remaining} donation(s) to reach ${nextLevel} level.`}
+            : `donation${remaining !== 1 ? "s" : ""} to earn the ${badgeName || nextLevel} badge`}
         </p>
 
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
           <div
             className="h-full rounded-full bg-emerald-500 transition-all duration-700"
             style={{ width: `${completed ? 100 : progress}%` }}
           />
         </div>
 
-        <p className="mt-3 text-sm text-[var(--text-secondary)]">
+        <p className="mt-2 text-xs text-[var(--text-muted)]">
           {completed
             ? `${totalDonations} Donations`
-            : `${totalDonations} / ${safeMilestone} Donations`}
+            : `${totalDonations} / ${safeMilestone} (${Math.round(progress)}%)`}
         </p>
       </div>
 

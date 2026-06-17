@@ -21,3 +21,11 @@ export const deleteCamp = async (id) => {
   });
   return response.data;
 };
+
+export const rescheduleCamp = async (id, start_date, end_date) => {
+  const response = await api.patch(`/camps/admin/${id}/reschedule/`, {
+    start_date,
+    end_date,
+  });
+  return response.data;
+};

@@ -136,3 +136,27 @@ def admin_camps_view(request):
     if request.method == "DELETE":
         camp.delete()
         return Response({"message": "Donation camp deleted successfully."})
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def reschedule_camp_view(request, camp_id):
+    try:
+        camp = DonationCamp.objects.get(id=camp_id)
+    except DonationCamp.DoesNotExist:
+        return Response(
+            {"error": "Donation camp not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    start_date = request.data.get("start_date")
+    end_date = request.data.get("end_date")
+
+    if start_date:
+        camp.start_date = start_date
+    if end_date:
+        camp.end_date = end_date
+
+    camp.save(update_fields=["start_date", "end_date"])
+    serializer = DonationCampSerializer(camp)
+    return Response(serializer.data)
