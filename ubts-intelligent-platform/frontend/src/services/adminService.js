@@ -29,3 +29,8 @@ export const getAdminAnalytics = async () => {
   const response = await api.get("/admin/analytics/");
   return response.data;
 };
+
+export const getBloodDemandForecast = async () => {
+  const response = await api.get("/admin/blood-demand-forecast/");
+  return response.data;
+};

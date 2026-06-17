@@ -258,3 +258,97 @@ def admin_analytics_view(request):
             "top_camps": top_camps_data,
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def blood_demand_forecast_view(request):
+    """
+    Rule-based blood demand forecast.
+    Compares recent donation activity per blood group against total eligible
+    donor capacity to infer which groups may be in highest demand next week.
+    """
+    ALL_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+    UNIVERSAL_DONORS = {"O-", "O+"}
+    HIGH_NEED_ALWAYS = {"O-", "B-", "AB-"}
+
+    today = date.today()
+    recent_cutoff = today - timedelta(days=30)
+    eligible_cutoff = today - timedelta(days=90)
+
+    # Count donors per blood group
+    donors_by_group = {
+        item["blood_group"]: item["count"]
+        for item in DonorProfile.objects.values("blood_group").annotate(count=Count("id"))
+    }
+
+    # Count recent donations per blood group (last 30 days)
+    recent_donations = {}
+    try:
+        for item in (
+            DonationRecord.objects.filter(donation_date__gte=recent_cutoff)
+            .select_related("donor")
+            .values("donor__blood_group")
+            .annotate(count=Count("id"))
+        ):
+            recent_donations[item["donor__blood_group"]] = item["count"]
+    except Exception:
+        pass
+
+    # Count eligible donors (haven't donated in 90 days) per blood group
+    eligible_donors = {}
+    try:
+        donated_recently_ids = set(
+            DonationRecord.objects.filter(donation_date__gte=eligible_cutoff)
+            .values_list("donor_id", flat=True)
+        )
+        for item in (
+            DonorProfile.objects.exclude(id__in=donated_recently_ids)
+            .values("blood_group")
+            .annotate(count=Count("id"))
+        ):
+            eligible_donors[item["blood_group"]] = item["count"]
+    except Exception:
+        pass
+
+    forecast = []
+    for bg in ALL_GROUPS:
+        total = donors_by_group.get(bg, 0)
+        recent = recent_donations.get(bg, 0)
+        eligible = eligible_donors.get(bg, total)
+
+        if total == 0:
+            demand_level = "UNKNOWN"
+            reason = "No donors registered with this blood group."
+        elif bg in HIGH_NEED_ALWAYS:
+            demand_level = "HIGH"
+            reason = f"Rare type — always in high clinical demand. {eligible} eligible donor(s) available."
+        else:
+            coverage = eligible / total if total else 0
+            if coverage < 0.3 or recent < 2:
+                demand_level = "HIGH"
+                reason = f"Low donor activity ({recent} donations in 30 days). Only {eligible} eligible donor(s)."
+            elif coverage < 0.6 or recent < 5:
+                demand_level = "MEDIUM"
+                reason = f"Moderate activity ({recent} donations). {eligible} of {total} donors eligible."
+            else:
+                demand_level = "LOW"
+                reason = f"Adequate supply. {recent} donations in 30 days, {eligible} eligible donors."
+
+        forecast.append({
+            "blood_group": bg,
+            "demand_level": demand_level,
+            "recent_donations": recent,
+            "eligible_donors": eligible,
+            "total_donors": total,
+            "reason": reason,
+        })
+
+    # Sort: HIGH first, then MEDIUM, then LOW
+    order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "UNKNOWN": 3}
+    forecast.sort(key=lambda x: order.get(x["demand_level"], 3))
+
+    return Response({
+        "forecast_date": str(today),
+        "forecast": forecast,
+    })

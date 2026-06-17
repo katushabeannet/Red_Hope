@@ -50,7 +50,15 @@ def chatbot_router_view(request):
         user = request.user if request.user.is_authenticated else None
         role = getattr(user, "role", "GUEST") if user else "GUEST"
 
-        result = route_chatbot_query(query=query, user=user)
+        conversation_history = request.data.get("conversation_history") or []
+        # Sanitise: only allow role/content dicts from the frontend
+        safe_history = [
+            {"role": h["role"], "content": str(h["content"])}
+            for h in conversation_history
+            if isinstance(h, dict) and h.get("role") in ("user", "assistant") and h.get("content")
+        ]
+
+        result = route_chatbot_query(query=query, user=user, conversation_history=safe_history or None)
 
         user_identifier = user.email if user else "guest-user"
 

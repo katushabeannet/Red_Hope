@@ -320,26 +320,61 @@ def donor_assessment_history_view(request):
     )
 
 
+def _churn_risk(donation_date, today):
+    if not donation_date:
+        return "HIGH"
+    days = (today - donation_date).days
+    if days > 365:
+        return "HIGH"
+    if days > 180:
+        return "MEDIUM"
+    return "LOW"
+
+
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_donors_list_view(request):
+    from datetime import date
+
     search = request.query_params.get("search", "").strip()
     page = max(1, int(request.query_params.get("page", 1)))
     page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
 
-    donors = DonorProfile.objects.select_related("user", "medical_record").all()
+    donors_qs = DonorProfile.objects.select_related("user", "medical_record").all()
 
     if search:
-        donors = donors.filter(
+        donors_qs = donors_qs.filter(
             Q(user__full_name__icontains=search)
             | Q(user__email__icontains=search)
             | Q(phone_number__icontains=search)
             | Q(address__icontains=search)
         )
 
-    total_count = donors.count()
+    total_count = donors_qs.count()
     start = (page - 1) * page_size
-    serializer = DonorProfileSerializer(donors[start : start + page_size], many=True)
+    page_qs = list(donors_qs[start : start + page_size])
+
+    # Annotate latest donation date per donor for churn risk (gracefully degrades)
+    today = date.today()
+    latest_donations = {}
+    try:
+        ids = [d.id for d in page_qs]
+        latest_sub = (
+            DonationRecord.objects.filter(donor_id=OuterRef("pk"))
+            .order_by("-donation_date")
+            .values("donation_date")[:1]
+        )
+        for row in DonorProfile.objects.filter(id__in=ids).annotate(ld=Subquery(latest_sub)):
+            latest_donations[row.id] = row.ld
+    except Exception:
+        pass
+
+    serializer = DonorProfileSerializer(page_qs, many=True)
+    results = list(serializer.data)
+    for item in results:
+        ld = latest_donations.get(item["id"])
+        item["latest_donation_date"] = str(ld) if ld else None
+        item["churn_risk"] = _churn_risk(ld, today)
 
     return Response(
         {
@@ -347,7 +382,7 @@ def admin_donors_list_view(request):
             "page": page,
             "page_size": page_size,
             "total_pages": math.ceil(total_count / page_size) if total_count else 1,
-            "results": serializer.data,
+            "results": results,
         }
     )
 
