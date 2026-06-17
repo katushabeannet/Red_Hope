@@ -4,16 +4,34 @@ import {
   RiCalendarLine,
   RiDeleteBinLine,
   RiEditLine,
+  RiListCheck,
   RiMapPinLine,
   RiRefreshLine,
 } from "react-icons/ri";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import { enUS } from "date-fns/locale";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 
 import {
   getAdminCamps,
   createCamp,
   updateCamp,
   deleteCamp,
+  rescheduleCamp,
 } from "../services/campService";
+
+const calLocalizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales: { "en-US": enUS },
+});
+
+const DnDCalendar = withDragAndDrop(Calendar);
 
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -40,6 +58,7 @@ function AdminCamps() {
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(true);
   const [error, setError] = useState("");
+  const [viewMode, setViewMode] = useState("table");
 
   useEffect(() => {
     loadCamps();
@@ -130,6 +149,27 @@ function AdminCamps() {
     }
   };
 
+  const handleEventDrop = async ({ event, start, end }) => {
+    try {
+      setError("");
+      const fmt = (d) => d.toISOString().split("T")[0];
+      await rescheduleCamp(event.id, fmt(start), fmt(end));
+      await loadCamps();
+    } catch {
+      setError("Failed to reschedule camp. Please try again.");
+    }
+  };
+
+  const calendarEvents = camps
+    .filter((c) => c.start_date && c.end_date)
+    .map((c) => ({
+      id: c.id,
+      title: c.name,
+      start: new Date(c.start_date),
+      end: new Date(c.end_date),
+      resource: c,
+    }));
+
   const activeCount = camps.filter((camp) => camp.status === "ACTIVE").length;
   const inactiveCount = camps.filter((camp) => camp.status === "INACTIVE").length;
   const completedCount = camps.filter((camp) => camp.status === "COMPLETED").length;
@@ -150,10 +190,17 @@ function AdminCamps() {
           </p>
         </div>
 
-        <Button variant="secondary" onClick={loadCamps}>
-          <RiRefreshLine />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant={viewMode === "table" ? "primary" : "secondary"} onClick={() => setViewMode("table")}>
+            <RiListCheck /> Table
+          </Button>
+          <Button variant={viewMode === "calendar" ? "primary" : "secondary"} onClick={() => setViewMode("calendar")}>
+            <RiCalendarLine /> Calendar
+          </Button>
+          <Button variant="secondary" onClick={loadCamps}>
+            <RiRefreshLine /> Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -317,6 +364,59 @@ function AdminCamps() {
         </form>
       </Card>
 
+      {viewMode === "calendar" && (
+        <Card>
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Camp Calendar</h3>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Drag events to reschedule. Click an event to edit it.
+              </p>
+            </div>
+            <Badge label={`${camps.length} camps`} variant="donor" />
+          </div>
+
+          {tableLoading ? (
+            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
+              Loading camps...
+            </div>
+          ) : calendarEvents.length > 0 ? (
+            <div style={{ height: 560 }} className="overflow-hidden rounded-xl">
+              <DnDCalendar
+                localizer={calLocalizer}
+                events={calendarEvents}
+                startAccessor="start"
+                endAccessor="end"
+                defaultView="month"
+                views={["month", "week", "agenda"]}
+                style={{ height: "100%" }}
+                draggableAccessor={() => true}
+                onEventDrop={handleEventDrop}
+                onSelectEvent={(event) => handleEdit(event.resource)}
+                eventPropGetter={(event) => ({
+                  style: {
+                    backgroundColor:
+                      event.resource?.status === "ACTIVE"
+                        ? "#C0162C"
+                        : event.resource?.status === "COMPLETED"
+                        ? "#64748b"
+                        : "#f59e0b",
+                    borderRadius: "6px",
+                    border: "none",
+                    fontSize: "12px",
+                  },
+                })}
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
+              No camps with dates set. Add start and end dates to see them on the calendar.
+            </div>
+          )}
+        </Card>
+      )}
+
+      {viewMode === "table" && (
       <Card>
         <div className="mb-5 flex items-center justify-between">
           <div>
@@ -426,6 +526,7 @@ function AdminCamps() {
           </div>
         )}
       </Card>
+      )}
     </div>
   );
 }

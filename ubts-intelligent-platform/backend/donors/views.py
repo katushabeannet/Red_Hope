@@ -492,6 +492,181 @@ def admin_record_donation_view(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def donor_donation_history_view(request):
+    try:
+        profile = DonorProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response(
+                {"error": "No donor profile found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        page = max(1, int(request.query_params.get("page", 1)))
+        page_size = min(20, max(1, int(request.query_params.get("page_size", 5))))
+        start = (page - 1) * page_size
+
+        records = DonationRecord.objects.filter(donor=profile).order_by("-donation_date")
+        total = records.count()
+
+        return Response(
+            {
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": math.ceil(total / page_size) if total else 1,
+                "donations": [
+                    {
+                        "id": r.id,
+                        "donation_date": str(r.donation_date),
+                        "camp_name": r.camp_name,
+                        "notes": r.notes,
+                        "recorded_at": str(r.recorded_at),
+                    }
+                    for r in records[start : start + page_size]
+                ],
+            }
+        )
+    except Exception:
+        return Response(
+            {"donations": [], "total": 0, "page": 1, "page_size": 5, "total_pages": 1}
+        )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def donor_certificate_view(request, donation_id):
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.colors import HexColor
+        from django.http import HttpResponse
+        import io
+    except ImportError:
+        return Response(
+            {"error": "PDF generation requires reportlab. Install with: pip install reportlab"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    try:
+        profile = DonorProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response(
+                {"error": "No donor profile found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        record = DonationRecord.objects.filter(id=donation_id, donor=profile).first()
+        if not record:
+            return Response(
+                {"error": "Donation record not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    except Exception:
+        return Response(
+            {"error": "Donation records not available. Run pending migrations first."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    buffer = io.BytesIO()
+    p = rl_canvas.Canvas(buffer, pagesize=A4)
+    w, h = A4
+
+    crimson = HexColor("#C0162C")
+    dark = HexColor("#1e293b")
+    muted = HexColor("#64748b")
+    white = HexColor("#ffffff")
+    light_gray = HexColor("#e2e8f0")
+
+    # Outer border
+    p.setStrokeColor(crimson)
+    p.setLineWidth(3)
+    p.rect(30, 30, w - 60, h - 60, stroke=1, fill=0)
+    p.setLineWidth(1)
+    p.rect(40, 40, w - 80, h - 80, stroke=1, fill=0)
+
+    # Header band
+    p.setFillColor(crimson)
+    p.rect(30, h - 130, w - 60, 100, stroke=0, fill=1)
+    p.setFillColor(white)
+    p.setFont("Helvetica-Bold", 26)
+    p.drawCentredString(w / 2, h - 80, "BLOOD DONATION CERTIFICATE")
+    p.setFont("Helvetica", 13)
+    p.drawCentredString(w / 2, h - 105, "Uganda Blood Transfusion Service — UBTS Platform")
+
+    # Body
+    p.setFillColor(dark)
+    p.setFont("Helvetica", 14)
+    p.drawCentredString(w / 2, h - 165, "This is to certify that")
+
+    # Donor name
+    p.setFont("Helvetica-Bold", 28)
+    p.setFillColor(crimson)
+    p.drawCentredString(w / 2, h - 205, profile.user.full_name)
+    nw = p.stringWidth(profile.user.full_name, "Helvetica-Bold", 28)
+    p.setStrokeColor(crimson)
+    p.setLineWidth(1.5)
+    p.line(w / 2 - nw / 2, h - 215, w / 2 + nw / 2, h - 215)
+
+    p.setFillColor(dark)
+    p.setFont("Helvetica", 14)
+    p.drawCentredString(w / 2, h - 250, "has successfully donated blood on")
+
+    p.setFont("Helvetica-Bold", 17)
+    p.setFillColor(crimson)
+    p.drawCentredString(w / 2, h - 280, record.donation_date.strftime("%d %B %Y"))
+
+    if record.camp_name:
+        p.setFillColor(dark)
+        p.setFont("Helvetica", 14)
+        p.drawCentredString(w / 2, h - 315, "at")
+        p.setFont("Helvetica-Bold", 15)
+        p.drawCentredString(w / 2, h - 340, record.camp_name)
+
+    # Stats row
+    p.setFillColor(muted)
+    p.setFont("Helvetica", 13)
+    stats_y = h - 385
+    p.drawCentredString(
+        w / 2,
+        stats_y,
+        f"Lifetime Donations: {profile.total_donations}   |   Blood Group: {profile.blood_group or 'N/A'}",
+    )
+
+    # Quote
+    p.setFont("Helvetica-Oblique", 12)
+    p.setFillColor(HexColor("#94a3b8"))
+    p.drawCentredString(
+        w / 2,
+        h - 425,
+        '"Every drop counts. Your gift is someone\'s second chance at life."',
+    )
+
+    # Divider
+    p.setStrokeColor(light_gray)
+    p.setLineWidth(1)
+    p.line(80, h - 445, w - 80, h - 445)
+
+    # Footer
+    p.setFillColor(muted)
+    p.setFont("Helvetica", 11)
+    p.drawCentredString(w / 2, h - 465, "Uganda Blood Transfusion Service (UBTS)")
+    p.drawCentredString(w / 2, h - 485, "Intelligent Blood Donation Assistance Platform")
+    p.setFont("Helvetica", 10)
+    p.setFillColor(HexColor("#94a3b8"))
+    p.drawCentredString(w / 2, h - 510, f"Certificate Ref: UBTS-CERT-{donation_id:06d}")
+
+    p.save()
+    buffer.seek(0)
+
+    from django.http import HttpResponse
+    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'attachment; filename="UBTS_Certificate_{donation_id}.pdf"'
+    )
+    return response
+
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_donors_export_view(request):
     import csv

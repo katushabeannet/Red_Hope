@@ -4,6 +4,9 @@ import {
   RiArrowRightLine,
   RiAwardLine,
   RiCalendarEventLine,
+  RiCalendarLine,
+  RiDownloadLine,
+  RiDropLine,
   RiHeartPulseLine,
   RiHistoryLine,
   RiMapPinLine,
@@ -11,6 +14,10 @@ import {
   RiShieldCheckLine,
   RiUserHeartLine,
 } from "react-icons/ri";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import { enUS } from "date-fns/locale";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 
 import {
   getDonorProfile,
@@ -21,7 +28,18 @@ import {
   checkAvailability,
   findNearestCamp,
   getDonorAssessmentHistory,
+  getDonationHistory,
+  downloadCertificate,
+  getActiveCamps,
 } from "../services/donorService";
+
+const calLocalizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+  getDay,
+  locales: { "en-US": enUS },
+});
 
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -42,6 +60,16 @@ function DonorDashboard() {
   const [history, setHistory] = useState(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyVisible, setHistoryVisible] = useState(false);
+
+  const [donations, setDonations] = useState(null);
+  const [donationPage, setDonationPage] = useState(1);
+  const [donationsVisible, setDonationsVisible] = useState(false);
+  const [donationsLoading, setDonationsLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const [campCalendarVisible, setCampCalendarVisible] = useState(false);
+  const [campEvents, setCampEvents] = useState([]);
+  const [campsLoading, setCampsLoading] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -129,6 +157,58 @@ function DonorDashboard() {
       setError("Failed to load assessment history.");
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const handleLoadDonations = async (page = 1) => {
+    try {
+      setDonationsLoading(true);
+      const data = await getDonationHistory({ page, page_size: 5 });
+      setDonations(data);
+      setDonationPage(page);
+      setDonationsVisible(true);
+    } catch {
+      setError("Failed to load donation history.");
+    } finally {
+      setDonationsLoading(false);
+    }
+  };
+
+  const handleDownloadCertificate = async (donationId) => {
+    try {
+      setDownloadingId(donationId);
+      await downloadCertificate(donationId);
+    } catch {
+      setError("Could not generate certificate. Ensure reportlab is installed on the server.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleLoadCampCalendar = async () => {
+    if (campCalendarVisible) {
+      setCampCalendarVisible(false);
+      return;
+    }
+    try {
+      setCampsLoading(true);
+      const camps = await getActiveCamps();
+      setCampEvents(
+        (camps || [])
+          .filter((c) => c.start_date && c.end_date)
+          .map((c) => ({
+            id: c.id,
+            title: c.name,
+            start: new Date(c.start_date),
+            end: new Date(c.end_date),
+            resource: c,
+          }))
+      );
+      setCampCalendarVisible(true);
+    } catch {
+      setError("Failed to load camp calendar.");
+    } finally {
+      setCampsLoading(false);
     }
   };
 
@@ -242,6 +322,7 @@ function DonorDashboard() {
         <NextMilestoneCard
           totalDonations={impact?.total_donations || 0}
           nextMilestone={impact?.next_milestone}
+          nextBadge={impact?.next_badge}
         />
       </div>
 
@@ -369,6 +450,24 @@ function DonorDashboard() {
             >
               <RiHistoryLine />
               {historyVisible ? "Hide History" : "Assessment History"}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => donationsVisible ? setDonationsVisible(false) : handleLoadDonations(1)}
+              loading={donationsLoading}
+            >
+              <RiDropLine />
+              {donationsVisible ? "Hide Donations" : "My Donations"}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleLoadCampCalendar}
+              loading={campsLoading}
+            >
+              <RiCalendarLine />
+              {campCalendarVisible ? "Hide Calendar" : "Camp Calendar"}
             </Button>
           </div>
         </div>
@@ -503,6 +602,118 @@ function DonorDashboard() {
                   Next <RiArrowRightLine />
                 </Button>
               </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {donationsVisible && (
+        <Card>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--crimson-light)] text-[var(--crimson)]">
+              <RiDropLine size={22} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">My Donations</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Your recorded donation history with downloadable certificates.</p>
+            </div>
+          </div>
+
+          {donations?.donations?.length > 0 ? (
+            <>
+              <div className="space-y-3">
+                {donations.donations.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                        <RiHeartPulseLine className="text-[var(--crimson)]" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[var(--text-primary)]">
+                          {new Date(d.donation_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {d.camp_name || "Camp not specified"}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={downloadingId === d.id}
+                      onClick={() => handleDownloadCertificate(d.id)}
+                    >
+                      <RiDownloadLine /> Certificate
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {donations.total_pages > 1 && (
+                <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
+                  <span className="text-sm text-[var(--text-secondary)]">
+                    Page {donationPage} of {donations.total_pages} ({donations.total} total)
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" disabled={donationPage <= 1} onClick={() => handleLoadDonations(donationPage - 1)}>
+                      <RiArrowLeftLine /> Prev
+                    </Button>
+                    <Button variant="secondary" disabled={donationPage >= donations.total_pages} onClick={() => handleLoadDonations(donationPage + 1)}>
+                      Next <RiArrowRightLine />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center">
+              <RiAwardLine size={32} className="mx-auto mb-3 text-[var(--text-muted)]" />
+              <p className="font-semibold text-[var(--text-primary)]">No donations recorded yet</p>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Your donations will appear here after UBTS staff records them.
+              </p>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {campCalendarVisible && (
+        <Card>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
+              <RiCalendarEventLine size={22} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Upcoming Donation Camps</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Active blood donation camps — click any event for details.</p>
+            </div>
+          </div>
+
+          {campEvents.length > 0 ? (
+            <div style={{ height: 480 }} className="rounded-xl overflow-hidden">
+              <Calendar
+                localizer={calLocalizer}
+                events={campEvents}
+                startAccessor="start"
+                endAccessor="end"
+                views={["month", "agenda"]}
+                defaultView="month"
+                style={{ height: "100%" }}
+                onSelectEvent={(event) => {
+                  const c = event.resource;
+                  setError("");
+                  alert(
+                    `${c.name}\n${c.venue}, ${c.district}, ${c.region}\n${c.start_date} → ${c.end_date}\nContact: ${c.contact_phone || "N/A"}`
+                  );
+                }}
+                eventPropGetter={() => ({
+                  style: { backgroundColor: "#C0162C", borderRadius: "6px", border: "none", fontSize: "12px" },
+                })}
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-muted)]">
+              No active donation camps found.
             </div>
           )}
         </Card>
