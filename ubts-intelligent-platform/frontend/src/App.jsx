@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import MyProfile from "./pages/MyProfile";
 import PersonalizedCampaign from "./pages/PersonalizedCampaign";
 import Notifications from "./pages/Notifications";
+import CampCheckin from "./pages/CampCheckin";
 
 function App() {
   return (
@@ -74,6 +75,7 @@ function App() {
           }
         />        
 
+        <Route path="/camp-checkin/:campId" element={<CampCheckin />} />
         <Route path="*" element={<NotFound />} />
         <Route
           path="/personalized-campaign"

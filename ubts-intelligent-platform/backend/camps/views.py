@@ -138,6 +138,52 @@ def admin_camps_view(request):
         return Response({"message": "Donation camp deleted successfully."})
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def camp_detail_view(request, camp_id):
+    try:
+        camp = DonationCamp.objects.get(id=camp_id)
+    except DonationCamp.DoesNotExist:
+        return Response({"error": "Camp not found."}, status=status.HTTP_404_NOT_FOUND)
+    return Response(DonationCampSerializer(camp).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def camp_qr_view(request, camp_id):
+    try:
+        import io
+        import base64
+        import qrcode
+    except ImportError:
+        return Response(
+            {"error": "qrcode library not installed. Run: pip install qrcode[pil]"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    try:
+        camp = DonationCamp.objects.get(id=camp_id)
+    except DonationCamp.DoesNotExist:
+        return Response({"error": "Camp not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    from django.conf import settings
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:5173")
+    checkin_url = f"{frontend_url}/camp-checkin/{camp_id}"
+
+    img = qrcode.make(checkin_url)
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    img_b64 = base64.b64encode(buffer.read()).decode("utf-8")
+
+    return Response({
+        "camp_id": camp_id,
+        "camp_name": camp.name,
+        "checkin_url": checkin_url,
+        "qr_image_base64": img_b64,
+    })
+
+
 @api_view(["PATCH"])
 @permission_classes([IsAdminUser])
 def reschedule_camp_view(request, camp_id):

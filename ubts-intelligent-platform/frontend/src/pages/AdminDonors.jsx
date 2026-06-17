@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  RiAlarmWarningLine,
   RiArrowLeftLine,
   RiArrowRightLine,
   RiDownloadLine,
@@ -12,9 +13,12 @@ import {
 import {
   exportDonorsCSV,
   getAdminDonors,
+  getAdminLapsedDonors,
   recordDonation,
   saveAdminMedicalRecord,
 } from "../services/adminDonorService";
+
+import { blastCampaignNotification } from "../services/notificationService";
 
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -51,6 +55,17 @@ function AdminDonors() {
   const [recordingDonation, setRecordingDonation] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Lapsed donors state
+  const [showLapsed, setShowLapsed] = useState(false);
+  const [lapsedDonors, setLapsedDonors] = useState([]);
+  const [lapsedTotal, setLapsedTotal] = useState(0);
+  const [lapsedLoading, setLapsedLoading] = useState(false);
+  const [blastTitle, setBlastTitle] = useState("We Miss You — Come Back and Donate!");
+  const [blastMessage, setBlastMessage] = useState(
+    "It has been over 6 months since your last donation. Your blood can save lives — visit the nearest UBTS camp and donate today."
+  );
+  const [blasting, setBlasting] = useState(false);
 
   const loadDonors = useCallback(async () => {
     try {
@@ -153,6 +168,46 @@ function AdminDonors() {
     }
   };
 
+  const loadLapsedDonors = async () => {
+    try {
+      setLapsedLoading(true);
+      const data = await getAdminLapsedDonors({ page_size: 50 });
+      setLapsedDonors(data.results || []);
+      setLapsedTotal(data.total || 0);
+    } catch {
+      setError("Failed to load lapsed donors.");
+    } finally {
+      setLapsedLoading(false);
+    }
+  };
+
+  const handleToggleLapsed = () => {
+    const next = !showLapsed;
+    setShowLapsed(next);
+    if (next && lapsedDonors.length === 0) loadLapsedDonors();
+  };
+
+  const handleBlastLapsed = async (e) => {
+    e.preventDefault();
+    if (!blastTitle.trim() || !blastMessage.trim()) return;
+    const ids = lapsedDonors.map((d) => d.id);
+    if (ids.length === 0) return;
+    try {
+      setBlasting(true);
+      setError("");
+      const result = await blastCampaignNotification({
+        donor_ids: ids,
+        title: blastTitle,
+        message: blastMessage,
+      });
+      setSuccess(`Blast sent to ${result.sent_count ?? ids.length} lapsed donor(s).`);
+    } catch {
+      setError("Failed to send blast notification.");
+    } finally {
+      setBlasting(false);
+    }
+  };
+
   const donorsWithMedical = donors.filter((d) => d.medical_record).length;
   const donorsPendingMedical = pagination.total - donorsWithMedical;
 
@@ -172,10 +227,19 @@ function AdminDonors() {
           </p>
         </div>
 
-        <Button variant="secondary" onClick={loadDonors}>
-          <RiRefreshLine />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant={showLapsed ? "primary" : "secondary"}
+            onClick={handleToggleLapsed}
+          >
+            <RiAlarmWarningLine />
+            Lapsed Donors
+          </Button>
+          <Button variant="secondary" onClick={loadDonors}>
+            <RiRefreshLine />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -455,6 +519,116 @@ function AdminDonors() {
           </div>
         )}
       </Card>
+      {showLapsed && (
+        <Card>
+          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                Lapsed Donors
+              </h3>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                {lapsedTotal} donor{lapsedTotal !== 1 ? "s" : ""} who
+                haven&apos;t donated in 6+ months or have never donated.
+              </p>
+            </div>
+            <Button variant="secondary" onClick={loadLapsedDonors}>
+              <RiRefreshLine /> Refresh
+            </Button>
+          </div>
+
+          {lapsedTotal > 0 && (
+            <form
+              onSubmit={handleBlastLapsed}
+              className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
+            >
+              <p className="mb-3 text-sm font-semibold text-amber-800 dark:text-amber-400">
+                Blast Notification to All {lapsedTotal} Lapsed Donors
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[var(--text-primary)]">
+                    Title
+                  </label>
+                  <input
+                    value={blastTitle}
+                    onChange={(e) => setBlastTitle(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-[var(--text-primary)]">
+                    Message
+                  </label>
+                  <input
+                    value={blastMessage}
+                    onChange={(e) => setBlastMessage(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
+                  />
+                </div>
+              </div>
+              <div className="mt-3">
+                <Button type="submit" loading={blasting}>
+                  <RiAlarmWarningLine /> Send Blast to {lapsedTotal} Donors
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {lapsedLoading ? (
+            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
+              Loading lapsed donors...
+            </div>
+          ) : lapsedDonors.length > 0 ? (
+            <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+                  <tr>
+                    <th className="p-3 font-medium">Donor</th>
+                    <th className="p-3 font-medium">Blood Group</th>
+                    <th className="p-3 font-medium">Last Donation</th>
+                    <th className="p-3 font-medium">Days Lapsed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lapsedDonors.map((donor) => (
+                    <tr key={donor.id} className="border-t border-[var(--border)]">
+                      <td className="p-3">
+                        <p className="font-semibold text-[var(--text-primary)]">
+                          {donor.full_name}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)]">{donor.email}</p>
+                      </td>
+                      <td className="p-3 font-semibold text-[var(--crimson)]">
+                        {donor.blood_group || "—"}
+                      </td>
+                      <td className="p-3 text-[var(--text-secondary)]">
+                        {donor.latest_donation_date || "Never donated"}
+                      </td>
+                      <td className="p-3">
+                        {donor.days_lapsed != null ? (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                            {donor.days_lapsed}d ago
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                            Never
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
+              No lapsed donors found.
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

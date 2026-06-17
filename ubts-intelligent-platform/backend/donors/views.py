@@ -1,6 +1,6 @@
 import math
 
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -371,6 +371,11 @@ def admin_medical_record_manage_view(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+    blood_group = request.data.get("blood_group")
+    if blood_group:
+        donor.blood_group = blood_group
+        donor.save(update_fields=["blood_group"])
+
     medical_record, created = DonorMedicalRecord.objects.update_or_create(
         donor=donor,
         defaults={
@@ -712,3 +717,133 @@ def admin_donors_export_view(request):
         ])
 
     return response
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_lapsed_donors_view(request):
+    from datetime import date, timedelta
+
+    cutoff = date.today() - timedelta(days=180)
+    search = request.query_params.get("search", "").strip()
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(50, max(1, int(request.query_params.get("page_size", 20))))
+
+    try:
+        latest_donation_sub = (
+            DonationRecord.objects.filter(donor_id=OuterRef("pk"))
+            .order_by("-donation_date")
+            .values("donation_date")[:1]
+        )
+
+        qs = DonorProfile.objects.select_related("user").annotate(
+            latest_donation=Subquery(latest_donation_sub)
+        ).filter(Q(latest_donation__lt=cutoff) | Q(latest_donation__isnull=True))
+    except Exception:
+        qs = DonorProfile.objects.none()
+
+    if search:
+        qs = qs.filter(
+            Q(user__full_name__icontains=search) | Q(user__email__icontains=search)
+        )
+
+    today = date.today()
+    total = qs.count()
+    offset = (page - 1) * page_size
+    results = []
+
+    for donor in qs[offset : offset + page_size]:
+        latest = donor.latest_donation
+        results.append({
+            "id": donor.id,
+            "full_name": donor.user.full_name,
+            "email": donor.user.email,
+            "phone_number": donor.phone_number,
+            "blood_group": donor.blood_group,
+            "latest_donation_date": str(latest) if latest else None,
+            "days_lapsed": (today - latest).days if latest else None,
+        })
+
+    return Response({
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": math.ceil(total / page_size) if total else 1,
+        "results": results,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def donor_camp_checkin_view(request, camp_id):
+    if not hasattr(request.user, "donor_profile"):
+        return Response(
+            {"error": "Only registered donors can check in."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    from camps.models import DonationCamp
+    from datetime import date
+
+    try:
+        camp = DonationCamp.objects.get(id=camp_id)
+    except DonationCamp.DoesNotExist:
+        return Response({"error": "Camp not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    donor = request.user.donor_profile
+    today = date.today()
+
+    try:
+        already = DonationRecord.objects.filter(
+            donor=donor, donation_date=today, camp_name=camp.name
+        ).exists()
+        if already:
+            return Response(
+                {"error": "You have already checked in to this camp today."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        DonationRecord.objects.create(
+            donor=donor,
+            donation_date=today,
+            camp_name=camp.name,
+            notes="Self check-in via QR code",
+        )
+
+        donor.total_donations += 1
+        donor.save(update_fields=["total_donations"])
+
+        try:
+            award_badges(donor)
+        except Exception:
+            pass
+
+        try:
+            from notifications.services import create_notification
+            next_eligible = today + timedelta(days=90)
+            create_notification(
+                recipient=request.user,
+                title="Check-in Recorded — Thank You!",
+                message=(
+                    f"Your attendance at {camp.name} on {today.strftime('%d %b %Y')} has been recorded. "
+                    f"Your next eligible donation date is {next_eligible.strftime('%d %b %Y')}."
+                ),
+                notification_type="SYSTEM",
+                action_label="View Dashboard",
+                action_url="/donor-dashboard",
+            )
+        except Exception:
+            pass
+
+    except Exception as exc:
+        return Response(
+            {"error": "Could not record check-in.", "detail": str(exc)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response({
+        "message": f"Check-in recorded at {camp.name}!",
+        "donation_date": str(today),
+        "camp_name": camp.name,
+        "total_donations": donor.total_donations,
+    })

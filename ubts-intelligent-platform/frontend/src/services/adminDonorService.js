@@ -34,6 +34,13 @@ export const exportDonorsCSV = async (search = "") => {
   URL.revokeObjectURL(url);
 };
 
+export const getAdminLapsedDonors = async ({ page = 1, page_size = 20, search = "" } = {}) => {
+  const params = new URLSearchParams({ page, page_size });
+  if (search) params.append("search", search);
+  const response = await api.get(`/donors/admin/donors/lapsed/?${params.toString()}`);
+  return response.data;
+};
+
 export const saveDonorMedicalRecord = async (formData) => {
   const payload = {
     donor_id: Number(formData.donor_id),

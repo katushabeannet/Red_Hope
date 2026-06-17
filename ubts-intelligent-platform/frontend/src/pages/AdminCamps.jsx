@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import {
   RiAddLine,
   RiCalendarLine,
+  RiCloseLine,
   RiDeleteBinLine,
   RiEditLine,
   RiListCheck,
   RiMapPinLine,
+  RiQrCodeLine,
   RiRefreshLine,
 } from "react-icons/ri";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -21,6 +23,7 @@ import {
   updateCamp,
   deleteCamp,
   rescheduleCamp,
+  getCampQR,
 } from "../services/campService";
 
 const calLocalizer = dateFnsLocalizer({
@@ -157,6 +160,22 @@ function AdminCamps() {
       await loadCamps();
     } catch {
       setError("Failed to reschedule camp. Please try again.");
+    }
+  };
+
+  const [qrModal, setQrModal] = useState(null);
+  const [qrLoading, setQrLoading] = useState(false);
+
+  const handleGetQR = async (camp) => {
+    try {
+      setQrLoading(true);
+      setError("");
+      const data = await getCampQR(camp.id);
+      setQrModal(data);
+    } catch {
+      setError("Failed to generate QR code. Make sure qrcode[pil] is installed.");
+    } finally {
+      setQrLoading(false);
     }
   };
 
@@ -507,6 +526,16 @@ function AdminCamps() {
 
                         <Button
                           size="sm"
+                          variant="secondary"
+                          loading={qrLoading}
+                          onClick={() => handleGetQR(camp)}
+                        >
+                          <RiQrCodeLine />
+                          QR
+                        </Button>
+
+                        <Button
+                          size="sm"
                           variant="danger"
                           onClick={() => handleDelete(camp.id)}
                         >
@@ -526,6 +555,52 @@ function AdminCamps() {
           </div>
         )}
       </Card>
+      )}
+
+      {qrModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setQrModal(null)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl bg-[var(--surface)] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setQrModal(null)}
+              className="absolute right-4 top-4 rounded-full p-1 text-[var(--text-muted)] hover:bg-[var(--surface-2)]"
+            >
+              <RiCloseLine size={20} />
+            </button>
+
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              Camp Check-in QR Code
+            </h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              {qrModal.camp_name}
+            </p>
+
+            <div className="mt-4 flex justify-center rounded-xl bg-white p-4">
+              <img
+                src={`data:image/png;base64,${qrModal.qr_image_base64}`}
+                alt="Camp QR Code"
+                className="h-56 w-56"
+              />
+            </div>
+
+            <p className="mt-3 break-all text-center text-xs text-[var(--text-muted)]">
+              {qrModal.checkin_url}
+            </p>
+
+            <a
+              href={`data:image/png;base64,${qrModal.qr_image_base64}`}
+              download={`camp_${qrModal.camp_id}_qr.png`}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface)]"
+            >
+              <RiQrCodeLine /> Download QR PNG
+            </a>
+          </div>
+        </div>
       )}
     </div>
   );
