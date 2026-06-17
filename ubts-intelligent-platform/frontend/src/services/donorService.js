@@ -97,3 +97,8 @@ export const getActiveCamps = async () => {
   const response = await api.get("/camps/active/");
   return response.data;
 };
+
+export const campCheckin = async (campId) => {
+  const response = await api.post(`/donors/camp-checkin/${campId}/`);
+  return response.data;
+};

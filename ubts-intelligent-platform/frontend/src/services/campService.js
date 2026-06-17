@@ -29,3 +29,13 @@ export const rescheduleCamp = async (id, start_date, end_date) => {
   });
   return response.data;
 };
+
+export const getCampQR = async (campId) => {
+  const response = await api.get(`/camps/${campId}/qr/`);
+  return response.data;
+};
+
+export const getCampDetail = async (campId) => {
+  const response = await api.get(`/camps/${campId}/`);
+  return response.data;
+};
