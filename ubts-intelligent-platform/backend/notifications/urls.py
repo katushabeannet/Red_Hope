@@ -9,6 +9,7 @@ from .views import (
     generate_camp_proximity_alerts_view,
     generate_blood_demand_alerts_view,
     blood_demand_alerts_list_view,
+    campaign_blast_view,
 )
 
 
@@ -21,4 +22,5 @@ urlpatterns = [
     path("admin/camp-proximity-alerts/", generate_camp_proximity_alerts_view),
     path("admin/blood-demand-alerts/", generate_blood_demand_alerts_view),
     path("admin/blood-demand-alerts/list/", blood_demand_alerts_list_view),
+    path("admin/campaign-blast/", campaign_blast_view),
 ]

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { RiCloseLine, RiEditLine, RiUserHeartLine } from "react-icons/ri";
+import { RiCloseLine, RiEditLine, RiLockLine, RiUserHeartLine } from "react-icons/ri";
 
 import {
   getDonorProfile,
   getDonorMedicalRecord,
   updateDonorProfile,
 } from "../services/donorService";
+import { changePassword } from "../services/authService";
 
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -18,7 +19,14 @@ function MyProfile() {
   const [profile, setProfile] = useState(null);
   const [medicalRecord, setMedicalRecord] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
 
   const [formData, setFormData] = useState({
     phone_number: "",
@@ -85,6 +93,32 @@ function MyProfile() {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      showToast({ type: "error", title: "Mismatch", message: "New passwords do not match." });
+      return;
+    }
+    try {
+      setSavingPassword(true);
+      await changePassword({
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+      });
+      setShowPasswordModal(false);
+      setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      showToast({ type: "success", title: "Password Changed", message: "Your password has been updated." });
+    } catch (err) {
+      showToast({
+        type: "error",
+        title: "Change Failed",
+        message: err.response?.data?.error || "Failed to change password.",
+      });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -101,10 +135,16 @@ function MyProfile() {
             </p>
           </div>
 
-          <Button onClick={() => setShowEditModal(true)}>
-            <RiEditLine />
-            Edit Profile
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => setShowPasswordModal(true)}>
+              <RiLockLine />
+              Change Password
+            </Button>
+            <Button onClick={() => setShowEditModal(true)}>
+              <RiEditLine />
+              Edit Profile
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -196,6 +236,46 @@ function MyProfile() {
           )}
         </Card>
       </div>
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[var(--border)] p-5">
+              <div>
+                <h3 className="font-semibold text-[var(--text-primary)]">Change Password</h3>
+                <p className="text-xs text-[var(--text-muted)]">Enter your current password to confirm.</p>
+              </div>
+              <button onClick={() => setShowPasswordModal(false)} className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--surface-2)]">
+                <RiCloseLine size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleChangePassword} className="space-y-4 p-5">
+              <Field
+                label="Current Password"
+                type="password"
+                value={passwordForm.current_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+              />
+              <Field
+                label="New Password (min 8 characters)"
+                type="password"
+                value={passwordForm.new_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+              />
+              <Field
+                label="Confirm New Password"
+                type="password"
+                value={passwordForm.confirm_password}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+              />
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="secondary" onClick={() => setShowPasswordModal(false)}>Cancel</Button>
+                <Button type="submit" loading={savingPassword}>Update Password</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showEditModal && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">

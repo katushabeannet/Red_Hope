@@ -14,6 +14,7 @@ import {
   getCampaignCamps,
   scanPersonalizedCampaignDonors,
 } from "../services/campaignService";
+import { blastCampaignNotification } from "../services/notificationService";
 
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -45,6 +46,11 @@ function PersonalizedCampaign() {
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [campsLoading, setCampsLoading] = useState(false);
+
+  const [blastTitle, setBlastTitle] = useState("UBTS Campaign — Blood Donation Alert");
+  const [blastMessage, setBlastMessage] = useState("");
+  const [blastTarget, setBlastTarget] = useState("available");
+  const [blasting, setBlasting] = useState(false);
 
   useEffect(() => {
     loadCamps();
@@ -82,6 +88,50 @@ function PersonalizedCampaign() {
     setResult(null);
     setActiveTab("matched_donors");
     setSelectedDonor(null);
+    setBlastMessage("");
+  };
+
+  const handleBlast = async (e) => {
+    e.preventDefault();
+    if (!blastMessage.trim()) {
+      showToast({ type: "error", title: "Missing Message", message: "Please enter a blast message." });
+      return;
+    }
+
+    const targetDonors =
+      blastTarget === "available" ? availableDonors : result?.matched_donors || [];
+
+    const donor_ids = targetDonors
+      .map((d) => d.donor_id)
+      .filter(Boolean);
+
+    if (!donor_ids.length) {
+      showToast({ type: "error", title: "No Donors", message: "No donor IDs found in selected group." });
+      return;
+    }
+
+    try {
+      setBlasting(true);
+      const data = await blastCampaignNotification({
+        donor_ids,
+        title: blastTitle,
+        message: blastMessage,
+      });
+      showToast({
+        type: "success",
+        title: "Blast Sent",
+        message: `Notifications sent to ${data.sent_count} of ${data.total_targeted} donors.`,
+      });
+      setBlastMessage("");
+    } catch (err) {
+      showToast({
+        type: "error",
+        title: "Blast Failed",
+        message: err.response?.data?.error || "Failed to send campaign blast.",
+      });
+    } finally {
+      setBlasting(false);
+    }
   };
 
   const handleScan = async (e) => {
@@ -306,6 +356,70 @@ const activeRows = useMemo(() => {
             )}
           </Card>
         </>
+      )}
+
+      {result && (
+        <Card>
+          <div className="mb-5">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              Send Campaign Notification Blast
+            </h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Send an in-app notification, email, and SMS to the selected donor group.
+            </p>
+          </div>
+
+          <form onSubmit={handleBlast} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                  Target Group
+                </label>
+                <select
+                  value={blastTarget}
+                  onChange={(e) => setBlastTarget(e.target.value)}
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
+                >
+                  <option value="available">
+                    Available donors only ({availableDonors.length})
+                  </option>
+                  <option value="all">
+                    All matched donors ({result?.matched_donors?.length || 0})
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                  Notification Title
+                </label>
+                <input
+                  value={blastTitle}
+                  onChange={(e) => setBlastTitle(e.target.value)}
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
+                  placeholder="UBTS Campaign — Blood Donation Alert"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
+                Message
+              </label>
+              <textarea
+                rows={3}
+                value={blastMessage}
+                onChange={(e) => setBlastMessage(e.target.value)}
+                placeholder="Dear donor, UBTS urgently needs your blood donation. Please visit your nearest camp..."
+                className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
+              />
+            </div>
+
+            <Button type="submit" loading={blasting}>
+              Send Blast Notification
+            </Button>
+          </form>
+        </Card>
       )}
 
       {selectedDonor && (

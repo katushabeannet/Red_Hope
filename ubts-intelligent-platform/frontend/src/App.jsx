@@ -6,6 +6,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Chatbot from "./pages/Chatbot";
 import DonorDashboard from "./pages/DonorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -23,6 +25,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
         <Route path="/chatbot" element={<Chatbot />} />
 
         <Route

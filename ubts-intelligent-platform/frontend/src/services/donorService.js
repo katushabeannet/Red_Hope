@@ -62,3 +62,10 @@ export const getAdminRetentionReminders = async () => {
   const response = await api.get("/donors/admin/retention-reminders/");
   return response.data;
 };
+
+export const getDonorAssessmentHistory = async ({ page = 1, page_size = 5 } = {}) => {
+  const response = await api.get(
+    `/donors/assessment-history/?page=${page}&page_size=${page_size}`
+  );
+  return response.data;
+};

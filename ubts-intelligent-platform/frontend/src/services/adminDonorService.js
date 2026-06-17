@@ -1,7 +1,9 @@
 import api from "../api/axios";
 
-export const getAdminDonors = async () => {
-  const response = await api.get("/donors/admin/donors/");
+export const getAdminDonors = async ({ page = 1, page_size = 20, search = "" } = {}) => {
+  const params = new URLSearchParams({ page, page_size });
+  if (search) params.append("search", search);
+  const response = await api.get(`/donors/admin/donors/?${params.toString()}`);
   return response.data;
 };
 

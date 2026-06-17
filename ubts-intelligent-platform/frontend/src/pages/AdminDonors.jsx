@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  RiArrowLeftLine,
+  RiArrowRightLine,
   RiHeartPulseLine,
   RiRefreshLine,
   RiSearchLine,
@@ -8,6 +10,7 @@ import {
 
 import {
   getAdminDonors,
+  recordDonation,
   saveAdminMedicalRecord,
 } from "../services/adminDonorService";
 
@@ -27,33 +30,52 @@ const initialMedicalForm = {
   is_on_medication: false,
 };
 
+const initialDonationForm = { donor_id: "", donation_date: "", camp_name: "", notes: "" };
+
 function AdminDonors() {
   const [donors, setDonors] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, total_pages: 1 });
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [formData, setFormData] = useState(initialMedicalForm);
-  const [search, setSearch] = useState("");
+  const [donationForm, setDonationForm] = useState(initialDonationForm);
+  const [showDonationForm, setShowDonationForm] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [recordingDonation, setRecordingDonation] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  useEffect(() => {
-    loadDonors();
-  }, []);
-
-  const loadDonors = async () => {
+  const loadDonors = useCallback(async () => {
     try {
       setError("");
       setLoading(true);
-      const data = await getAdminDonors();
-      setDonors(data);
+      const data = await getAdminDonors({ page, search, page_size: 20 });
+      setDonors(data.results);
+      setPagination({ total: data.total, page: data.page, total_pages: data.total_pages });
     } catch {
       setError("Failed to load donors.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search]);
+
+  useEffect(() => {
+    loadDonors();
+  }, [loadDonors]);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleSelectDonor = (donor) => {
     setSelectedDonor(donor);
@@ -87,38 +109,50 @@ function AdminDonors() {
 
   const handleSaveMedicalRecord = async (e) => {
     e.preventDefault();
-
     try {
       setSaving(true);
       setError("");
       setSuccess("");
-
       await saveAdminMedicalRecord({
         ...formData,
         weight_kg: Number(formData.weight_kg),
         hemoglobin_level: Number(formData.hemoglobin_level),
         last_donation_date: formData.last_donation_date || null,
       });
-
       setSuccess("Medical information saved successfully.");
       await loadDonors();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "Failed to save donor medical information."
-      );
+      setError(err.response?.data?.error || "Failed to save donor medical information.");
     } finally {
       setSaving(false);
     }
   };
 
-  const filteredDonors = donors.filter((donor) => {
-    const text = `${donor.full_name} ${donor.email} ${donor.phone_number} ${donor.address}`;
-    return text.toLowerCase().includes(search.toLowerCase());
-  });
+  const handleRecordDonation = async (e) => {
+    e.preventDefault();
+    try {
+      setRecordingDonation(true);
+      setError("");
+      setSuccess("");
+      const result = await recordDonation({
+        donor_id: Number(donationForm.donor_id),
+        donation_date: donationForm.donation_date,
+        camp_name: donationForm.camp_name,
+        notes: donationForm.notes,
+      });
+      setSuccess(`Donation recorded. ${result.donor_name} now has ${result.total_donations} donation(s).`);
+      setShowDonationForm(false);
+      setDonationForm(initialDonationForm);
+      await loadDonors();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to record donation.");
+    } finally {
+      setRecordingDonation(false);
+    }
+  };
 
-  const donorsWithMedical = donors.filter((donor) => donor.medical_record).length;
-  const donorsPendingMedical = donors.length - donorsWithMedical;
+  const donorsWithMedical = donors.filter((d) => d.medical_record).length;
+  const donorsPendingMedical = pagination.total - donorsWithMedical;
 
   return (
     <div className="space-y-6">
@@ -155,10 +189,51 @@ function AdminDonors() {
       )}
 
       <div className="grid gap-5 md:grid-cols-3">
-        <SummaryCard label="Total Donors" value={donors.length} />
+        <SummaryCard label="Total Donors" value={pagination.total} />
         <SummaryCard label="Medical Records Added" value={donorsWithMedical} />
         <SummaryCard label="Pending Medical Records" value={donorsPendingMedical} />
       </div>
+
+      {showDonationForm && (
+        <Card>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-semibold text-[var(--text-primary)]">Record a Donation</h3>
+            <Button variant="secondary" onClick={() => setShowDonationForm(false)}>Cancel</Button>
+          </div>
+          <form onSubmit={handleRecordDonation} className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">Donor</label>
+              <select
+                name="donor_id"
+                value={donationForm.donor_id}
+                onChange={(e) => setDonationForm({ ...donationForm, donor_id: e.target.value })}
+                required
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
+              >
+                <option value="">Select donor</option>
+                {donors.map((d) => (
+                  <option key={d.id} value={d.id}>{d.full_name} ({d.blood_group})</option>
+                ))}
+              </select>
+            </div>
+            <Field label="Donation Date" type="date" name="donation_date"
+              value={donationForm.donation_date}
+              onChange={(e) => setDonationForm({ ...donationForm, donation_date: e.target.value })}
+              required />
+            <Field label="Camp Name (optional)" name="camp_name"
+              value={donationForm.camp_name}
+              onChange={(e) => setDonationForm({ ...donationForm, camp_name: e.target.value })} />
+            <Field label="Notes (optional)" name="notes"
+              value={donationForm.notes}
+              onChange={(e) => setDonationForm({ ...donationForm, notes: e.target.value })} />
+            <div className="md:col-span-2">
+              <Button type="submit" loading={recordingDonation}>
+                <RiHeartPulseLine /> Record Donation
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
 
       {selectedDonor && (
         <Card>
@@ -271,18 +346,23 @@ function AdminDonors() {
               Registered Donors
             </h3>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Select a donor to add or update medical information.
+              Page {pagination.page} of {pagination.total_pages} — {pagination.total} total donors
             </p>
           </div>
 
-          <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3">
-            <RiSearchLine className="text-[var(--text-muted)]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search donors..."
-              className="bg-transparent p-2 text-sm text-[var(--text-primary)] outline-none"
-            />
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={() => setShowDonationForm((v) => !v)}>
+              <RiHeartPulseLine /> Record Donation
+            </Button>
+            <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3">
+              <RiSearchLine className="text-[var(--text-muted)]" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search donors..."
+                className="bg-transparent p-2 text-sm text-[var(--text-primary)] outline-none"
+              />
+            </div>
           </div>
         </div>
 
@@ -290,80 +370,80 @@ function AdminDonors() {
           <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
             Loading donors...
           </div>
-        ) : filteredDonors.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
-                <tr>
-                  <th className="p-3 font-medium">Donor</th>
-                  <th className="p-3 font-medium">Contact</th>
-                  <th className="p-3 font-medium">Location</th>
-                  <th className="p-3 font-medium">Medical Status</th>
-                  <th className="p-3 font-medium">Action</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredDonors.map((donor) => (
-                  <tr
-                    key={donor.id}
-                    className="border-t border-[var(--border)]"
-                  >
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--crimson-light)] text-[var(--crimson)]">
-                          <RiUserHeartLine />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-[var(--text-primary)]">
-                            {donor.full_name}
-                          </p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            {donor.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="p-3 text-[var(--text-secondary)]">
-                      {donor.phone_number || "Not available"}
-                    </td>
-
-                    <td className="p-3 text-[var(--text-secondary)]">
-                      {donor.address || "Not available"}
-                    </td>
-
-                    <td className="p-3">
-                      <Badge
-                        label={
-                          donor.medical_record
-                            ? "Medical Added"
-                            : "Pending Medical"
-                        }
-                        variant={donor.medical_record ? "eligible" : "inactive"}
-                      />
-                    </td>
-
-                    <td className="p-3">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleSelectDonor(donor)}
-                      >
-                        {donor.medical_record ? "Update" : "Add Medical"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setSelectedDonor(donor)}
-                        >
-                        View
-                    </Button>
-                    </td>
+        ) : donors.length > 0 ? (
+          <>
+            <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+                  <tr>
+                    <th className="p-3 font-medium">Donor</th>
+                    <th className="p-3 font-medium">Contact</th>
+                    <th className="p-3 font-medium">Donations</th>
+                    <th className="p-3 font-medium">Medical Status</th>
+                    <th className="p-3 font-medium">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {donors.map((donor) => (
+                    <tr key={donor.id} className="border-t border-[var(--border)]">
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--crimson-light)] text-[var(--crimson)]">
+                            <RiUserHeartLine />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-[var(--text-primary)]">{donor.full_name}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{donor.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-[var(--text-secondary)]">
+                        {donor.phone_number || "Not available"}
+                      </td>
+                      <td className="p-3 text-center font-semibold text-[var(--text-primary)]">
+                        {donor.total_donations ?? 0}
+                      </td>
+                      <td className="p-3">
+                        <Badge
+                          label={donor.medical_record ? "Medical Added" : "Pending Medical"}
+                          variant={donor.medical_record ? "eligible" : "inactive"}
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Button size="sm" variant="secondary" onClick={() => handleSelectDonor(donor)}>
+                          {donor.medical_record ? "Update" : "Add Medical"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {pagination.total_pages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Showing {((pagination.page - 1) * 20) + 1}–{Math.min(pagination.page * 20, pagination.total)} of {pagination.total}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    disabled={pagination.page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <RiArrowLeftLine /> Prev
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={pagination.page >= pagination.total_pages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next <RiArrowRightLine />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
             No donors found.
