@@ -88,6 +88,21 @@ class AvailabilityAssessment(models.Model):
     def __str__(self):
         return f"Availability for {self.donor.user.email} - {self.availability_probability}"
     
+class DonationRecord(models.Model):
+    donor = models.ForeignKey(
+        DonorProfile,
+        on_delete=models.CASCADE,
+        related_name="donation_records",
+    )
+    donation_date = models.DateField()
+    camp_name = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Donation by {self.donor.user.email} on {self.donation_date}"
+
+
 class DonorBadge(models.Model):
     donor = models.ForeignKey(
         DonorProfile,

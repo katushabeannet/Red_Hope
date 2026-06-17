@@ -19,3 +19,8 @@ export const getCampaignReadyDonors = async () => {
   const response = await api.get("/donors/admin/campaign-ready/");
   return response.data;
 };
+
+export const getPublicStats = async () => {
+  const response = await api.get("/admin/public-stats/");
+  return response.data;
+};
