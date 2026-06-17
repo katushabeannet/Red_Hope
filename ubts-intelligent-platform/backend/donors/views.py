@@ -1,3 +1,6 @@
+import math
+
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -274,11 +277,77 @@ def campaign_ready_donors_view(request):
     )
     
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def donor_assessment_history_view(request):
+    profile = DonorProfile.objects.filter(user=request.user).first()
+    if not profile:
+        return Response(
+            {"error": "No donor profile found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(20, max(1, int(request.query_params.get("page_size", 5))))
+    start = (page - 1) * page_size
+
+    eligibility_qs = EligibilityAssessment.objects.filter(
+        donor=profile
+    ).order_by("-assessed_at")
+    availability_qs = AvailabilityAssessment.objects.filter(
+        donor=profile
+    ).order_by("-assessed_at")
+
+    e_total = eligibility_qs.count()
+    a_total = availability_qs.count()
+
+    return Response(
+        {
+            "eligibility_history": EligibilityAssessmentSerializer(
+                eligibility_qs[start : start + page_size], many=True
+            ).data,
+            "availability_history": AvailabilityAssessmentSerializer(
+                availability_qs[start : start + page_size], many=True
+            ).data,
+            "eligibility_total": e_total,
+            "availability_total": a_total,
+            "eligibility_total_pages": math.ceil(e_total / page_size) if e_total else 1,
+            "availability_total_pages": math.ceil(a_total / page_size) if a_total else 1,
+            "page": page,
+            "page_size": page_size,
+        }
+    )
+
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_donors_list_view(request):
-    donors = DonorProfile.objects.select_related("user").all()
-    serializer = DonorProfileSerializer(donors, many=True)
-    return Response(serializer.data)
+    search = request.query_params.get("search", "").strip()
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
+
+    donors = DonorProfile.objects.select_related("user", "medical_record").all()
+
+    if search:
+        donors = donors.filter(
+            Q(user__full_name__icontains=search)
+            | Q(user__email__icontains=search)
+            | Q(phone_number__icontains=search)
+            | Q(address__icontains=search)
+        )
+
+    total_count = donors.count()
+    start = (page - 1) * page_size
+    serializer = DonorProfileSerializer(donors[start : start + page_size], many=True)
+
+    return Response(
+        {
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": math.ceil(total_count / page_size) if total_count else 1,
+            "results": serializer.data,
+        }
+    )
 
 
 @api_view(["POST"])

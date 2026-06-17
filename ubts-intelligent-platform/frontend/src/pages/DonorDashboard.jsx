@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import {
+  RiArrowLeftLine,
+  RiArrowRightLine,
   RiAwardLine,
   RiCalendarEventLine,
   RiHeartPulseLine,
+  RiHistoryLine,
   RiMapPinLine,
   RiNotification3Line,
   RiShieldCheckLine,
@@ -17,6 +20,7 @@ import {
   checkEligibility,
   checkAvailability,
   findNearestCamp,
+  getDonorAssessmentHistory,
 } from "../services/donorService";
 
 import Card from "../components/common/Card";
@@ -35,8 +39,13 @@ function DonorDashboard() {
   const [availabilityResult, setAvailabilityResult] = useState(null);
   const [nearestCamp, setNearestCamp] = useState(null);
 
+  const [history, setHistory] = useState(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyVisible, setHistoryVisible] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -106,6 +115,20 @@ function DonorDashboard() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLoadHistory = async (page = 1) => {
+    try {
+      setHistoryLoading(true);
+      const data = await getDonorAssessmentHistory({ page, page_size: 5 });
+      setHistory(data);
+      setHistoryPage(page);
+      setHistoryVisible(true);
+    } catch {
+      setError("Failed to load assessment history.");
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -338,6 +361,15 @@ function DonorDashboard() {
               <RiMapPinLine />
               Find Nearest Camp
             </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => historyVisible ? setHistoryVisible(false) : handleLoadHistory(1)}
+              loading={historyLoading}
+            >
+              <RiHistoryLine />
+              {historyVisible ? "Hide History" : "Assessment History"}
+            </Button>
           </div>
         </div>
       </Card>
@@ -385,6 +417,94 @@ function DonorDashboard() {
           <p className="text-sm leading-6 text-[var(--text-secondary)]">
             {availabilityResult.assistant_response}
           </p>
+        </Card>
+      )}
+
+      {historyVisible && history && (
+        <Card>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--crimson-light)] text-[var(--crimson)]">
+              <RiHistoryLine size={22} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Assessment History</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Your past eligibility and availability checks.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div>
+              <h4 className="mb-3 font-semibold text-[var(--text-primary)]">
+                Eligibility ({history.eligibility_total} total)
+              </h4>
+              {history.eligibility_history?.length > 0 ? (
+                <div className="space-y-2">
+                  {history.eligibility_history.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {new Date(item.assessed_at).toLocaleDateString()}
+                        </span>
+                        <Badge
+                          label={item.is_eligible ? "Eligible" : "Not Eligible"}
+                          variant={item.is_eligible ? "eligible" : "ineligible"}
+                        />
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--text-secondary)] line-clamp-2">{item.summary}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--text-muted)]">No eligibility assessments yet.</p>
+              )}
+            </div>
+
+            <div>
+              <h4 className="mb-3 font-semibold text-[var(--text-primary)]">
+                Availability ({history.availability_total} total)
+              </h4>
+              {history.availability_history?.length > 0 ? (
+                <div className="space-y-2">
+                  {history.availability_history.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {new Date(item.assessed_at).toLocaleDateString()}
+                        </span>
+                        <Badge
+                          label={item.is_available ? "Available" : "Not Available"}
+                          variant={item.is_available ? "eligible" : "ineligible"}
+                        />
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                        Probability: {Math.round((item.availability_probability || 0) * 100)}%
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--text-muted)]">No availability assessments yet.</p>
+              )}
+            </div>
+          </div>
+
+          {(history.eligibility_total_pages > 1 || history.availability_total_pages > 1) && (
+            <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
+              <span className="text-sm text-[var(--text-secondary)]">Page {historyPage}</span>
+              <div className="flex gap-2">
+                <Button variant="secondary" disabled={historyPage <= 1} onClick={() => handleLoadHistory(historyPage - 1)}>
+                  <RiArrowLeftLine /> Prev
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={historyPage >= Math.max(history.eligibility_total_pages, history.availability_total_pages)}
+                  onClick={() => handleLoadHistory(historyPage + 1)}
+                >
+                  Next <RiArrowRightLine />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

@@ -52,16 +52,11 @@ def create_notification(
     
     donor_profile = getattr(recipient, "donor_profile", None)
 
-    if donor_profile:
+    if donor_profile and donor_profile.phone_number:
         send_sms_notification(
             phone_number=donor_profile.phone_number,
             message=f"{title}: {message}",
         )
-    
-    print("SMS RESULT:", send_sms_notification(
-        phone_number=donor_profile.phone_number,
-        message=f"{title}: {message}",
-    ))
 
     return notification, True
 

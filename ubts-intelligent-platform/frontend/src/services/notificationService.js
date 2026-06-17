@@ -24,3 +24,12 @@ export const markAllNotificationsAsRead = async () => {
   const response = await api.post("/notifications/read-all/");
   return response.data;
 };
+
+export const blastCampaignNotification = async ({ donor_ids, title, message }) => {
+  const response = await api.post("/notifications/admin/campaign-blast/", {
+    donor_ids,
+    title,
+    message,
+  });
+  return response.data;
+};

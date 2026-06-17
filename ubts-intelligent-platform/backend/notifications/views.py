@@ -8,6 +8,7 @@ from donors.models import DonorProfile
 from .models import Notification, BloodDemandAlert
 from .serializers import NotificationSerializer, BloodDemandAlertSerializer
 from .services import (
+    create_notification,
     generate_all_donor_notifications,
     generate_nearby_camp_notifications,
     generate_blood_demand_notifications,
@@ -83,14 +84,79 @@ def mark_all_notifications_read_view(request):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_notifications_view(request):
-    notifications = Notification.objects.all()
-    serializer = NotificationSerializer(notifications, many=True)
+    import math
+
+    search = request.query_params.get("search", "").strip()
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
+
+    from django.db.models import Q
+    notifications = Notification.objects.all().order_by("-created_at")
+
+    if search:
+        notifications = notifications.filter(
+            Q(title__icontains=search)
+            | Q(message__icontains=search)
+            | Q(recipient__email__icontains=search)
+            | Q(recipient__full_name__icontains=search)
+        )
+
+    total_count = notifications.count()
+    start = (page - 1) * page_size
+    page_notifications = notifications[start : start + page_size]
+    serializer = NotificationSerializer(page_notifications, many=True)
 
     return Response(
         {
-            "total_notifications": notifications.count(),
-            "unread_notifications": notifications.filter(is_read=False).count(),
+            "total_notifications": total_count,
+            "unread_notifications": Notification.objects.filter(is_read=False).count(),
+            "page": page,
+            "page_size": page_size,
+            "total_pages": math.ceil(total_count / page_size) if total_count else 1,
             "notifications": serializer.data,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def campaign_blast_view(request):
+    donor_ids = request.data.get("donor_ids", [])
+    title = request.data.get("title", "UBTS Campaign Alert").strip()
+    message = request.data.get("message", "").strip()
+
+    if not message:
+        return Response(
+            {"error": "message is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not donor_ids:
+        return Response(
+            {"error": "donor_ids list is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    profiles = DonorProfile.objects.filter(id__in=donor_ids).select_related("user")
+    sent_count = 0
+
+    for profile in profiles:
+        _, created = create_notification(
+            recipient=profile.user,
+            title=title,
+            message=message,
+            notification_type="SYSTEM",
+            action_label="View Dashboard",
+            action_url="/donor-dashboard",
+        )
+        if created:
+            sent_count += 1
+
+    return Response(
+        {
+            "message": f"Campaign blast sent to {sent_count} donors.",
+            "sent_count": sent_count,
+            "total_targeted": len(donor_ids),
         }
     )
 
