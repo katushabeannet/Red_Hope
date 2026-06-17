@@ -26,6 +26,10 @@ import {
   getCampQR,
 } from "../services/campService";
 
+import Card from "../components/common/Card";
+import Button from "../components/common/Button";
+import Badge from "../components/common/Badge";
+
 const calLocalizer = dateFnsLocalizer({
   format,
   parse,
@@ -34,11 +38,8 @@ const calLocalizer = dateFnsLocalizer({
   locales: { "en-US": enUS },
 });
 
-const DnDCalendar = withDragAndDrop(Calendar);
-
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
+const _dnd = withDragAndDrop?.default ?? withDragAndDrop;
+const DnDCalendar = _dnd(Calendar);
 
 const initialForm = {
   name: "",
