@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -7,12 +8,59 @@ import {
   RiDropLine,
   RiGroupLine,
   RiHeartPulseLine,
+  RiLoaderLine,
   RiMapPinLine,
   RiShieldCheckLine,
 } from "react-icons/ri";
 
+import { getPublicStats } from "../services/adminService";
+import { findNearestCampFromChatbot } from "../services/chatbotService";
+
 function Home() {
-  const activeCamps = 2;
+  const [stats, setStats] = useState({ total_donors: null, active_camps: null });
+  const [guestCamp, setGuestCamp] = useState(null);
+  const [campLoading, setCampLoading] = useState(false);
+  const [campError, setCampError] = useState("");
+
+  useEffect(() => {
+    getPublicStats()
+      .then((data) => setStats(data))
+      .catch(() => {});
+  }, []);
+
+  const handleFindCamp = () => {
+    if (!navigator.geolocation) {
+      setCampError("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setCampLoading(true);
+    setCampError("");
+    setGuestCamp(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const data = await findNearestCampFromChatbot({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setGuestCamp(data);
+        } catch {
+          setCampError("No active donation camps found nearby. Try again later.");
+        } finally {
+          setCampLoading(false);
+        }
+      },
+      () => {
+        setCampError("Location access was denied. Please allow location to find nearby camps.");
+        setCampLoading(false);
+      }
+    );
+  };
+
+  const activeCamps = stats.active_camps ?? "—";
+  const totalDonors = stats.total_donors ?? "—";
 
   return (
     <div className="bg-white dark:bg-slate-900">
@@ -131,7 +179,7 @@ function Home() {
         <div className="mx-auto max-w-6xl px-6 py-8 lg:px-12">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {[
-              [RiGroupLine, "1,284", "Registered Donors"],
+              [RiGroupLine, totalDonors, "Registered Donors"],
               [RiCalendarLine, activeCamps, "Active Camps"],
               [RiDropLine, "500+", "Units Needed Daily"],
               [RiShieldCheckLine, "12,000+", "Lives Saved"],
@@ -193,34 +241,101 @@ function Home() {
       </section>
 
       <section id="camps" className="bg-slate-50 px-6 py-16 dark:bg-slate-800 lg:px-12 lg:py-20">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
-          <div>
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
-              Find Donation Camps Near You
-            </h2>
-            <p className="mt-4 text-slate-600 dark:text-slate-400">
-              The platform uses browser location, active camp records, and
-              distance calculation to recommend the nearest available blood
-              donation camp.
-            </p>
-            <Link
-              to="/login"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-red-700 px-6 py-3 font-semibold text-white hover:bg-red-800"
-            >
-              Login to Find Camp <RiArrowRightLine />
-            </Link>
-          </div>
+        <div className="mx-auto max-w-6xl">
+          <div className="grid items-start gap-10 lg:grid-cols-2">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">
+                Find Donation Camps Near You
+              </h2>
+              <p className="mt-4 text-slate-600 dark:text-slate-400">
+                No login required. Use your browser location to instantly find
+                the nearest active blood donation camp.
+              </p>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            <RiMapPinLine className="mb-4 text-red-700" size={36} />
-            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-              Location-Based Recommendation
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-              Donors and guests can ask for nearby donation locations. The
-              system calculates the nearest active camp and displays it on an
-              interactive map.
-            </p>
+              <button
+                onClick={handleFindCamp}
+                disabled={campLoading}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-red-700 px-6 py-3 font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60"
+              >
+                {campLoading ? (
+                  <>
+                    <RiLoaderLine className="animate-spin" size={18} />
+                    Locating...
+                  </>
+                ) : (
+                  <>
+                    <RiMapPinLine size={18} />
+                    Find Nearest Camp
+                  </>
+                )}
+              </button>
+
+              {campError && (
+                <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                  {campError}
+                </p>
+              )}
+
+              {guestCamp && guestCamp.nearest_camp && (
+                <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-900/20">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                    Nearest Active Camp
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-50">
+                    {guestCamp.nearest_camp.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    {guestCamp.nearest_camp.venue} &middot; {guestCamp.nearest_camp.district}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-red-700 dark:text-red-400">
+                    {guestCamp.distance_km} km away
+                  </p>
+                  {guestCamp.nearest_camp.contact_phone && (
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                      Contact: {guestCamp.nearest_camp.contact_phone}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                Want personalized eligibility checks and donation history?{" "}
+                <Link to="/login" className="font-semibold text-red-700 hover:underline dark:text-red-400">
+                  Sign in
+                </Link>{" "}
+                or{" "}
+                <Link to="/register" className="font-semibold text-red-700 hover:underline dark:text-red-400">
+                  register as a donor
+                </Link>
+                .
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+              <RiMapPinLine className="mb-4 text-red-700" size={36} />
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                Location-Based Recommendation
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                The system uses browser geolocation and Haversine distance
+                calculation to find the nearest active camp and log the query
+                in the knowledge graph for traceability.
+              </p>
+              <div className="mt-5 space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Available to all visitors — no account needed
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Powered by Haversine geospatial distance
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Shows only currently active camps
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -240,7 +355,7 @@ function Home() {
           <div className="grid gap-6 md:grid-cols-3">
             {[
               [RiHeartPulseLine, "Instant Eligibility Screening", "Get assessment results based on your health profile."],
-              [RiMapPinLine, "Real-Time Camp Locator", "Find active donation camps near you."],
+              [RiMapPinLine, "Real-Time Camp Locator", "Find active donation camps near you — no login required."],
               [RiBrainLine, "Smart Availability Prediction", "Personalized availability insights for donors."],
             ].map(([Icon, title, desc]) => (
               <div

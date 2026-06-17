@@ -10,6 +10,11 @@ export const saveAdminMedicalRecord = async (medicalData) => {
   return response.data;
 };
 
+export const recordDonation = async (donationData) => {
+  const response = await api.post("/donors/admin/record-donation/", donationData);
+  return response.data;
+};
+
 export const saveDonorMedicalRecord = async (formData) => {
   const payload = {
     donor_id: Number(formData.donor_id),

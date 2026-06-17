@@ -9,6 +9,7 @@ from .views import (
     admin_donors_list_view,
     admin_medical_record_manage_view,
     update_profile_view,
+    admin_record_donation_view,
 )
 
 from .views_impact import donor_impact_view
@@ -24,6 +25,7 @@ from .views_campaign import personalized_campaign_scan_view
 urlpatterns = [
     path("profile/", donor_profile_view),
     path("profile/update/", update_profile_view),
+    path("admin/record-donation/", admin_record_donation_view),
     path("medical-record/", donor_medical_record_view),
     path("eligibility-check/", eligibility_check_view),
     path("availability-check/", availability_check_view),

@@ -8,6 +8,7 @@ from .models import (
     DonorMedicalRecord,
     EligibilityAssessment,
     AvailabilityAssessment,
+    DonationRecord,
 )
 
 from .serializers import (
@@ -18,10 +19,10 @@ from .serializers import (
 )
 
 from ai_modules.eligibility.eligibility_engine import check_donor_eligibility
-
 from ai_modules.availability.availability_engine import predict_availability
 from ai_modules.gpt_response_generator import format_verified_response
 from neo4j_service.neo4j_client import Neo4jClient
+from .badge_engine import award_badges
 
 
 @api_view(["GET", "POST", "PUT"])
@@ -341,15 +342,59 @@ def admin_medical_record_manage_view(request):
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_profile_view(request):
-    profile = request.user.donor_profile
+    try:
+        profile = request.user.donor_profile
+    except Exception:
+        return Response(
+            {"error": "No donor profile found to update."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
-    serializer = DonorProfileSerializer(
-        profile,
-        data=request.data,
-        partial=True,
-    )
-
+    serializer = DonorProfileSerializer(profile, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
-
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_record_donation_view(request):
+    donor_id = request.data.get("donor_id")
+    donation_date = request.data.get("donation_date")
+
+    if not donor_id or not donation_date:
+        return Response(
+            {"error": "donor_id and donation_date are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        profile = DonorProfile.objects.get(id=donor_id)
+    except DonorProfile.DoesNotExist:
+        return Response(
+            {"error": "Donor profile not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    record = DonationRecord.objects.create(
+        donor=profile,
+        donation_date=donation_date,
+        camp_name=request.data.get("camp_name", ""),
+        notes=request.data.get("notes", ""),
+    )
+
+    profile.total_donations += 1
+    profile.save(update_fields=["total_donations"])
+
+    award_badges(profile)
+
+    return Response(
+        {
+            "message": "Donation recorded successfully.",
+            "donor_name": profile.user.full_name,
+            "total_donations": profile.total_donations,
+            "donation_date": str(record.donation_date),
+            "camp_name": record.camp_name,
+        },
+        status=status.HTTP_201_CREATED,
+    )

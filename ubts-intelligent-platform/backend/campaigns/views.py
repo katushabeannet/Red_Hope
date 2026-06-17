@@ -1,6 +1,6 @@
 from django.db.models import Avg, Sum
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 
 from donors.models import (
@@ -12,6 +12,24 @@ from donors.models import (
 
 from camps.models import DonationCamp
 from .models import CampaignPerformance
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_platform_stats_view(request):
+    total_donors = DonorProfile.objects.count()
+    active_camps = DonationCamp.objects.filter(
+        status=DonationCamp.CampStatus.ACTIVE
+    ).count()
+    total_camps = DonationCamp.objects.count()
+
+    return Response(
+        {
+            "total_donors": total_donors,
+            "active_camps": active_camps,
+            "total_camps": total_camps,
+        }
+    )
 
 
 @api_view(["GET"])
