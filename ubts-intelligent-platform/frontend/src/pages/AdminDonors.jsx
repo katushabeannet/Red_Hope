@@ -448,6 +448,7 @@ function AdminDonors() {
                     <th className="p-3 font-medium">Donor</th>
                     <th className="p-3 font-medium">Contact</th>
                     <th className="p-3 font-medium">Donations</th>
+                    <th className="p-3 font-medium">Churn Risk</th>
                     <th className="p-3 font-medium">Medical Status</th>
                     <th className="p-3 font-medium">Action</th>
                   </tr>
@@ -471,6 +472,9 @@ function AdminDonors() {
                       </td>
                       <td className="p-3 text-center font-semibold text-[var(--text-primary)]">
                         {donor.total_donations ?? 0}
+                      </td>
+                      <td className="p-3">
+                        <ChurnBadge risk={donor.churn_risk} />
                       </td>
                       <td className="p-3">
                         <Badge
@@ -690,6 +694,21 @@ function Select({ label, name, value, onChange, options }) {
         ))}
       </select>
     </div>
+  );
+}
+
+function ChurnBadge({ risk }) {
+  const cfg = {
+    HIGH:   { cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",    dot: "bg-red-500" },
+    MEDIUM: { cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500" },
+    LOW:    { cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
+  }[risk] ?? { cls: "bg-slate-100 text-slate-500", dot: "bg-slate-400" };
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+      {risk ?? "—"}
+    </span>
   );
 }
 

@@ -5,20 +5,17 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def generate_gpt_response(system_instruction, user_content):
+def generate_gpt_response(system_instruction, user_content, history=None):
     try:
+        input_messages = [{"role": "system", "content": system_instruction}]
+        if history:
+            # Inject up to last 10 history items (5 user+assistant turns) for context
+            input_messages.extend(history[-10:])
+        input_messages.append({"role": "user", "content": user_content})
+
         response = client.responses.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
-            input=[
-                {
-                    "role": "system",
-                    "content": system_instruction,
-                },
-                {
-                    "role": "user",
-                    "content": user_content,
-                },
-            ],
+            input=input_messages,
             temperature=0.4,
             max_output_tokens=250,
         )
@@ -30,7 +27,7 @@ def generate_gpt_response(system_instruction, user_content):
         return None
 
 
-def format_conversational_response(query, retriever_result):
+def format_conversational_response(query, retriever_result, history=None):
     system_instruction = """
 You are the UBTS Intelligent Blood Donation Assistant.
 You must only answer using the trusted retrieved blood donation answer.
@@ -52,7 +49,7 @@ Confidence:
 Write a natural response for the user.
 """
 
-    return generate_gpt_response(system_instruction, user_content)
+    return generate_gpt_response(system_instruction, user_content, history=history)
 
 
 def format_safe_decline_response(query, role):

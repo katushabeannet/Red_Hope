@@ -6,6 +6,7 @@ from .views import (
     camp_statistics_view,
     campaign_performance_analytics_view,
     admin_analytics_view,
+    blood_demand_forecast_view,
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path("camp-statistics/", camp_statistics_view),
     path("campaign-performance/", campaign_performance_analytics_view),
     path("analytics/", admin_analytics_view),
+    path("blood-demand-forecast/", blood_demand_forecast_view),
 ]

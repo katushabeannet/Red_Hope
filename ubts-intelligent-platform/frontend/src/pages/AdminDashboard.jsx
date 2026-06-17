@@ -29,6 +29,7 @@ import {
   getCampStatistics,
   getCampaignReadyDonors,
   getAdminAnalytics,
+  getBloodDemandForecast,
 } from "../services/adminService";
 
 import Card from "../components/common/Card";
@@ -42,6 +43,7 @@ function AdminDashboard() {
   const [campStats, setCampStats] = useState(null);
   const [readyDonors, setReadyDonors] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [demandForecast, setDemandForecast] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [scanLoading, setScanLoading] = useState(false);
@@ -63,12 +65,14 @@ function AdminDashboard() {
         campData,
         campaignAnalyticsData,
         analyticsData,
+        demandData,
       ] = await Promise.all([
         getDashboardSummary(),
         getRecentAssessments(),
         getCampStatistics(),
         getCampaignPerformanceAnalytics(),
         getAdminAnalytics(),
+        getBloodDemandForecast().catch(() => null),
       ]);
 
       setSummary(summaryData);
@@ -76,6 +80,7 @@ function AdminDashboard() {
       setCampStats(campData);
       setCampaignAnalytics(campaignAnalyticsData);
       setAnalytics(analyticsData);
+      setDemandForecast(demandData);
     } catch {
       setError("Failed to load admin dashboard data.");
     } finally {
@@ -178,6 +183,8 @@ function AdminDashboard() {
       )}
 
       {analytics && <AnalyticsCharts analytics={analytics} />}
+
+      {demandForecast && <BloodDemandForecast data={demandForecast} />}
 
       {campaignAnalytics && (
         <Card>
@@ -663,6 +670,72 @@ function AssessmentList({ title, items, type }) {
           No records found.
         </p>
       )}
+    </Card>
+  );
+}
+
+const DEMAND_CONFIG = {
+  HIGH:    { bg: "bg-red-50 dark:bg-red-900/15",    text: "text-red-700 dark:text-red-400",    badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",    dot: "bg-red-500" },
+  MEDIUM:  { bg: "bg-amber-50 dark:bg-amber-900/15", text: "text-amber-700 dark:text-amber-400", badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500" },
+  LOW:     { bg: "bg-emerald-50 dark:bg-emerald-900/15", text: "text-emerald-700 dark:text-emerald-400", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
+  UNKNOWN: { bg: "bg-slate-50 dark:bg-slate-800/30",  text: "text-slate-500",  badge: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400", dot: "bg-slate-400" },
+};
+
+function BloodDemandForecast({ data }) {
+  if (!data?.forecast?.length) return null;
+  const high = data.forecast.filter((f) => f.demand_level === "HIGH");
+
+  return (
+    <Card>
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            Blood Demand Forecast
+          </h3>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Rule-based supply/demand signal for next 7 days — as of{" "}
+            {data.forecast_date}.{" "}
+            {high.length > 0 && (
+              <span className="font-medium text-red-600">
+                {high.map((f) => f.blood_group).join(", ")} in HIGH demand.
+              </span>
+            )}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          AI Forecast
+        </span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {data.forecast.map((item) => {
+          const cfg = DEMAND_CONFIG[item.demand_level] || DEMAND_CONFIG.UNKNOWN;
+          return (
+            <div
+              key={item.blood_group}
+              className={`rounded-xl border border-[var(--border)] p-4 ${cfg.bg}`}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xl font-extrabold text-[var(--text-primary)]">
+                  {item.blood_group}
+                </span>
+                <span
+                  className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${cfg.badge}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                  {item.demand_level}
+                </span>
+              </div>
+              <p className={`text-xs leading-5 ${cfg.text}`}>{item.reason}</p>
+              <div className="mt-3 flex gap-3 text-xs text-[var(--text-muted)]">
+                <span>{item.recent_donations} donations/30d</span>
+                <span>·</span>
+                <span>{item.eligible_donors} eligible</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </Card>
   );
 }

@@ -46,7 +46,7 @@ def with_fallback(gpt_text, fallback_text):
     return gpt_text if gpt_text else fallback_text
 
 
-def route_chatbot_query(query, user=None):
+def route_chatbot_query(query, user=None, conversation_history=None):
     role = (
         getattr(user, "role", "GUEST")
         if user and user.is_authenticated
@@ -215,7 +215,7 @@ def route_chatbot_query(query, user=None):
         }
 
     fallback = retriever_result["answer"]
-    gpt_text = format_conversational_response(query, retriever_result)
+    gpt_text = format_conversational_response(query, retriever_result, history=conversation_history)
 
     return {
         "intent": "conversational_mode",

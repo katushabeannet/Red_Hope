@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   RiMapPinLine,
   RiRobot2Line,
@@ -16,17 +16,47 @@ import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import NearestCampMap from "../components/NearestCampMap";
 
+const STORAGE_KEY = "ubts_chat_history";
+const MAX_HISTORY_TURNS = 5;
+
 function Chatbot() {
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  });
   const [nearestCamp, setNearestCamp] = useState(null);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState("");
+  const chatEndRef = useRef(null);
+
+  // Build GPT-format history from the messages array (last N turns)
+  const buildHistory = (msgs) =>
+    msgs
+      .slice(-MAX_HISTORY_TURNS * 2)
+      .map((m) => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
 
   const addMessage = (sender, text) => {
-    setMessages((prev) => [...prev, { sender, text }]);
+    setMessages((prev) => {
+      const next = [...prev, { sender, text }];
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,12 +66,15 @@ function Chatbot() {
     const userQuestion = query;
     setQuery("");
     setError("");
+
+    // Capture history BEFORE adding the new user message
+    const historySnapshot = buildHistory(messages);
     addMessage("user", userQuestion);
 
     try {
       setLoading(true);
 
-      const data = await askChatbot(userQuestion);
+      const data = await askChatbot(userQuestion, historySnapshot);
 
       addMessage("assistant", data.assistant_response || data.message);
 
@@ -109,7 +142,20 @@ function Chatbot() {
           </p>
         </div>
 
-        <Badge label="MPNet + Action Router" variant="donor" />
+        <div className="flex items-center gap-3">
+          <Badge label="MPNet + Action Router" variant="donor" />
+          {messages.length > 0 && (
+            <button
+              onClick={() => {
+                setMessages([]);
+                sessionStorage.removeItem(STORAGE_KEY);
+              }}
+              className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)] hover:border-red-300 hover:text-red-600"
+            >
+              Clear chat
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -219,6 +265,8 @@ function Chatbot() {
               Getting your location and finding nearest camp...
             </div>
           )}
+
+          <div ref={chatEndRef} />
         </div>
 
         <form
