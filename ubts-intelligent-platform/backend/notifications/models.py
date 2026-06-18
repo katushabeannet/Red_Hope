@@ -143,14 +143,29 @@ class BloodDemandAlert(models.Model):
         ACTIVE = "ACTIVE", "Active"
         RESOLVED = "RESOLVED", "Resolved"
 
+    class UrgencyLevel(models.TextChoices):
+        CRITICAL = "CRITICAL", "Critical"
+        HIGH = "HIGH", "High"
+        MEDIUM = "MEDIUM", "Medium"
+        LOW = "LOW", "Low"
+
     blood_group = models.CharField(max_length=5)
     title = models.CharField(max_length=150)
     message = models.TextField()
+    urgency_level = models.CharField(
+        max_length=10,
+        choices=UrgencyLevel.choices,
+        default=UrgencyLevel.HIGH,
+    )
+    units_needed = models.PositiveIntegerField(default=1)
+    hospital_name = models.CharField(max_length=200, blank=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.ACTIVE,
     )
+    notified_count = models.PositiveIntegerField(default=0)
+    resolved_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -164,4 +179,4 @@ class BloodDemandAlert(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.blood_group} - {self.title}"
+        return f"[{self.urgency_level}] {self.blood_group} - {self.title}"

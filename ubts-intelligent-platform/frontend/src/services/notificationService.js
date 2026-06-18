@@ -109,3 +109,48 @@ export const updateDonorWhatsAppConsent = async ({ whatsapp_consent, whatsapp_nu
   });
   return response.data;
 };
+
+// Blood Demand Alerts
+export const createBloodDemandAlert = async (data) => {
+  const response = await api.post("/notifications/admin/blood-demand-alerts/", data);
+  return response.data;
+};
+
+export const getBloodDemandAlertsList = async ({ page = 1, page_size = 20, status = "", blood_group = "", urgency_level = "", search = "" } = {}) => {
+  const params = { page, page_size };
+  if (status) params.status = status;
+  if (blood_group) params.blood_group = blood_group;
+  if (urgency_level) params.urgency_level = urgency_level;
+  if (search) params.search = search;
+  const response = await api.get("/notifications/admin/blood-demand-alerts/list/", { params });
+  return response.data;
+};
+
+export const getBloodDemandAlertDetail = async (alertId) => {
+  const response = await api.get(`/notifications/admin/blood-demand-alerts/${alertId}/`);
+  return response.data;
+};
+
+export const updateBloodDemandAlert = async (alertId, data) => {
+  const response = await api.patch(`/notifications/admin/blood-demand-alerts/${alertId}/`, data);
+  return response.data;
+};
+
+export const deleteBloodDemandAlert = async (alertId) => {
+  await api.delete(`/notifications/admin/blood-demand-alerts/${alertId}/`);
+};
+
+export const resolveBloodDemandAlert = async (alertId) => {
+  const response = await api.post(`/notifications/admin/blood-demand-alerts/${alertId}/resolve/`);
+  return response.data;
+};
+
+export const reNotifyBloodDemandAlert = async (alertId) => {
+  const response = await api.post(`/notifications/admin/blood-demand-alerts/${alertId}/notify/`);
+  return response.data;
+};
+
+export const getDonorBloodDemandAlerts = async () => {
+  const response = await api.get("/notifications/blood-demand-alerts/");
+  return response.data;
+};

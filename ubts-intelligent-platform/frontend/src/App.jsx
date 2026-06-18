@@ -21,6 +21,8 @@ import CampCheckin from "./pages/CampCheckin";
 import AdminCampaignHistory from "./pages/AdminCampaignHistory";
 import AdminSMS from "./pages/AdminSMS";
 import AdminWhatsApp from "./pages/AdminWhatsApp";
+import AdminBloodDemand from "./pages/AdminBloodDemand";
+import BloodDemandAlerts from "./pages/BloodDemandAlerts";
 
 function App() {
   return (
@@ -117,6 +119,22 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
               <Notifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-blood-demand"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminBloodDemand />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/blood-demand-alerts"
+          element={
+            <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
+              <BloodDemandAlerts />
             </ProtectedRoute>
           }
         />
