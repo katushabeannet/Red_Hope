@@ -7,6 +7,10 @@ from .views import (
     campaign_performance_analytics_view,
     admin_analytics_view,
     blood_demand_forecast_view,
+    campaign_scan_history_view,
+    campaign_scan_detail_view,
+    campaign_scan_mark_converted_view,
+    campaign_scan_export_csv_view,
 )
 
 urlpatterns = [
@@ -17,4 +21,8 @@ urlpatterns = [
     path("campaign-performance/", campaign_performance_analytics_view),
     path("analytics/", admin_analytics_view),
     path("blood-demand-forecast/", blood_demand_forecast_view),
+    path("campaign-history/", campaign_scan_history_view),
+    path("campaign-history/export/", campaign_scan_export_csv_view),
+    path("campaign-history/<int:performance_id>/", campaign_scan_detail_view),
+    path("campaign-history/<int:performance_id>/converted/", campaign_scan_mark_converted_view),
 ]

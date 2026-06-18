@@ -18,6 +18,8 @@ import MyProfile from "./pages/MyProfile";
 import PersonalizedCampaign from "./pages/PersonalizedCampaign";
 import Notifications from "./pages/Notifications";
 import CampCheckin from "./pages/CampCheckin";
+import AdminCampaignHistory from "./pages/AdminCampaignHistory";
+import AdminSMS from "./pages/AdminSMS";
 
 function App() {
   return (
@@ -76,6 +78,22 @@ function App() {
         />        
 
         <Route path="/camp-checkin/:campId" element={<CampCheckin />} />
+        <Route
+          path="/campaign-history"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminCampaignHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-sms"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminSMS />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
         <Route
           path="/personalized-campaign"

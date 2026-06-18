@@ -24,6 +24,10 @@ class CampaignPerformance(models.Model):
     average_availability_score = models.FloatField(default=0)
     average_campaign_priority_score = models.FloatField(default=0)
 
+    contacted_donors = models.PositiveIntegerField(default=0)
+    converted_donors = models.PositiveIntegerField(default=0)
+    campaign_name = models.CharField(max_length=200, blank=True)
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

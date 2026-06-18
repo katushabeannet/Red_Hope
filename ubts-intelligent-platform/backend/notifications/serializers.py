@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Notification, BloodDemandAlert
+from .models import Notification, BloodDemandAlert, SMSLog
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -30,3 +30,22 @@ class BloodDemandAlertSerializer(serializers.ModelSerializer):
             "status",
             "created_at",
         ]
+
+
+class SMSLogSerializer(serializers.ModelSerializer):
+    recipient_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SMSLog
+        fields = [
+            "id",
+            "phone_number",
+            "message",
+            "status",
+            "error_message",
+            "recipient_email",
+            "created_at",
+        ]
+
+    def get_recipient_email(self, obj):
+        return getattr(obj.recipient, "email", None) if obj.recipient else None
