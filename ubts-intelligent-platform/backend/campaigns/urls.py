@@ -11,6 +11,10 @@ from .views import (
     campaign_scan_detail_view,
     campaign_scan_mark_converted_view,
     campaign_scan_export_csv_view,
+    campaign_responses_view,
+    campaign_response_update_view,
+    campaign_response_bulk_update_view,
+    campaign_responses_export_csv_view,
 )
 
 urlpatterns = [
@@ -25,4 +29,8 @@ urlpatterns = [
     path("campaign-history/export/", campaign_scan_export_csv_view),
     path("campaign-history/<int:performance_id>/", campaign_scan_detail_view),
     path("campaign-history/<int:performance_id>/converted/", campaign_scan_mark_converted_view),
+    path("campaign-history/<int:performance_id>/responses/", campaign_responses_view),
+    path("campaign-history/<int:performance_id>/responses/bulk/", campaign_response_bulk_update_view),
+    path("campaign-history/<int:performance_id>/responses/export/", campaign_responses_export_csv_view),
+    path("campaign-responses/<int:response_id>/", campaign_response_update_view),
 ]

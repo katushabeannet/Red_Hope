@@ -102,3 +102,11 @@ export const campCheckin = async (campId) => {
   const response = await api.post(`/donors/camp-checkin/${campId}/`);
   return response.data;
 };
+
+export const updateWhatsAppConsent = async ({ whatsapp_consent, whatsapp_number }) => {
+  const response = await api.post("/notifications/whatsapp/consent/", {
+    whatsapp_consent,
+    whatsapp_number,
+  });
+  return response.data;
+};

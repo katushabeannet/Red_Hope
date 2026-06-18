@@ -28,6 +28,9 @@ class DonorProfile(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
 
+    whatsapp_number = models.CharField(max_length=20, blank=True)
+    whatsapp_consent = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Notification, BloodDemandAlert, SMSLog
+from .models import Notification, BloodDemandAlert, SMSLog, WhatsAppLog
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -43,6 +43,28 @@ class SMSLogSerializer(serializers.ModelSerializer):
             "message",
             "status",
             "error_message",
+            "recipient_email",
+            "created_at",
+        ]
+
+    def get_recipient_email(self, obj):
+        return getattr(obj.recipient, "email", None) if obj.recipient else None
+
+
+class WhatsAppLogSerializer(serializers.ModelSerializer):
+    recipient_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WhatsAppLog
+        fields = [
+            "id",
+            "phone_number",
+            "message",
+            "template_name",
+            "message_type",
+            "status",
+            "error_message",
+            "wa_message_id",
             "recipient_email",
             "created_at",
         ]

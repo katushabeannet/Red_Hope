@@ -86,6 +86,58 @@ class SMSSetting(models.Model):
         return obj
 
 
+class WhatsAppLog(models.Model):
+    class Status(models.TextChoices):
+        SENT = "SENT", "Sent"
+        FAILED = "FAILED", "Failed"
+        SKIPPED = "SKIPPED", "Skipped"
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_logs",
+    )
+    phone_number = models.CharField(max_length=30)
+    message = models.TextField()
+    template_name = models.CharField(max_length=100, blank=True)
+    message_type = models.CharField(max_length=20, default="text")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.SKIPPED)
+    error_message = models.TextField(blank=True)
+    response_data = models.JSONField(null=True, blank=True)
+    wa_message_id = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"WhatsApp to {self.phone_number} — {self.status}"
+
+
+class WhatsAppSetting(models.Model):
+    whatsapp_enabled = models.BooleanField(default=False)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "WhatsApp Setting"
+
+    def __str__(self):
+        return f"WhatsApp {'enabled' if self.whatsapp_enabled else 'disabled'}"
+
+    @classmethod
+    def get_setting(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+
 class BloodDemandAlert(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"

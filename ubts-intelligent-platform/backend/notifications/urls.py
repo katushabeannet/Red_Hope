@@ -15,6 +15,12 @@ from .views import (
     admin_sms_test_view,
     admin_sms_logs_view,
     admin_sms_bulk_view,
+    admin_whatsapp_settings_view,
+    admin_whatsapp_toggle_view,
+    admin_whatsapp_test_view,
+    admin_whatsapp_logs_view,
+    admin_whatsapp_bulk_view,
+    donor_whatsapp_consent_view,
 )
 
 
@@ -33,4 +39,10 @@ urlpatterns = [
     path("admin/sms/test/", admin_sms_test_view),
     path("admin/sms/logs/", admin_sms_logs_view),
     path("admin/sms/bulk/", admin_sms_bulk_view),
+    path("admin/whatsapp/settings/", admin_whatsapp_settings_view),
+    path("admin/whatsapp/toggle/", admin_whatsapp_toggle_view),
+    path("admin/whatsapp/test/", admin_whatsapp_test_view),
+    path("admin/whatsapp/logs/", admin_whatsapp_logs_view),
+    path("admin/whatsapp/bulk/", admin_whatsapp_bulk_view),
+    path("whatsapp/consent/", donor_whatsapp_consent_view),
 ]

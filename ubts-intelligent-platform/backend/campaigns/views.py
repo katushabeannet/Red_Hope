@@ -19,7 +19,7 @@ from donors.models import (
 )
 
 from camps.models import DonationCamp
-from .models import CampaignPerformance
+from .models import CampaignPerformance, CampaignResponse
 
 
 @api_view(["GET"])
@@ -487,3 +487,165 @@ def campaign_scan_export_csv_view(request):
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="campaign_history.csv"'
     return response
+
+
+# ── Campaign Response Tracking ───────────────────────────────────────────────
+
+def _serialize_response(r):
+    return {
+        "id": r.id,
+        "donor_id": r.donor_id,
+        "donor_name": getattr(r.donor.user, "full_name", "") or getattr(r.donor.user, "email", ""),
+        "donor_email": getattr(r.donor.user, "email", ""),
+        "donor_phone": r.donor.phone_number or "",
+        "donor_blood_group": r.donor.blood_group or "",
+        "status": r.status,
+        "response_date": r.response_date,
+        "outcome": r.outcome,
+        "notes": r.notes,
+        "recorded_by": getattr(r.recorded_by, "email", None),
+        "created_at": r.created_at,
+        "updated_at": r.updated_at,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def campaign_responses_view(request, performance_id):
+    try:
+        campaign = CampaignPerformance.objects.get(id=performance_id)
+    except CampaignPerformance.DoesNotExist:
+        return Response({"error": "Campaign not found."}, status=404)
+
+    status_filter = request.query_params.get("status", "").strip().upper()
+    responses = CampaignResponse.objects.filter(campaign=campaign).select_related(
+        "donor", "donor__user", "recorded_by"
+    )
+
+    if status_filter in ("CONTACTED", "RESPONDED", "DONATED", "NOT_INTERESTED"):
+        responses = responses.filter(status=status_filter)
+
+    status_counts = {
+        "CONTACTED": responses.filter(status="CONTACTED").count(),
+        "RESPONDED": responses.filter(status="RESPONDED").count(),
+        "DONATED": responses.filter(status="DONATED").count(),
+        "NOT_INTERESTED": responses.filter(status="NOT_INTERESTED").count(),
+    }
+
+    return Response({
+        "campaign_id": performance_id,
+        "total_responses": responses.count(),
+        "status_counts": status_counts,
+        "responses": [_serialize_response(r) for r in responses],
+    })
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def campaign_response_update_view(request, response_id):
+    try:
+        cr = CampaignResponse.objects.select_related("donor", "donor__user").get(id=response_id)
+    except CampaignResponse.DoesNotExist:
+        return Response({"error": "Response record not found."}, status=404)
+
+    allowed_statuses = {"CONTACTED", "RESPONDED", "DONATED", "NOT_INTERESTED"}
+    new_status = request.data.get("status", "").upper()
+    if new_status and new_status not in allowed_statuses:
+        return Response({"error": f"Invalid status. Choose from: {', '.join(allowed_statuses)}"}, status=400)
+
+    if new_status:
+        cr.status = new_status
+    if "response_date" in request.data:
+        cr.response_date = request.data["response_date"] or None
+    if "outcome" in request.data:
+        cr.outcome = request.data["outcome"] or ""
+    if "notes" in request.data:
+        cr.notes = request.data["notes"] or ""
+
+    cr.recorded_by = request.user
+    cr.save()
+
+    if new_status == "DONATED":
+        try:
+            perf = cr.campaign
+            perf.converted_donors = CampaignResponse.objects.filter(
+                campaign=perf, status="DONATED"
+            ).count()
+            perf.save(update_fields=["converted_donors"])
+        except Exception:
+            pass
+
+    return Response(_serialize_response(cr))
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def campaign_response_bulk_update_view(request, performance_id):
+    try:
+        CampaignPerformance.objects.get(id=performance_id)
+    except CampaignPerformance.DoesNotExist:
+        return Response({"error": "Campaign not found."}, status=404)
+
+    response_ids = request.data.get("response_ids", [])
+    new_status = (request.data.get("status") or "").upper()
+    allowed = {"CONTACTED", "RESPONDED", "DONATED", "NOT_INTERESTED"}
+
+    if new_status not in allowed:
+        return Response({"error": f"Invalid status. Choose from: {', '.join(allowed)}"}, status=400)
+    if not response_ids:
+        return Response({"error": "response_ids list is required."}, status=400)
+
+    updated = CampaignResponse.objects.filter(
+        id__in=response_ids,
+        campaign_id=performance_id,
+    ).update(status=new_status, recorded_by=request.user)
+
+    if new_status == "DONATED":
+        try:
+            perf = CampaignPerformance.objects.get(id=performance_id)
+            perf.converted_donors = CampaignResponse.objects.filter(
+                campaign=perf, status="DONATED"
+            ).count()
+            perf.save(update_fields=["converted_donors"])
+        except Exception:
+            pass
+
+    return Response({"message": f"{updated} response(s) updated to {new_status}.", "updated": updated})
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def campaign_responses_export_csv_view(request, performance_id):
+    try:
+        campaign = CampaignPerformance.objects.get(id=performance_id)
+    except CampaignPerformance.DoesNotExist:
+        return Response({"error": "Campaign not found."}, status=404)
+
+    responses = CampaignResponse.objects.filter(campaign=campaign).select_related(
+        "donor", "donor__user", "recorded_by"
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Response ID", "Donor Name", "Email", "Phone", "Blood Group",
+        "Status", "Response Date", "Outcome", "Notes", "Recorded By", "Last Updated",
+    ])
+    for r in responses:
+        writer.writerow([
+            r.id,
+            getattr(r.donor.user, "full_name", "") or "",
+            getattr(r.donor.user, "email", "") or "",
+            r.donor.phone_number or "",
+            r.donor.blood_group or "",
+            r.status,
+            r.response_date or "",
+            r.outcome or "",
+            r.notes or "",
+            getattr(r.recorded_by, "email", "") or "",
+            r.updated_at.strftime("%Y-%m-%d %H:%M") if r.updated_at else "",
+        ])
+
+    http_response = HttpResponse(output.getvalue(), content_type="text/csv")
+    http_response["Content-Disposition"] = f'attachment; filename="campaign_{performance_id}_responses.csv"'
+    return http_response
