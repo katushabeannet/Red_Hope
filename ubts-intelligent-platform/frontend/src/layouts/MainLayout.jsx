@@ -148,84 +148,50 @@ const handleMarkAllRead = async () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-white dark:bg-slate-900">
-        <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/90">
-          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-12">
-            <NavLink to="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-700 text-white">
-                <RiDropLine size={20} />
-              </span>
+        {/* ── Guest Header ── */}
+        <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-lg dark:border-slate-700/50 dark:bg-slate-900/90">
+          <div className="mx-auto max-w-7xl px-6 lg:px-12">
+            <div className="flex h-16 items-center justify-between gap-6">
+              {/* Part 1: Logo + Name + Tagline */}
+              <NavLink to="/" className="flex shrink-0 items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-700 text-white shadow">
+                  <RiDropLine size={22} />
+                </span>
+                <div className="hidden sm:block">
+                  <p className="text-base font-extrabold leading-none text-slate-900 dark:text-white">RedHope</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">One drop. One Life. One Hope.</p>
+                </div>
+              </NavLink>
 
-              <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  UBTS Platform
-                </p>
-                <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-                  Intelligent Donor Assistance
-                </p>
+              {/* Part 2: Nav links */}
+              <nav className="hidden items-center gap-7 lg:flex">
+                {[
+                  { to: "/", label: "Home" },
+                  { to: "/about", label: "About" },
+                  { to: "/process", label: "Process" },
+                  { to: "/campaigns", label: "Campaigns" },
+                  { to: "/contact", label: "Contact" },
+                ].map(({ to, label }) => (
+                  <NavLink key={to} to={to} end={to === "/"} className={guestNavClass}>{label}</NavLink>
+                ))}
+              </nav>
+
+              {/* Part 3: Actions + Theme toggle */}
+              <div className="flex items-center gap-2.5">
+                <button onClick={toggle}
+                  className="rounded-xl bg-slate-100 p-2.5 text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  title="Toggle theme">
+                  {dark ? <RiSunLine size={17} /> : <RiMoonLine size={17} />}
+                </button>
+                <NavLink to="/login"
+                  className="hidden rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-red-400 hover:text-red-700 dark:border-slate-600 dark:text-slate-300 dark:hover:text-red-400 sm:inline-flex">
+                  Log In
+                </NavLink>
+                <NavLink to="/register"
+                  className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-800">
+                  Sign Up
+                </NavLink>
               </div>
-            </NavLink>
-
-            <nav className="hidden items-center gap-8 lg:flex">
-              <NavLink to="/" className={guestNavClass}>
-                Home
-              </NavLink>
-
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("about")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="font-medium text-slate-600 transition-colors hover:text-red-700 dark:text-slate-300 dark:hover:text-red-400"
-              >
-                Eligibility
-              </button>
-
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("camps")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="font-medium text-slate-600 transition-colors hover:text-red-700 dark:text-slate-300 dark:hover:text-red-400"
-              >
-                Camps
-              </button>
-
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("faq")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="font-medium text-slate-600 transition-colors hover:text-red-700 dark:text-slate-300 dark:hover:text-red-400"
-              >
-                Get Started
-              </button>
-            </nav>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggle}
-                className="rounded-xl bg-slate-100 p-2.5 text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                title="Toggle theme"
-              >
-                {dark ? <RiSunLine size={18} /> : <RiMoonLine size={18} />}
-              </button>
-
-              <NavLink
-                to="/register"
-                className="hidden rounded-xl border border-red-700 px-4 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 dark:text-red-400 lg:inline-flex"
-              >
-                Register
-              </NavLink>
-
-              <NavLink
-                to="/login"
-                className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800"
-              >
-                Login
-              </NavLink>
             </div>
           </div>
         </header>
@@ -501,54 +467,92 @@ const handleMarkAllRead = async () => {
 }
 
 function Footer() {
+  const navLinkCls = "text-slate-400 text-sm hover:text-white transition-colors";
+
   return (
-    <footer className="border-t border-slate-200 bg-slate-50 px-6 py-10 dark:border-slate-800 dark:bg-slate-950 lg:px-12">
-      <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
-        <div className="md:col-span-2">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-700 text-white">
-              <RiDropLine size={20} />
-            </span>
-            <span className="font-bold text-slate-900 dark:text-white">
-              UBTS Platform
-            </span>
+    <footer style={{ backgroundColor: "#2c3e50" }} className="dark:bg-slate-900">
+      <div className="mx-auto max-w-7xl px-6 py-14 lg:px-12">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+
+          {/* Col 1: Brand */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <NavLink to="/" className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-700 text-white">
+                <RiDropLine size={20} />
+              </span>
+              <span className="text-lg font-extrabold text-white">RedHope</span>
+            </NavLink>
+            <p className="mt-4 text-sm leading-6 text-slate-400">
+              Uganda's AI-powered intelligent blood donation management system. Connecting donors, camps, and recipients to save lives every day.
+            </p>
+            <div className="mt-5 space-y-1.5">
+              <NavLink to="/" className={navLinkCls}>Home</NavLink><br />
+              <NavLink to="/about" className={navLinkCls}>About</NavLink><br />
+              <NavLink to="/process" className={navLinkCls}>The Process</NavLink><br />
+              <NavLink to="/campaigns" className={navLinkCls}>Campaigns</NavLink>
+            </div>
           </div>
 
-          <p className="max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
-            An intelligent donor assistance and campaign planning platform for
-            blood donation support, eligibility screening, location
-            recommendations, and transparent AI reasoning.
-          </p>
-        </div>
+          {/* Col 2: Quick Links */}
+          <div>
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-white">Quick Links</h4>
+            <ul className="space-y-2.5">
+              {[
+                { to: "/register", label: "Register as Donor" },
+                { to: "/login", label: "Donor Login" },
+                { to: "/campaigns", label: "Find a Camp" },
+                { to: "/contact", label: "Contact Us" },
+                { to: "/process", label: "How It Works" },
+              ].map(({ to, label }) => (
+                <li key={to}><NavLink to={to} className={navLinkCls}>{label}</NavLink></li>
+              ))}
+            </ul>
+          </div>
 
-        <div>
-          <h4 className="mb-3 font-semibold text-slate-900 dark:text-white">
-            Platform
-          </h4>
-          <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <li>Eligibility Guidance</li>
-            <li>Nearest Camps</li>
-            <li>Donor Dashboard</li>
-            <li>Admin Intelligence</li>
-          </ul>
-        </div>
+          {/* Col 3: Resources */}
+          <div>
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-white">Resources</h4>
+            <ul className="space-y-2.5">
+              {[
+                { label: "Blood Facts", href: "https://www.who.int/news-room/fact-sheets/detail/blood-safety-and-availability" },
+                { label: "Donation Guide", href: "https://www.ubts.go.ug" },
+                { label: "Eligibility Criteria", href: "https://www.ubts.go.ug" },
+                { label: "UBTS Official Site", href: "https://www.ubts.go.ug" },
+                { label: "MOH Uganda", href: "https://www.health.go.ug" },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  <a href={href} target="_blank" rel="noopener noreferrer" className={navLinkCls}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        <div>
-          <h4 className="mb-3 font-semibold text-slate-900 dark:text-white">
-            Technologies
-          </h4>
-          <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <li>MPNet Retrieval</li>
-            <li>Neo4j Traceability</li>
-            <li>Leaflet Maps</li>
-            <li>Django REST API</li>
-          </ul>
+          {/* Col 4: Partners */}
+          <div>
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-white">Partners</h4>
+            <ul className="space-y-2.5">
+              {[
+                { label: "UBTS Uganda", href: "https://www.ubts.go.ug" },
+                { label: "Ministry of Health", href: "https://www.health.go.ug" },
+                { label: "WHO Uganda", href: "https://www.afro.who.int/countries/uganda" },
+                { label: "Uganda Red Cross", href: "https://www.redcrossuganda.org" },
+                { label: "Makerere University", href: "https://www.mak.ac.ug" },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  <a href={href} target="_blank" rel="noopener noreferrer" className={navLinkCls}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-8 max-w-7xl border-t border-slate-200 pt-6 text-sm text-slate-500 dark:border-slate-800">
-        © 2026 UBTS Intelligent Donor Assistance Platform. Sample project
-        environment.
+      {/* Copyright bar */}
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-slate-500 sm:flex-row lg:px-12">
+          <p>© 2026 RedHope — UBTS Intelligent Donor Assistance Platform. All rights reserved.</p>
+          <p>Built with ❤️ by Makerere University Computer Science students</p>
+        </div>
       </div>
     </footer>
   );

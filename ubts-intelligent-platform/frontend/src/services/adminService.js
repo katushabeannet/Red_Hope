@@ -25,6 +25,11 @@ export const getPublicStats = async () => {
   return response.data;
 };
 
+export const getPublicCamps = async () => {
+  const response = await api.get("/admin/public-camps/");
+  return response.data;
+};
+
 export const getAdminAnalytics = async () => {
   const response = await api.get("/admin/analytics/");
   return response.data;
