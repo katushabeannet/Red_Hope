@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     public_platform_stats_view,
+    public_active_camps_view,
     admin_dashboard_summary_view,
     recent_assessments_view,
     camp_statistics_view,
@@ -19,6 +20,7 @@ from .views import (
 
 urlpatterns = [
     path("public-stats/", public_platform_stats_view),
+    path("public-camps/", public_active_camps_view),
     path("dashboard-summary/", admin_dashboard_summary_view),
     path("recent-assessments/", recent_assessments_view),
     path("camp-statistics/", camp_statistics_view),

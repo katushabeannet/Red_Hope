@@ -26,18 +26,32 @@ from .models import CampaignPerformance, CampaignResponse
 @permission_classes([AllowAny])
 def public_platform_stats_view(request):
     total_donors = DonorProfile.objects.count()
-    active_camps = DonationCamp.objects.filter(
-        status=DonationCamp.CampStatus.ACTIVE
-    ).count()
+    active_donors = DonorProfile.objects.filter(total_donations__gt=0).count()
+    active_camps = DonationCamp.objects.filter(status=DonationCamp.CampStatus.ACTIVE).count()
     total_camps = DonationCamp.objects.count()
+    units_donated = DonationRecord.objects.count()
+    lives_impacted = units_donated * 3  # each donation saves up to 3 lives
 
-    return Response(
-        {
-            "total_donors": total_donors,
-            "active_camps": active_camps,
-            "total_camps": total_camps,
-        }
+    return Response({
+        "total_donors": total_donors,
+        "active_donors": active_donors,
+        "active_camps": active_camps,
+        "total_camps": total_camps,
+        "units_donated": units_donated,
+        "lives_impacted": lives_impacted,
+    })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_active_camps_view(request):
+    """Public endpoint — returns all active camps for the home page map."""
+    camps = DonationCamp.objects.filter(status=DonationCamp.CampStatus.ACTIVE).values(
+        "id", "name", "venue", "district",
+        "start_date", "end_date", "contact_phone",
+        "latitude", "longitude",
     )
+    return Response({"camps": list(camps)})
 
 
 @api_view(["GET"])
