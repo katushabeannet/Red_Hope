@@ -37,6 +37,55 @@ class Notification(models.Model):
         return f"{self.title} - {self.recipient}"
 
 
+class SMSLog(models.Model):
+    class Status(models.TextChoices):
+        SENT = "SENT", "Sent"
+        FAILED = "FAILED", "Failed"
+        SKIPPED = "SKIPPED", "Skipped"
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sms_logs",
+    )
+    phone_number = models.CharField(max_length=30)
+    message = models.TextField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.SKIPPED)
+    error_message = models.TextField(blank=True)
+    response_data = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"SMS to {self.phone_number} — {self.status}"
+
+
+class SMSSetting(models.Model):
+    sms_enabled = models.BooleanField(default=False)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "SMS Setting"
+
+    def __str__(self):
+        return f"SMS {'enabled' if self.sms_enabled else 'disabled'}"
+
+    @classmethod
+    def get_setting(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+
 class BloodDemandAlert(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"

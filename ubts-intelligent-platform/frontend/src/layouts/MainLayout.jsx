@@ -9,6 +9,8 @@ import {
   RiSunLine,
   RiUserLine,
   RiMegaphoneLine,
+  RiBarChart2Line,
+  RiMessage2Line,
 } from "react-icons/ri";
 
 import { useEffect, useRef, useState } from "react";
@@ -257,6 +259,16 @@ const handleMarkAllRead = async () => {
             to: "/admin-camps",
             label: "Manage Camps",
             icon: RiMapPinLine,
+          },
+          {
+            to: "/campaign-history",
+            label: "Campaign History",
+            icon: RiBarChart2Line,
+          },
+          {
+            to: "/admin-sms",
+            label: "SMS Management",
+            icon: RiMessage2Line,
           },
           {
             to: "/notifications",

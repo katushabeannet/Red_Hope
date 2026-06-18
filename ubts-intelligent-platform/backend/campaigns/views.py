@@ -1,7 +1,11 @@
+import csv
+import io
+import math
 from datetime import date, timedelta
 
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncMonth
+from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
@@ -352,3 +356,134 @@ def blood_demand_forecast_view(request):
         "forecast_date": str(today),
         "forecast": forecast,
     })
+
+
+def _serialize_performance(record):
+    return {
+        "id": record.id,
+        "campaign_name": record.campaign_name or "",
+        "blood_group": record.blood_group or "All",
+        "radius_km": record.radius_km,
+        "total_matches": record.total_matches,
+        "available_donors": record.available_donors,
+        "unavailable_donors": record.unavailable_donors,
+        "high_priority_donors": record.high_priority_donors,
+        "medium_priority_donors": record.medium_priority_donors,
+        "low_priority_donors": record.low_priority_donors,
+        "ineligible_donors": record.ineligible_donors,
+        "outside_radius_donors": record.outside_radius_donors,
+        "skipped_donors": record.skipped_donors,
+        "contacted_donors": record.contacted_donors,
+        "converted_donors": record.converted_donors,
+        "average_availability_score": record.average_availability_score,
+        "average_campaign_priority_score": record.average_campaign_priority_score,
+        "created_by": getattr(record.created_by, "full_name", None) or getattr(record.created_by, "email", None),
+        "created_at": record.created_at,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def campaign_scan_history_view(request):
+    search = request.query_params.get("search", "").strip()
+    blood_group = request.query_params.get("blood_group", "").strip()
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(50, max(1, int(request.query_params.get("page_size", 20))))
+
+    records = CampaignPerformance.objects.select_related("created_by")
+
+    if blood_group:
+        records = records.filter(blood_group=blood_group)
+
+    if search:
+        records = records.filter(
+            Q(campaign_name__icontains=search)
+            | Q(blood_group__icontains=search)
+            | Q(created_by__full_name__icontains=search)
+            | Q(created_by__email__icontains=search)
+        )
+
+    total = records.count()
+    start = (page - 1) * page_size
+    page_records = records[start: start + page_size]
+
+    return Response({
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": math.ceil(total / page_size) if total else 1,
+        "results": [_serialize_performance(r) for r in page_records],
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def campaign_scan_detail_view(request, performance_id):
+    try:
+        record = CampaignPerformance.objects.select_related("created_by").get(id=performance_id)
+    except CampaignPerformance.DoesNotExist:
+        return Response({"error": "Campaign scan not found."}, status=404)
+
+    return Response(_serialize_performance(record))
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def campaign_scan_mark_converted_view(request, performance_id):
+    try:
+        record = CampaignPerformance.objects.get(id=performance_id)
+    except CampaignPerformance.DoesNotExist:
+        return Response({"error": "Campaign scan not found."}, status=404)
+
+    count = int(request.data.get("converted_donors", 0))
+    record.converted_donors = count
+    record.save(update_fields=["converted_donors"])
+    return Response({"message": "Conversion count updated.", "converted_donors": count})
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def campaign_scan_export_csv_view(request):
+    blood_group = request.query_params.get("blood_group", "").strip()
+    records = CampaignPerformance.objects.select_related("created_by").order_by("-created_at")
+
+    if blood_group:
+        records = records.filter(blood_group=blood_group)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Campaign Name", "Blood Group", "Radius (km)", "Total Matches",
+        "Available", "Unavailable", "High Priority", "Medium Priority", "Low Priority",
+        "Ineligible", "Outside Radius", "Skipped",
+        "Contacted", "Converted",
+        "Avg Availability", "Avg Priority Score",
+        "Created By", "Created At",
+    ])
+
+    for r in records:
+        writer.writerow([
+            r.id,
+            r.campaign_name or "",
+            r.blood_group or "All",
+            r.radius_km,
+            r.total_matches,
+            r.available_donors,
+            r.unavailable_donors,
+            r.high_priority_donors,
+            r.medium_priority_donors,
+            r.low_priority_donors,
+            r.ineligible_donors,
+            r.outside_radius_donors,
+            r.skipped_donors,
+            r.contacted_donors,
+            r.converted_donors,
+            round(r.average_availability_score, 4),
+            round(r.average_campaign_priority_score, 4),
+            getattr(r.created_by, "email", "") or "",
+            r.created_at.strftime("%Y-%m-%d %H:%M") if r.created_at else "",
+        ])
+
+    response = HttpResponse(output.getvalue(), content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="campaign_history.csv"'
+    return response

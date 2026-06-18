@@ -25,11 +25,40 @@ export const markAllNotificationsAsRead = async () => {
   return response.data;
 };
 
-export const blastCampaignNotification = async ({ donor_ids, title, message }) => {
+export const blastCampaignNotification = async ({ donor_ids, title, message, campaign_performance_id }) => {
   const response = await api.post("/notifications/admin/campaign-blast/", {
     donor_ids,
     title,
     message,
+    ...(campaign_performance_id ? { campaign_performance_id } : {}),
   });
+  return response.data;
+};
+
+export const getAdminSMSSettings = async () => {
+  const response = await api.get("/notifications/admin/sms/settings/");
+  return response.data;
+};
+
+export const toggleAdminSMS = async (sms_enabled) => {
+  const response = await api.post("/notifications/admin/sms/toggle/", { sms_enabled });
+  return response.data;
+};
+
+export const sendAdminSMSTest = async ({ phone_number, message }) => {
+  const response = await api.post("/notifications/admin/sms/test/", { phone_number, message });
+  return response.data;
+};
+
+export const getAdminSMSLogs = async ({ page = 1, page_size = 30, search = "", status = "" } = {}) => {
+  const params = { page, page_size };
+  if (search) params.search = search;
+  if (status) params.status = status;
+  const response = await api.get("/notifications/admin/sms/logs/", { params });
+  return response.data;
+};
+
+export const sendBulkSMS = async ({ donor_ids, message }) => {
+  const response = await api.post("/notifications/admin/sms/bulk/", { donor_ids, message });
   return response.data;
 };

@@ -51,6 +51,7 @@ function PersonalizedCampaign() {
   const [blastMessage, setBlastMessage] = useState("");
   const [blastTarget, setBlastTarget] = useState("available");
   const [blasting, setBlasting] = useState(false);
+  const [campaignPerformanceId, setCampaignPerformanceId] = useState(null);
 
   useEffect(() => {
     loadCamps();
@@ -89,6 +90,7 @@ function PersonalizedCampaign() {
     setActiveTab("matched_donors");
     setSelectedDonor(null);
     setBlastMessage("");
+    setCampaignPerformanceId(null);
   };
 
   const handleBlast = async (e) => {
@@ -116,6 +118,7 @@ function PersonalizedCampaign() {
         donor_ids,
         title: blastTitle,
         message: blastMessage,
+        campaign_performance_id: campaignPerformanceId,
       });
       showToast({
         type: "success",
@@ -149,6 +152,7 @@ function PersonalizedCampaign() {
 
       const data = await scanPersonalizedCampaignDonors(payload);
       setResult(data);
+      setCampaignPerformanceId(data.campaign_performance_id || null);
       setActiveTab("matched_donors");
 
       showToast({

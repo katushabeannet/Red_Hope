@@ -10,6 +10,11 @@ from .views import (
     generate_blood_demand_alerts_view,
     blood_demand_alerts_list_view,
     campaign_blast_view,
+    admin_sms_settings_view,
+    admin_sms_toggle_view,
+    admin_sms_test_view,
+    admin_sms_logs_view,
+    admin_sms_bulk_view,
 )
 
 
@@ -23,4 +28,9 @@ urlpatterns = [
     path("admin/blood-demand-alerts/", generate_blood_demand_alerts_view),
     path("admin/blood-demand-alerts/list/", blood_demand_alerts_list_view),
     path("admin/campaign-blast/", campaign_blast_view),
+    path("admin/sms/settings/", admin_sms_settings_view),
+    path("admin/sms/toggle/", admin_sms_toggle_view),
+    path("admin/sms/test/", admin_sms_test_view),
+    path("admin/sms/logs/", admin_sms_logs_view),
+    path("admin/sms/bulk/", admin_sms_bulk_view),
 ]
