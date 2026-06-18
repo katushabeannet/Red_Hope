@@ -12,6 +12,8 @@ import {
   RiBarChart2Line,
   RiMessage2Line,
   RiWhatsappLine,
+  RiAlertLine,
+  RiHeartPulseLine,
 } from "react-icons/ri";
 
 import { useEffect, useRef, useState } from "react";
@@ -277,6 +279,11 @@ const handleMarkAllRead = async () => {
             icon: RiWhatsappLine,
           },
           {
+            to: "/admin-blood-demand",
+            label: "Blood Demand",
+            icon: RiAlertLine,
+          },
+          {
             to: "/notifications",
             label: "Notifications",
             icon: RiNotification3Line,
@@ -292,6 +299,11 @@ const handleMarkAllRead = async () => {
             to: "/my-profile",
             label: "My Profile",
             icon: RiUserLine,
+          },
+          {
+            to: "/blood-demand-alerts",
+            label: "Blood Alerts",
+            icon: RiHeartPulseLine,
           },
           {
             to: "/notifications",
