@@ -11,6 +11,7 @@ import {
   RiMegaphoneLine,
   RiBarChart2Line,
   RiMessage2Line,
+  RiWhatsappLine,
 } from "react-icons/ri";
 
 import { useEffect, useRef, useState } from "react";
@@ -269,6 +270,11 @@ const handleMarkAllRead = async () => {
             to: "/admin-sms",
             label: "SMS Management",
             icon: RiMessage2Line,
+          },
+          {
+            to: "/admin-whatsapp",
+            label: "WhatsApp",
+            icon: RiWhatsappLine,
           },
           {
             to: "/notifications",

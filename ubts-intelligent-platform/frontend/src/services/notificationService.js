@@ -62,3 +62,50 @@ export const sendBulkSMS = async ({ donor_ids, message }) => {
   const response = await api.post("/notifications/admin/sms/bulk/", { donor_ids, message });
   return response.data;
 };
+
+// WhatsApp
+export const getAdminWhatsAppSettings = async () => {
+  const response = await api.get("/notifications/admin/whatsapp/settings/");
+  return response.data;
+};
+
+export const toggleAdminWhatsApp = async (whatsapp_enabled) => {
+  const response = await api.post("/notifications/admin/whatsapp/toggle/", { whatsapp_enabled });
+  return response.data;
+};
+
+export const sendAdminWhatsAppTest = async ({ phone_number, message, use_template, template_name }) => {
+  const response = await api.post("/notifications/admin/whatsapp/test/", {
+    phone_number,
+    message,
+    use_template: use_template || false,
+    template_name: template_name || "",
+  });
+  return response.data;
+};
+
+export const getAdminWhatsAppLogs = async ({ page = 1, page_size = 30, search = "", status = "" } = {}) => {
+  const params = { page, page_size };
+  if (search) params.search = search;
+  if (status) params.status = status;
+  const response = await api.get("/notifications/admin/whatsapp/logs/", { params });
+  return response.data;
+};
+
+export const sendBulkWhatsApp = async ({ donor_ids, message, use_template, template_name }) => {
+  const response = await api.post("/notifications/admin/whatsapp/bulk/", {
+    donor_ids,
+    message: message || "",
+    use_template: use_template || false,
+    template_name: template_name || "",
+  });
+  return response.data;
+};
+
+export const updateDonorWhatsAppConsent = async ({ whatsapp_consent, whatsapp_number }) => {
+  const response = await api.post("/notifications/whatsapp/consent/", {
+    whatsapp_consent,
+    whatsapp_number,
+  });
+  return response.data;
+};

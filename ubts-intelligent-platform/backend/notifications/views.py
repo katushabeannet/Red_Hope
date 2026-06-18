@@ -5,8 +5,8 @@ from rest_framework.response import Response
 
 from donors.models import DonorProfile
 
-from .models import Notification, BloodDemandAlert, SMSLog, SMSSetting
-from .serializers import NotificationSerializer, BloodDemandAlertSerializer, SMSLogSerializer
+from .models import Notification, BloodDemandAlert, SMSLog, SMSSetting, WhatsAppLog, WhatsAppSetting
+from .serializers import NotificationSerializer, BloodDemandAlertSerializer, SMSLogSerializer, WhatsAppLogSerializer
 from .services import (
     create_notification,
     generate_all_donor_notifications,
@@ -155,10 +155,17 @@ def campaign_blast_view(request):
 
     if campaign_performance_id:
         try:
-            from campaigns.models import CampaignPerformance
+            from campaigns.models import CampaignPerformance, CampaignResponse
             perf = CampaignPerformance.objects.get(id=campaign_performance_id)
             perf.contacted_donors = sent_count
             perf.save(update_fields=["contacted_donors"])
+
+            for profile in profiles:
+                CampaignResponse.objects.get_or_create(
+                    campaign=perf,
+                    donor=profile,
+                    defaults={"status": "CONTACTED", "recorded_by": request.user},
+                )
         except Exception:
             pass
 
@@ -394,4 +401,198 @@ def admin_sms_bulk_view(request):
         "failed": failed,
         "skipped": skipped,
         "total_targeted": len(donor_ids),
+    })
+
+
+# ── WhatsApp Admin Views ─────────────────────────────────────────────────────
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_whatsapp_settings_view(request):
+    setting = WhatsAppSetting.get_setting()
+    return Response({
+        "whatsapp_enabled": setting.whatsapp_enabled,
+        "updated_at": setting.updated_at,
+        "updated_by": getattr(setting.updated_by, "email", None),
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_whatsapp_toggle_view(request):
+    enabled = request.data.get("whatsapp_enabled")
+    if enabled is None:
+        return Response({"error": "whatsapp_enabled (bool) is required."}, status=400)
+
+    setting = WhatsAppSetting.get_setting()
+    setting.whatsapp_enabled = bool(enabled)
+    setting.updated_by = request.user
+    setting.save()
+
+    return Response({
+        "message": f"WhatsApp notifications {'enabled' if setting.whatsapp_enabled else 'disabled'}.",
+        "whatsapp_enabled": setting.whatsapp_enabled,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_whatsapp_test_view(request):
+    phone = (request.data.get("phone_number") or "").strip()
+    message = (request.data.get("message") or "").strip()
+    use_template = request.data.get("use_template", False)
+    template_name = (request.data.get("template_name") or "").strip()
+
+    if not phone:
+        return Response({"error": "phone_number is required."}, status=400)
+
+    from .whatsapp_service import send_whatsapp_text, send_whatsapp_template
+
+    if use_template and template_name:
+        result = send_whatsapp_template(
+            phone_number=phone,
+            template_name=template_name,
+            recipient=request.user,
+        )
+    else:
+        if not message:
+            message = "This is a test WhatsApp message from the UBTS Blood Donation Platform."
+        result = send_whatsapp_text(phone_number=phone, message=message, recipient=request.user)
+
+    return Response({
+        "phone_number": phone,
+        "success": result.get("success", False),
+        "skipped": result.get("skipped", False),
+        "detail": result.get("message") or result.get("error") or str(result.get("response", "")),
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_whatsapp_logs_view(request):
+    import math as _math
+    from django.db.models import Q as DQ
+
+    search = request.query_params.get("search", "").strip()
+    status_filter = request.query_params.get("status", "").strip().upper()
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(100, max(1, int(request.query_params.get("page_size", 30))))
+
+    logs = WhatsAppLog.objects.select_related("recipient")
+
+    if status_filter in ("SENT", "FAILED", "SKIPPED"):
+        logs = logs.filter(status=status_filter)
+
+    if search:
+        logs = logs.filter(
+            DQ(phone_number__icontains=search)
+            | DQ(message__icontains=search)
+            | DQ(template_name__icontains=search)
+            | DQ(recipient__email__icontains=search)
+        )
+
+    total = logs.count()
+    start = (page - 1) * page_size
+    page_logs = logs[start: start + page_size]
+    serializer = WhatsAppLogSerializer(page_logs, many=True)
+
+    return Response({
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": _math.ceil(total / page_size) if total else 1,
+        "sent_count": WhatsAppLog.objects.filter(status="SENT").count(),
+        "failed_count": WhatsAppLog.objects.filter(status="FAILED").count(),
+        "skipped_count": WhatsAppLog.objects.filter(status="SKIPPED").count(),
+        "logs": serializer.data,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_whatsapp_bulk_view(request):
+    donor_ids = request.data.get("donor_ids", [])
+    message = (request.data.get("message") or "").strip()
+    use_template = request.data.get("use_template", False)
+    template_name = (request.data.get("template_name") or "").strip()
+
+    if not donor_ids:
+        return Response({"error": "donor_ids list is required."}, status=400)
+    if not use_template and not message:
+        return Response({"error": "message is required when not using a template."}, status=400)
+    if use_template and not template_name:
+        return Response({"error": "template_name is required when use_template is true."}, status=400)
+
+    profiles = DonorProfile.objects.filter(
+        id__in=donor_ids,
+        whatsapp_consent=True,
+    ).select_related("user")
+
+    from .whatsapp_service import send_whatsapp_text, send_whatsapp_template
+    sent, failed, skipped, no_consent = 0, 0, 0, len(donor_ids) - profiles.count()
+
+    for profile in profiles:
+        phone = profile.whatsapp_number or profile.phone_number
+        if not phone:
+            skipped += 1
+            continue
+
+        if use_template:
+            result = send_whatsapp_template(
+                phone_number=phone,
+                template_name=template_name,
+                recipient=profile.user,
+            )
+        else:
+            result = send_whatsapp_text(
+                phone_number=phone,
+                message=message,
+                recipient=profile.user,
+            )
+
+        if result.get("skipped"):
+            skipped += 1
+        elif result.get("success"):
+            sent += 1
+        else:
+            failed += 1
+
+    return Response({
+        "message": f"Bulk WhatsApp complete. Sent: {sent}, Failed: {failed}, Skipped: {skipped}, No consent: {no_consent}.",
+        "sent": sent,
+        "failed": failed,
+        "skipped": skipped,
+        "no_consent": no_consent,
+        "total_targeted": len(donor_ids),
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def donor_whatsapp_consent_view(request):
+    from donors.models import DonorProfile as DP
+    profile = DP.objects.filter(user=request.user).first()
+    if not profile:
+        return Response({"error": "Donor profile not found."}, status=404)
+
+    consent = request.data.get("whatsapp_consent")
+    whatsapp_number = (request.data.get("whatsapp_number") or "").strip()
+
+    if consent is not None:
+        profile.whatsapp_consent = bool(consent)
+    if whatsapp_number:
+        profile.whatsapp_number = whatsapp_number
+
+    update_fields = []
+    if consent is not None:
+        update_fields.append("whatsapp_consent")
+    if whatsapp_number:
+        update_fields.append("whatsapp_number")
+
+    if update_fields:
+        profile.save(update_fields=update_fields)
+
+    return Response({
+        "whatsapp_consent": profile.whatsapp_consent,
+        "whatsapp_number": profile.whatsapp_number,
     })

@@ -20,6 +20,7 @@ import Notifications from "./pages/Notifications";
 import CampCheckin from "./pages/CampCheckin";
 import AdminCampaignHistory from "./pages/AdminCampaignHistory";
 import AdminSMS from "./pages/AdminSMS";
+import AdminWhatsApp from "./pages/AdminWhatsApp";
 
 function App() {
   return (
@@ -91,6 +92,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminSMS />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-whatsapp"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminWhatsApp />
             </ProtectedRoute>
           }
         />

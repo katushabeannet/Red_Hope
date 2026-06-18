@@ -40,3 +40,30 @@ export const exportCampaignHistoryCSV = (blood_group = "") => {
   const params = blood_group ? `?blood_group=${encodeURIComponent(blood_group)}` : "";
   window.open(`${api.defaults.baseURL}/admin/campaign-history/export/${params}`, "_blank");
 };
+
+// Campaign Response Tracking
+export const getCampaignResponses = async (performanceId, { status = "" } = {}) => {
+  const params = status ? { status } : {};
+  const response = await api.get(`/admin/campaign-history/${performanceId}/responses/`, { params });
+  return response.data;
+};
+
+export const updateCampaignResponse = async (responseId, data) => {
+  const response = await api.patch(`/admin/campaign-responses/${responseId}/`, data);
+  return response.data;
+};
+
+export const bulkUpdateCampaignResponses = async (performanceId, { response_ids, status }) => {
+  const response = await api.post(`/admin/campaign-history/${performanceId}/responses/bulk/`, {
+    response_ids,
+    status,
+  });
+  return response.data;
+};
+
+export const exportCampaignResponsesCSV = (performanceId) => {
+  window.open(
+    `${api.defaults.baseURL}/admin/campaign-history/${performanceId}/responses/export/`,
+    "_blank"
+  );
+};
