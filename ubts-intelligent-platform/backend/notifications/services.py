@@ -303,11 +303,17 @@ def generate_blood_demand_notifications(
     title,
     message,
     created_by=None,
+    urgency_level="HIGH",
+    units_needed=1,
+    hospital_name="",
 ):
     alert = BloodDemandAlert.objects.create(
         blood_group=blood_group,
         title=title,
         message=message,
+        urgency_level=urgency_level,
+        units_needed=units_needed,
+        hospital_name=hospital_name,
         created_by=created_by,
     )
 
@@ -323,8 +329,10 @@ def generate_blood_demand_notifications(
         if not is_eligible:
             continue
 
+        hospital_note = f" at {hospital_name}" if hospital_name else ""
         notification_message = (
-            f"{message} UBTS currently needs {blood_group} blood donors. "
+            f"[{urgency_level}] {message} UBTS currently needs {blood_group} blood donors"
+            f"{hospital_note}. {units_needed} unit(s) required. "
             "Your donation may help save lives."
         )
 
@@ -333,12 +341,15 @@ def generate_blood_demand_notifications(
             title=title,
             message=notification_message,
             notification_type="BLOOD_DEMAND",
-            action_label="Open Dashboard",
-            action_url="/donor-dashboard",
+            action_label="View Alert",
+            action_url="/blood-demand-alerts",
         )
 
         if created:
             created_notifications.append(notification)
+
+    alert.notified_count = len(created_notifications)
+    alert.save(update_fields=["notified_count"])
 
     return {
         "alert": alert,

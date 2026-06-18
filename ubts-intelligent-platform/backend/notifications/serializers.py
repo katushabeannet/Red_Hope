@@ -20,6 +20,8 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 
 class BloodDemandAlertSerializer(serializers.ModelSerializer):
+    created_by_email = serializers.SerializerMethodField()
+
     class Meta:
         model = BloodDemandAlert
         fields = [
@@ -27,9 +29,18 @@ class BloodDemandAlertSerializer(serializers.ModelSerializer):
             "blood_group",
             "title",
             "message",
+            "urgency_level",
+            "units_needed",
+            "hospital_name",
             "status",
+            "notified_count",
+            "resolved_at",
+            "created_by_email",
             "created_at",
         ]
+
+    def get_created_by_email(self, obj):
+        return getattr(obj.created_by, "email", None) if obj.created_by else None
 
 
 class SMSLogSerializer(serializers.ModelSerializer):

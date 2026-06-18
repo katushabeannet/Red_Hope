@@ -212,40 +212,35 @@ def generate_camp_proximity_alerts_view(request):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def generate_blood_demand_alerts_view(request):
-    blood_group = request.data.get("blood_group")
-    title = request.data.get("title")
-    message = request.data.get("message")
+    blood_group = (request.data.get("blood_group") or "").strip()
+    title = (request.data.get("title") or "").strip()
+    message = (request.data.get("message") or "").strip()
+    urgency_level = (request.data.get("urgency_level") or "HIGH").strip().upper()
+    units_needed = int(request.data.get("units_needed") or 1)
+    hospital_name = (request.data.get("hospital_name") or "").strip()
 
-    if not blood_group:
-        return Response(
-            {"error": "blood_group is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    for field, val in [("blood_group", blood_group), ("title", title), ("message", message)]:
+        if not val:
+            return Response({"error": f"{field} is required."}, status=400)
 
-    if not title:
-        return Response(
-            {"error": "title is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    if not message:
-        return Response(
-            {"error": "message is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    if urgency_level not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+        urgency_level = "HIGH"
 
     result = generate_blood_demand_notifications(
         blood_group=blood_group,
         title=title,
         message=message,
         created_by=request.user,
+        urgency_level=urgency_level,
+        units_needed=units_needed,
+        hospital_name=hospital_name,
     )
 
     return Response(
         {
-            "message": "Critical blood demand notifications generated successfully.",
+            "message": "Blood demand alert created and donors notified.",
             "alert": BloodDemandAlertSerializer(result["alert"]).data,
-            "created_count": result["created_count"],
+            "notified_count": result["created_count"],
         },
         status=status.HTTP_201_CREATED,
     )
@@ -254,15 +249,164 @@ def generate_blood_demand_alerts_view(request):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def blood_demand_alerts_list_view(request):
-    alerts = BloodDemandAlert.objects.all()
-    serializer = BloodDemandAlertSerializer(alerts, many=True)
+    from django.db.models import Q as DQ
+    import math as _math
 
-    return Response(
-        {
-            "total_alerts": alerts.count(),
-            "alerts": serializer.data,
-        }
-    )
+    status_filter = request.query_params.get("status", "").strip().upper()
+    bg_filter = request.query_params.get("blood_group", "").strip()
+    urgency_filter = request.query_params.get("urgency_level", "").strip().upper()
+    search = request.query_params.get("search", "").strip()
+    page = max(1, int(request.query_params.get("page", 1)))
+    page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
+
+    alerts = BloodDemandAlert.objects.select_related("created_by")
+
+    if status_filter in ("ACTIVE", "RESOLVED"):
+        alerts = alerts.filter(status=status_filter)
+    if bg_filter:
+        alerts = alerts.filter(blood_group=bg_filter)
+    if urgency_filter in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+        alerts = alerts.filter(urgency_level=urgency_filter)
+    if search:
+        alerts = alerts.filter(
+            DQ(title__icontains=search) | DQ(message__icontains=search) | DQ(hospital_name__icontains=search)
+        )
+
+    total = alerts.count()
+    start = (page - 1) * page_size
+    page_alerts = alerts[start: start + page_size]
+
+    return Response({
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": _math.ceil(total / page_size) if total else 1,
+        "active_count": BloodDemandAlert.objects.filter(status="ACTIVE").count(),
+        "resolved_count": BloodDemandAlert.objects.filter(status="RESOLVED").count(),
+        "alerts": BloodDemandAlertSerializer(page_alerts, many=True).data,
+    })
+
+
+@api_view(["GET", "PATCH", "DELETE"])
+@permission_classes([IsAdminUser])
+def blood_demand_alert_detail_view(request, alert_id):
+    try:
+        alert = BloodDemandAlert.objects.get(id=alert_id)
+    except BloodDemandAlert.DoesNotExist:
+        return Response({"error": "Alert not found."}, status=404)
+
+    if request.method == "GET":
+        return Response(BloodDemandAlertSerializer(alert).data)
+
+    if request.method == "PATCH":
+        allowed = ["title", "message", "urgency_level", "units_needed", "hospital_name", "status"]
+        for field in allowed:
+            if field in request.data:
+                val = request.data[field]
+                if field == "urgency_level":
+                    val = (val or "HIGH").upper()
+                    if val not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+                        continue
+                if field == "status":
+                    val = (val or "ACTIVE").upper()
+                    if val not in ("ACTIVE", "RESOLVED"):
+                        continue
+                    if val == "RESOLVED" and alert.status != "RESOLVED":
+                        from django.utils import timezone
+                        alert.resolved_at = timezone.now()
+                    elif val == "ACTIVE":
+                        alert.resolved_at = None
+                setattr(alert, field, val)
+        alert.save()
+        return Response(BloodDemandAlertSerializer(alert).data)
+
+    if request.method == "DELETE":
+        alert.delete()
+        return Response({"message": "Alert deleted."}, status=204)
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def blood_demand_alert_resolve_view(request, alert_id):
+    from django.utils import timezone
+    try:
+        alert = BloodDemandAlert.objects.get(id=alert_id)
+    except BloodDemandAlert.DoesNotExist:
+        return Response({"error": "Alert not found."}, status=404)
+
+    if alert.status == "ACTIVE":
+        alert.status = "RESOLVED"
+        alert.resolved_at = timezone.now()
+    else:
+        alert.status = "ACTIVE"
+        alert.resolved_at = None
+    alert.save(update_fields=["status", "resolved_at"])
+
+    return Response({
+        "message": f"Alert marked as {alert.status}.",
+        "alert": BloodDemandAlertSerializer(alert).data,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def blood_demand_alert_notify_view(request, alert_id):
+    """Re-send notifications to matching eligible donors for an existing alert."""
+    try:
+        alert = BloodDemandAlert.objects.get(id=alert_id)
+    except BloodDemandAlert.DoesNotExist:
+        return Response({"error": "Alert not found."}, status=404)
+
+    if alert.status == "RESOLVED":
+        return Response({"error": "Cannot re-notify for a resolved alert."}, status=400)
+
+    from .services import donor_is_campaign_ready
+
+    donors = DonorProfile.objects.select_related("user").filter(blood_group=alert.blood_group)
+    sent = 0
+    for profile in donors:
+        is_eligible, _, _ = donor_is_campaign_ready(profile)
+        if not is_eligible:
+            continue
+        hospital_note = f" at {alert.hospital_name}" if alert.hospital_name else ""
+        msg = (
+            f"[{alert.urgency_level}] {alert.message} UBTS needs {alert.blood_group} blood"
+            f"{hospital_note}. {alert.units_needed} unit(s) required."
+        )
+        _, created = create_notification(
+            recipient=profile.user,
+            title=alert.title,
+            message=msg,
+            notification_type="BLOOD_DEMAND",
+            action_label="View Alert",
+            action_url="/blood-demand-alerts",
+        )
+        if created:
+            sent += 1
+
+    alert.notified_count = (alert.notified_count or 0) + sent
+    alert.save(update_fields=["notified_count"])
+
+    return Response({"message": f"Re-notified {sent} donor(s).", "notified": sent})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def donor_blood_demand_alerts_view(request):
+    """Donor-facing: active alerts (all groups or their specific group)."""
+    from donors.models import DonorProfile as DP
+    profile = DP.objects.filter(user=request.user).first()
+    bg = profile.blood_group if profile else None
+
+    alerts = BloodDemandAlert.objects.filter(status="ACTIVE")
+    if bg:
+        from django.db.models import Q as DQ
+        alerts = alerts.filter(DQ(blood_group=bg) | DQ(blood_group="ALL"))
+
+    return Response({
+        "donor_blood_group": bg,
+        "alerts": BloodDemandAlertSerializer(alerts, many=True).data,
+    })
 
 
 # ── SMS Admin Views ─────────────────────────────────────────────────────────
