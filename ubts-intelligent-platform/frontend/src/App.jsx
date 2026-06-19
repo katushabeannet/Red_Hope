@@ -31,16 +31,18 @@ import BloodDemandAlerts from "./pages/BloodDemandAlerts";
 function App() {
   return (
     <Routes>
+      {/* Auth routes — standalone (no header / footer) */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
+
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/process" element={<Process />} />
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
         <Route path="/chatbot" element={<Chatbot />} />
 
         <Route
