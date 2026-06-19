@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 
 import MainLayout from "./layouts/MainLayout";
+import AuthLayout from "./layouts/AuthLayout";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 import Home from "./pages/Home";
@@ -8,35 +10,41 @@ import About from "./pages/About";
 import Process from "./pages/Process";
 import Campaigns from "./pages/Campaigns";
 import Contact from "./pages/Contact";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+
 import Chatbot from "./pages/Chatbot";
+
 import DonorDashboard from "./pages/DonorDashboard";
+import MyProfile from "./pages/MyProfile";
+import Notifications from "./pages/Notifications";
+import BloodDemandAlerts from "./pages/BloodDemandAlerts";
+
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCamps from "./pages/AdminCamps";
 import AdminDonors from "./pages/AdminDonors";
-import NotFound from "./pages/NotFound";
-import MyProfile from "./pages/MyProfile";
 import PersonalizedCampaign from "./pages/PersonalizedCampaign";
-import Notifications from "./pages/Notifications";
-import CampCheckin from "./pages/CampCheckin";
 import AdminCampaignHistory from "./pages/AdminCampaignHistory";
 import AdminSMS from "./pages/AdminSMS";
 import AdminWhatsApp from "./pages/AdminWhatsApp";
 import AdminBloodDemand from "./pages/AdminBloodDemand";
-import BloodDemandAlerts from "./pages/BloodDemandAlerts";
+
+import CampCheckin from "./pages/CampCheckin";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
     <Routes>
-      {/* Auth routes — standalone (no header / footer) */}
+      {/* Standalone authentication pages */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
 
+      {/* Public website pages */}
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
@@ -44,7 +52,11 @@ function App() {
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/chatbot" element={<Chatbot />} />
+      </Route>
 
+      {/* Protected dashboard pages */}
+      <Route element={<AuthLayout />}>
+        {/* Donor routes */}
         <Route
           path="/donor-dashboard"
           element={
@@ -54,6 +66,35 @@ function App() {
           }
         />
 
+        <Route
+          path="/my-profile"
+          element={
+            <ProtectedRoute allowedRoles={["DONOR"]}>
+              <MyProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/blood-demand-alerts"
+          element={
+            <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
+              <BloodDemandAlerts />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Shared routes */}
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin routes */}
         <Route
           path="/admin-dashboard"
           element={
@@ -82,15 +123,14 @@ function App() {
         />
 
         <Route
-          path="/my-profile"
+          path="/personalized-campaign"
           element={
-            <ProtectedRoute allowedRoles={["DONOR"]}>
-              <MyProfile />
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <PersonalizedCampaign />
             </ProtectedRoute>
           }
-        />        
+        />
 
-        <Route path="/camp-checkin/:campId" element={<CampCheckin />} />
         <Route
           path="/campaign-history"
           element={
@@ -99,6 +139,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/admin-sms"
           element={
@@ -107,6 +148,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/admin-whatsapp"
           element={
@@ -115,23 +157,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<NotFound />} />
-        <Route
-          path="/personalized-campaign"
-          element={
-            <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <PersonalizedCampaign />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
-              <Notifications />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/admin-blood-demand"
           element={
@@ -140,15 +166,19 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path="/blood-demand-alerts"
+          path="/camp-checkin/:campId"
           element={
-            <ProtectedRoute allowedRoles={["DONOR", "ADMIN"]}>
-              <BloodDemandAlerts />
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <CampCheckin />
             </ProtectedRoute>
           }
         />
       </Route>
+
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
