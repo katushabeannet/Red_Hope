@@ -1,106 +1,177 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { RiMailLine, RiShieldCheckLine } from "react-icons/ri";
+import { Link, NavLink } from "react-router-dom";
+import { RiSunLine, RiMoonLine, RiCheckLine } from "react-icons/ri";
 
 import { forgotPassword } from "../services/authService";
+import { useTheme } from "../context/ThemeContext";
+
+const FEATURES = [
+  "Secure one-time password reset link",
+  "Link expires automatically for safety",
+  "Your donor history stays fully intact",
+  "256-bit encrypted, end to end",
+];
+
+function AuthDrop() {
+  return (
+    <svg width="36" height="44" viewBox="0 0 36 44" fill="none">
+      <path d="M18 2C18 2 2 19 2 28C2 37.4 9.2 42 18 42C26.8 42 34 37.4 34 28C34 19 18 2 18 2Z" fill="url(#forgotDrop)" />
+      <path d="M12 28.5C12 33 14.6 36 18 36" stroke="rgba(255,255,255,.4)" strokeWidth="2" strokeLinecap="round" />
+      <defs>
+        <linearGradient id="forgotDrop" x1="18" y1="2" x2="18" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#E8314F" /><stop offset="1" stopColor="#6B0F1A" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+function BtnSpinner() {
+  return <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,.35)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin .7s linear infinite" }} />;
+}
 
 function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const { dark, toggle } = useTheme();
+  const [email, setEmail]   = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
+  const [sent, setSent]     = useState(false);
+  const [errMsg, setErrMsg] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
+    setErrMsg("");
+    if (!email || !email.includes("@")) { setErrMsg("Please enter a valid email address."); return; }
     try {
       setLoading(true);
       await forgotPassword(email);
       setSent(true);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setErrMsg("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center bg-white px-6 dark:bg-slate-900">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-950">
-            <RiShieldCheckLine size={28} className="text-red-700 dark:text-red-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Forgot Password
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Enter your registered email address. If an account exists, we will
-            send a password reset link.
-          </p>
+    <div className="auth-root">
+      {/* ── LEFT PANEL ── */}
+      <div
+        className="auth-left"
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1200&q=80')", backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        <svg className="auth-deco-drop d1" viewBox="0 0 36 44" fill="none"><path d="M18 2C18 2 2 19 2 28C2 37.4 9.2 42 18 42C26.8 42 34 37.4 34 28C34 19 18 2 18 2Z" fill="white" /></svg>
+        <svg className="auth-deco-drop d2" viewBox="0 0 36 44" fill="none"><path d="M18 2C18 2 2 19 2 28C2 37.4 9.2 42 18 42C26.8 42 34 37.4 34 28C34 19 18 2 18 2Z" fill="white" /></svg>
+
+        <div className="auth-float-stat s1">
+          <div className="rh-display" style={{ fontSize: 26, fontWeight: 800, lineHeight: 1 }}>85K+</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,.7)", fontWeight: 500, marginTop: 3 }}>Lives Impacted</div>
+        </div>
+        <div className="auth-float-stat s2">
+          <div className="rh-display" style={{ fontSize: 26, fontWeight: 800, lineHeight: 1 }}>12K+</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,.7)", fontWeight: 500, marginTop: 3 }}>Active Donors</div>
         </div>
 
-        {sent ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-800 dark:bg-emerald-900/20">
-            <p className="font-semibold text-emerald-700 dark:text-emerald-400">
-              Reset link sent
-            </p>
-            <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-300">
-              If an account with <strong>{email}</strong> exists, you will
-              receive a password reset email shortly. Check your inbox.
-            </p>
-            <Link
-              to="/login"
-              className="mt-4 inline-block text-sm font-semibold text-red-700 hover:underline dark:text-red-400"
-            >
-              Back to Sign In
-            </Link>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20">
-                {error}
-              </div>
-            )}
-
+        <div className="auth-left-inner">
+          <NavLink to="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+            <div className="animate-rh-float"><AuthDrop /></div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email Address
-              </label>
-              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-800">
-                <RiMailLine className="text-slate-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="your@email.com"
-                  className="w-full bg-transparent p-3 text-sm text-slate-900 outline-none dark:text-slate-50"
-                />
-              </div>
+              <div className="rh-display" style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1 }}>RedHope</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,.55)", fontWeight: 500, letterSpacing: ".06em" }}>One Drop. One Life. One Hope.</div>
             </div>
+          </NavLink>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-red-700 px-4 py-3 font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60"
-            >
-              {loading ? "Sending..." : "Send Reset Link"}
-            </button>
+          <div style={{ margin: "auto 0", padding: "20px 0" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.2)", color: "rgba(255,255,255,.85)", fontSize: 11, fontWeight: 600, letterSpacing: ".1em", textTransform: "uppercase", padding: "6px 16px", borderRadius: 20, marginBottom: 24 }}>
+              Account Recovery
+            </div>
+            <h2 className="rh-display" style={{ fontSize: "clamp(28px,3.2vw,44px)", fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 16 }}>
+              Let's Get You<br />Back <span style={{ color: "#FFD0DA" }}>In.</span>
+            </h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,.72)", lineHeight: 1.75, maxWidth: 360, marginBottom: 28 }}>
+              It happens to everyone. Enter your email and we'll send you a secure
+              link to reset your password and get back to saving lives.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {FEATURES.map((f) => (
+                <div key={f} style={{ display: "flex", alignItems: "center", gap: 12, color: "rgba(255,255,255,.82)", fontSize: 13.5 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, color: "#fff", fontWeight: 700 }}>✓</div>
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
 
-            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-              Remembered your password?{" "}
+          <div style={{ marginTop: "auto", paddingTop: 28, borderTop: "1px solid rgba(255,255,255,.12)", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+            {["UBTS Certified", "256-bit Encrypted", "Makerere University"].map((t) => (
+              <div key={t} style={{ display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,.55)", fontSize: 12 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,.3)" }} />{t}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL ── */}
+      <div className="auth-right">
+        <button onClick={toggle} style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)" }} aria-label="Toggle dark mode">
+          {dark ? <RiSunLine size={16} /> : <RiMoonLine size={16} />}
+        </button>
+
+        <div className="auth-form-box">
+          {sent ? (
+            /* ── SUCCESS STATE ── */
+            <div style={{ textAlign: "center", padding: "20px 0", animation: "rh-fadeup .5s cubic-bezier(.16,1,.3,1) both" }}>
+              <div style={{ width: 74, height: 74, borderRadius: "50%", background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 22px" }}>
+                <RiCheckLine size={34} style={{ color: "var(--cr)" }} />
+              </div>
+              <h2 className="rh-display" style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", marginBottom: 10 }}>Check Your Inbox</h2>
+              <p style={{ fontSize: 14, color: "var(--ink-l)", lineHeight: 1.7, marginBottom: 28 }}>
+                If an account with <strong style={{ color: "var(--ink)" }}>{email}</strong> exists, you'll receive a password reset link shortly.
+              </p>
               <Link
                 to="/login"
-                className="font-semibold text-red-700 hover:text-red-800 dark:text-red-400"
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 36px", borderRadius: 12, background: "linear-gradient(135deg, var(--cr), var(--cr-dk))", color: "#fff", fontFamily: "'Poppins', sans-serif", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 18px rgba(196,30,58,.3)" }}
               >
-                Sign in
+                Back to Sign In →
               </Link>
-            </p>
-          </form>
-        )}
+              <div style={{ marginTop: 20 }}>
+                <Link to="/" style={{ fontSize: 12.5, color: "var(--ink-l)", textDecoration: "none" }}>← Back to RedHope Home</Link>
+              </div>
+            </div>
+          ) : (
+            /* ── EMAIL FORM ── */
+            <>
+              <div style={{ width: 58, height: 58, borderRadius: 16, background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, marginBottom: 20 }}>
+                📧
+              </div>
+              <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Account Recovery</p>
+              <h1 className="rh-display" style={{ fontSize: "clamp(24px,3vw,34px)", fontWeight: 800, color: "var(--ink)", marginBottom: 6, lineHeight: 1.2 }}>Forgot Password?</h1>
+              <p style={{ fontSize: 14, color: "var(--ink-l)", marginBottom: 28, lineHeight: 1.6 }}>
+                No worries — enter the email linked to your RedHope account and we'll send you a password reset link.
+              </p>
+
+              {errMsg && <div className="auth-flash danger"><span>⚠</span><span>{errMsg}</span></div>}
+
+              <form onSubmit={handleSubmit}>
+                <div className="auth-field">
+                  <label>Email Address</label>
+                  <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrMsg(""); }} placeholder="your@email.com" autoComplete="email" />
+                </div>
+                <button type="submit" className="auth-submit" disabled={loading}>
+                  {loading ? <><BtnSpinner /> Sending…</> : "Send Reset Link →"}
+                </button>
+              </form>
+
+              <p style={{ textAlign: "center", marginTop: 20, fontSize: 13.5, color: "var(--ink-l)" }}>
+                Remembered your password?{" "}
+                <Link to="/login" style={{ color: "var(--cr)", fontWeight: 700, textDecoration: "none" }}>Sign In</Link>
+              </p>
+              <div style={{ textAlign: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--rh-border)" }}>
+                <Link to="/" style={{ fontSize: 12.5, color: "var(--ink-l)", textDecoration: "none" }}>← Back to RedHope Home</Link>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

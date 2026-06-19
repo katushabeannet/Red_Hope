@@ -340,6 +340,13 @@ function MainLayout() {
 
             {/* Actions */}
             <div className="rh-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={toggle}
+                style={{ width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)", transition: "all .2s" }}
+                aria-label="Toggle dark mode"
+              >
+                {dark ? <RiSunLine size={16} /> : <RiMoonLine size={16} />}
+              </button>
               <NavLink to="/login" className="rh-btn-login">Log In</NavLink>
               <NavLink to="/register" className="rh-btn-signup">Sign Up</NavLink>
             </div>
