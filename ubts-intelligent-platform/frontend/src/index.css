@@ -1,8 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ─── Authenticated-app design tokens ─────────────────────────── */
 :root {
   --crimson: #c0162c;
   --crimson-dark: #990000;
@@ -13,6 +13,21 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
+
+  /* ─── RedHope public-page design system ──────────────────────── */
+  --cr:          #C41E3A;
+  --cr-dk:       #8B1A1A;
+  --cr-lt:       #E8314F;
+  --cr-xl:       #FDEEF1;
+  --gold:        #D97706;
+  --gold-l:      #FEF3C7;
+  --ink:         #1A1F2E;
+  --ink-s:       #4A5568;
+  --ink-l:       #8898AA;
+  --rh-canvas:   #F7F8FC;
+  --rh-border:   #E2E8F0;
+  --footer-bg:   #2c3e50;
+  --footer-text: #CBD5E0;
 }
 
 .dark {
@@ -26,59 +41,384 @@
   --crimson-light: #1f0a0e;
 }
 
+/* ─── Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-family: 'Poppins', 'Sora', sans-serif; }
 body {
-  margin: 0;
-  font-family: "Sora", sans-serif;
+  font-family: 'Poppins', sans-serif;
   background: var(--surface);
   color: var(--text-primary);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  font-family: "Sora", sans-serif;
-}
-
-/* body {
-  margin: 0;
-  background: var(--surface);
-  color: var(--text-primary);
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-} */
-
-::-webkit-scrollbar {
-  width: 5px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+/* ─── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--rh-canvas); }
+::-webkit-scrollbar-thumb { background: #FFD0DA; border-radius: 10px; }
+
+/* ─── Font utilities ───────────────────────────────────────────── */
+.rh-display { font-family: 'Playfair Display', serif !important; }
+.rh-poppins { font-family: 'Poppins', sans-serif !important; }
+
+/* ─── Animations ───────────────────────────────────────────────── */
+@keyframes rh-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
-
-.leaflet-container {
-  border-radius: 12px;
+@keyframes rh-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-9px); }
 }
-
-@keyframes toast-progress {
-  from {
-    width: 100%;
-  }
-
-  to {
-    width: 0%;
-  }
+@keyframes rh-fadeup {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
+@keyframes rh-pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(196,30,58,.45); }
+  70%  { box-shadow: 0 0 0 16px rgba(196,30,58,0);  }
+  100% { box-shadow: 0 0 0 0   rgba(196,30,58,0);  }
+}
+@keyframes rh-scale-x {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes toast-progress { from { width:100%; } to { width:0%; } }
 @keyframes fade-pop {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity:0; transform:translateY(-6px) scale(.96); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
 }
+
+.animate-rh-marquee       { animation: rh-marquee 24s linear infinite; }
+.animate-rh-marquee:hover { animation-play-state: paused; }
+.animate-rh-float         { animation: rh-float 3s ease-in-out infinite; }
+.animate-rh-fadeup        { animation: rh-fadeup .7s ease forwards; }
+.animate-rh-pulse         { animation: rh-pulse-ring 2s infinite; }
+
+/* ─── RedHope Header ───────────────────────────────────────────── */
+.rh-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(255,255,255,.82);
+  border-bottom: 1px solid rgba(255,255,255,.5);
+  box-shadow: 0 2px 20px rgba(0,0,0,.08);
+}
+.rh-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.rh-brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cr-dk);
+  line-height: 1;
+}
+.rh-brand-tagline {
+  font-size: 10px;
+  color: var(--ink-l);
+  font-weight: 500;
+  letter-spacing: .04em;
+  margin-top: 2px;
+}
+.rh-nav { flex: 1; display: flex; justify-content: center; gap: 4px; }
+.rh-nav-link {
+  font-family: 'Poppins', sans-serif;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-s);
+  text-decoration: none;
+  transition: all .2s;
+  position: relative;
+}
+.rh-nav-link:hover        { color: var(--cr); background: var(--cr-xl); }
+.rh-nav-link.active       { color: var(--cr); background: var(--cr-xl); }
+.rh-nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--cr);
+}
+.rh-btn-login {
+  font-family: 'Poppins', sans-serif;
+  padding: 9px 20px;
+  border-radius: 50px;
+  border: 1.5px solid var(--rh-border);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  text-decoration: none;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.rh-btn-login:hover { border-color: var(--cr); color: var(--cr); }
+.rh-btn-signup {
+  font-family: 'Poppins', sans-serif;
+  padding: 9px 22px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--cr), var(--cr-dk));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  text-decoration: none;
+  transition: all .2s;
+  box-shadow: 0 4px 12px rgba(196,30,58,.25);
+  white-space: nowrap;
+}
+.rh-btn-signup:hover { box-shadow: 0 6px 20px rgba(196,30,58,.4); transform: translateY(-1px); }
+
+/* ─── Hero gradient overlay ────────────────────────────────────── */
+.rh-hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(139,26,26,.82) 0%, rgba(26,31,46,.7) 100%);
+}
+
+/* ─── Stat hover bar ───────────────────────────────────────────── */
+.rh-stat-item { position: relative; overflow: hidden; }
+.rh-stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--cr);
+  transform: scaleX(0);
+  transition: transform .4s ease;
+}
+.rh-stat-item:hover::before { transform: scaleX(1); }
+
+/* ─── Blood group cards (urgent needs) ────────────────────────── */
+.rh-blood-card {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  padding: 24px 28px;
+  text-align: center;
+  min-width: 130px;
+  flex-shrink: 0;
+  transition: all .2s;
+  cursor: default;
+}
+.rh-blood-card:hover {
+  background: rgba(196,30,58,.25);
+  border-color: var(--cr);
+  transform: translateY(-4px);
+}
+.rh-blood-card.urgent {
+  border-color: rgba(232,49,79,.5);
+  background: rgba(196,30,58,.12);
+}
+
+/* ─── How RedHope works cards ──────────────────────────────────── */
+.rh-how-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 36px 28px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  transition: all .3s;
+}
+.rh-how-card::before {
+  content: attr(data-num);
+  position: absolute;
+  top: 12px; right: 16px;
+  font-family: 'Playfair Display', serif;
+  font-size: 72px;
+  font-weight: 800;
+  color: rgba(196,30,58,.06);
+  line-height: 1;
+  pointer-events: none;
+}
+.rh-how-card:hover {
+  box-shadow: 0 16px 40px rgba(196,30,58,.12);
+  border-color: #FFD0DA;
+  transform: translateY(-4px);
+}
+
+/* ─── FAQ accordion ────────────────────────────────────────────── */
+.rh-faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .4s ease, padding .3s;
+  padding: 0 24px;
+  font-size: 13.5px;
+  color: var(--ink-s);
+  line-height: 1.75;
+}
+.rh-faq-answer.open {
+  max-height: 220px;
+  padding: 0 24px 20px;
+}
+.rh-faq-icon { transition: transform .3s; }
+.rh-faq-item.open .rh-faq-icon { transform: rotate(45deg); }
+
+/* ─── Donor recognition cards ──────────────────────────────────── */
+.rh-recog-card {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,.14);
+  transition: transform .3s, box-shadow .3s;
+  cursor: default;
+}
+.rh-recog-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 50px rgba(0,0,0,.2);
+}
+
+/* ─── Process step cards ────────────────────────────────────────── */
+.rh-process-card {
+  background: #fff;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  transition: all .3s;
+}
+.rh-process-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 40px rgba(196,30,58,.1);
+  border-color: #FFD0DA;
+}
+
+/* ─── Team cards ────────────────────────────────────────────────── */
+.rh-team-card {
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  transition: all .3s;
+}
+.rh-team-card:hover {
+  box-shadow: 0 16px 40px rgba(0,0,0,.12);
+  transform: translateY(-5px);
+  border-color: #FFD0DA;
+}
+
+/* ─── Campaigns camp item ───────────────────────────────────────── */
+.rh-camp-item {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+  transition: box-shadow .25s, transform .25s;
+}
+.rh-camp-item:hover {
+  box-shadow: 0 10px 30px rgba(0,0,0,.1);
+  transform: translateY(-3px);
+}
+@media (max-width: 560px) {
+  .rh-camp-item { grid-template-columns: 1fr; }
+}
+
+/* ─── Info/service cards ────────────────────────────────────────── */
+.rh-info-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 22px;
+  text-align: center;
+  border: 1px solid var(--rh-border);
+  transition: all .3s;
+}
+.rh-info-card:hover { border-color: var(--cr); box-shadow: 0 8px 28px rgba(196,30,58,.1); }
+
+/* ─── Mobile hamburger ──────────────────────────────────────────── */
+.rh-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px; background: none; border: none; }
+.rh-hamburger span { width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all .3s; display: block; }
+.rh-mobile-nav {
+  display: none;
+  position: fixed;
+  inset: 0; top: 72px;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(12px);
+  z-index: 998;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+.rh-mobile-nav.open { display: flex; }
+.rh-mobile-nav a {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  font-family: 'Playfair Display', serif;
+}
+@media (max-width: 900px) {
+  .rh-nav     { display: none; }
+  .rh-actions { display: none; }
+  .rh-hamburger { display: flex !important; }
+}
+
+/* ─── RedHope Footer ────────────────────────────────────────────── */
+.rh-footer { background: var(--footer-bg); color: var(--footer-text); font-family: 'Poppins', sans-serif; }
+.rh-footer-link {
+  font-size: 13.5px;
+  color: var(--footer-text);
+  text-decoration: none;
+  transition: color .2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rh-footer-link::before { content: '›'; color: var(--cr-lt); font-size: 16px; }
+.rh-footer-link:hover { color: #fff; }
+
+/* ─── Section heading underline ────────────────────────────────── */
+.rh-underline { padding-bottom: 18px; position: relative; }
+.rh-underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 48px; height: 3px;
+  background: var(--cr);
+  border-radius: 2px;
+}
+
+/* ─── Sponsor / achievement / service cards ─────────────────────── */
+.rh-sponsor-card {
+  background: #fff; border-radius: 18px; padding: 30px 20px;
+  text-align: center; border: 1px solid var(--rh-border); transition: all .3s;
+}
+.rh-sponsor-card:hover { border-color: var(--cr); box-shadow: 0 8px 28px rgba(196,30,58,.1); transform: translateY(-3px); }
+
+.rh-achieve-card {
+  background: #fff; border-radius: 20px; padding: 32px 24px;
+  text-align: center; border: 1px solid var(--rh-border); transition: all .3s;
+}
+.rh-achieve-card:hover { box-shadow: 0 10px 30px rgba(196,30,58,.1); border-color: #FFD0DA; transform: translateY(-4px); }
+
+/* ─── Generic spin (loading spinner fallback) ───────────────────── */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.rh-service-item {
+  display: flex; gap: 18px; align-items: flex-start;
+  padding: 22px; background: #fff; border-radius: 16px;
+  border: 1px solid var(--rh-border); transition: all .3s;
+}
+.rh-service-item:hover { border-color: var(--cr-xl); box-shadow: 0 4px 18px rgba(196,30,58,.08); }
+
+/* ─── Leaflet ───────────────────────────────────────────────────── */
+.leaflet-container { border-radius: 12px; }
