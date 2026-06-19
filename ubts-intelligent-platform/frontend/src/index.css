@@ -470,3 +470,19 @@ body {
   .auth-right { padding: 32px 20px; background: #fff; }
   .auth-root { height: auto; }
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.45s ease-out both;
+}
