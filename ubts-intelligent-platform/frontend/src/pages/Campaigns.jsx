@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,7 +12,7 @@ import {
 
 import { getActiveCamps } from "../services/donorService";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ───────────────────────────────────────────────────────────────────
 const CAMPAIGN_IMAGES = [
   "https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=600&q=80",
   "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&q=80",
@@ -27,67 +27,82 @@ const CAMPAIGN_IMAGES = [
 ];
 
 const SPONSORS = [
-  { name: "UBTS", subtitle: "Uganda Blood Transfusion Service", url: "https://www.ubts.go.ug" },
-  { name: "MOH Uganda", subtitle: "Ministry of Health", url: "https://www.health.go.ug" },
-  { name: "WHO Uganda", subtitle: "World Health Organization", url: "https://www.afro.who.int/countries/uganda" },
-  { name: "Uganda Red Cross", subtitle: "Uganda Red Cross Society", url: "https://www.redcrossuganda.org" },
+  { name: "UBTS",          subtitle: "Uganda Blood Transfusion Service",    url: "https://www.ubts.go.ug" },
+  { name: "MOH Uganda",    subtitle: "Ministry of Health",                  url: "https://www.health.go.ug" },
+  { name: "WHO Uganda",    subtitle: "World Health Organization",           url: "https://www.afro.who.int/countries/uganda" },
+  { name: "Uganda Red Cross", subtitle: "Uganda Red Cross Society",        url: "https://www.redcrossuganda.org" },
 ];
-const SPONSORS_LOOP = [...SPONSORS, ...SPONSORS, ...SPONSORS];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+const FILTERS = ["All", "Active Now", "Upcoming"];
+
+// ── Helpers ─────────────────────────────────────────────────────────────────────
 function fmtDate(str) {
   if (!str) return "—";
   return new Date(str).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-function CampaignCard({ camp, index }) {
+// ── Sub-components ───────────────────────────────────────────────────────────────
+function CampItem({ camp, index }) {
   const img = CAMPAIGN_IMAGES[index % CAMPAIGN_IMAGES.length];
   const mapsUrl = camp.latitude && camp.longitude
     ? `https://www.google.com/maps/search/?api=1&query=${camp.latitude},${camp.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${camp.venue}, ${camp.district}, Uganda`)}`;
 
+  const isActive = camp.status === "ACTIVE";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.4, delay: (index % 3) * 0.08 }}
-      className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
+      transition={{ duration: 0.4, delay: (index % 4) * 0.06 }}
+      className="rh-camp-item"
     >
-      <div className="relative h-[200px] overflow-hidden">
-        <img src={img} alt={camp.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" />
-        <span className="absolute left-3 top-3 rounded-full bg-red-700 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow">
+      {/* Image (left) */}
+      <div style={{ overflow: "hidden", position: "relative" }}>
+        <img src={img} alt={camp.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform .5s" }}
+          onMouseEnter={e => (e.target.style.transform = "scale(1.06)")}
+          onMouseLeave={e => (e.target.style.transform = "scale(1)")}
+        />
+        <span style={{ position: "absolute", top: 12, left: 12, background: "var(--cr)", color: "#fff", borderRadius: 4, padding: "2px 10px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>
           {camp.district}
         </span>
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${camp.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-slate-100 text-slate-600"}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${camp.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-400"}`} />
-          {camp.status}
+
+      {/* Text (right) */}
+      <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
+        {/* Status badge */}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, width: "fit-content", background: isActive ? "#D1FAE5" : "#FEF3C7", color: isActive ? "#065F46" : "#92400E", borderRadius: 4, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "#10B981" : "#D97706" }} />
+          {isActive ? "Active Now" : "Upcoming"}
         </span>
-        <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-50">{camp.name}</h3>
-        <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
-          <RiMapPinLine size={15} className="mt-0.5 shrink-0 text-red-600" />
-          <span>{camp.venue}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-          <RiCalendarLine size={15} className="shrink-0 text-red-600" />
-          <span>{fmtDate(camp.start_date)}{camp.end_date && camp.end_date !== camp.start_date ? ` – ${fmtDate(camp.end_date)}` : ""}</span>
-        </div>
+
+        {/* Name */}
+        <h3 className="rh-display" style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)", lineHeight: 1.25 }}>{camp.name}</h3>
+
+        {/* Details */}
+        <p style={{ fontSize: 13, color: "var(--ink-s)", display: "flex", alignItems: "flex-start", gap: 6 }}>
+          <RiMapPinLine size={14} style={{ color: "var(--cr)", marginTop: 2, flexShrink: 0 }} /> {camp.venue}
+        </p>
+        <p style={{ fontSize: 13, color: "var(--ink-s)", display: "flex", alignItems: "center", gap: 6 }}>
+          <RiCalendarLine size={14} style={{ color: "var(--cr)", flexShrink: 0 }} />
+          {fmtDate(camp.start_date)}{camp.end_date && camp.end_date !== camp.start_date ? ` – ${fmtDate(camp.end_date)}` : ""}
+        </p>
         {camp.contact_phone && (
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <RiPhoneLine size={15} className="shrink-0 text-red-600" />
-            <a href={`tel:${camp.contact_phone}`} className="hover:text-red-700 hover:underline">{camp.contact_phone}</a>
-          </div>
+          <p style={{ fontSize: 13, color: "var(--ink-s)", display: "flex", alignItems: "center", gap: 6 }}>
+            <RiPhoneLine size={14} style={{ color: "var(--cr)", flexShrink: 0 }} />
+            <a href={`tel:${camp.contact_phone}`} style={{ color: "inherit", textDecoration: "none" }}>{camp.contact_phone}</a>
+          </p>
         )}
-        <div className="mt-auto flex items-center gap-3 pt-3">
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
           <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-800">
-            <RiMapPinLine size={14} /> Get Directions
+            style={{ flex: 1, background: "var(--cr)", color: "#fff", borderRadius: 6, padding: "9px 0", textAlign: "center", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            <RiMapPinLine size={13} /> Directions
           </a>
           <Link to={`/camp-checkin/${camp.id}`}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-700 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20">
+            style={{ flex: 1, border: "1.5px solid var(--cr)", color: "var(--cr)", borderRadius: 6, padding: "9px 0", textAlign: "center", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
             Learn More
           </Link>
         </div>
@@ -96,30 +111,12 @@ function CampaignCard({ camp, index }) {
   );
 }
 
-function SponsorCard({ sponsor }) {
-  return (
-    <div className="mx-3 flex min-w-[240px] flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
-        <RiDropLine size={28} className="text-red-700" />
-      </div>
-      <p className="text-center text-base font-bold text-slate-900 dark:text-slate-50">{sponsor.name}</p>
-      <p className="text-center text-xs text-slate-500">{sponsor.subtitle}</p>
-      <a href={sponsor.url} target="_blank" rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 hover:underline dark:text-red-400">
-        Visit Website <RiExternalLinkLine size={11} />
-      </a>
-    </div>
-  );
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Main Component ───────────────────────────────────────────────────────────────
 function Campaigns() {
-  const [camps, setCamps] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const trackRef = useRef(null);
-  const posRef = useRef(0);
-  const rafRef = useRef(null);
+  const [camps, setCamps]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
+  const [activeFilter, setFilter] = useState("All");
 
   useEffect(() => {
     getActiveCamps()
@@ -128,111 +125,135 @@ function Campaigns() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    const totalWidth = track.scrollWidth / 3;
-    const step = () => {
-      posRef.current -= 0.5;
-      if (Math.abs(posRef.current) >= totalWidth) posRef.current = 0;
-      track.style.transform = `translateX(${posRef.current}px)`;
-      rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
+  const filtered = camps.filter((c) => {
+    if (activeFilter === "All") return true;
+    if (activeFilter === "Active Now") return c.status === "ACTIVE";
+    if (activeFilter === "Upcoming") return c.status !== "ACTIVE";
+    return true;
+  });
 
   return (
-    <div className="bg-white dark:bg-slate-900">
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
 
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: "50vh" }}>
-        <div className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1920&q=80')" }} />
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative z-10 mx-auto max-w-4xl px-6 py-20 text-center">
+      {/* ── HERO ────────────────────────────────────────────────────────────── */}
+      <section style={{ position: "relative", minHeight: "58vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="rh-hero-overlay" style={{ position: "absolute", inset: 0 }} />
+        <div style={{ position: "relative", zIndex: 10, maxWidth: 780, padding: "96px 28px", textAlign: "center" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-400/40 bg-red-700/30 px-4 py-1.5 text-sm font-semibold uppercase tracking-widest text-red-300 backdrop-blur-sm">
-              <RiDropLine size={14} /> Blood Donation Drives
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#fff", backdropFilter: "blur(8px)", marginBottom: 22 }}>
+              <RiDropLine size={13} /> Blood Donation Drives
             </span>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight text-white lg:text-6xl">
-              Active Campaigns <span className="text-red-400">Near You</span>
+            <h1 className="rh-display" style={{ fontSize: "clamp(34px,6vw,64px)", fontWeight: 800, color: "#fff", lineHeight: 1.08, marginBottom: 18 }}>
+              Active Campaigns{" "}
+              <span style={{ color: "#FFB3C1" }}>Near You</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/80">
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", lineHeight: 1.75, maxWidth: 540, margin: "0 auto 36px" }}>
               Find blood donation camps currently running across Uganda. Every donation saves up to three lives.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <button onClick={() => document.getElementById("campaigns-list")?.scrollIntoView({ behavior: "smooth" })}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-7 py-3.5 font-semibold text-white shadow-lg transition hover:bg-red-800">
-                <RiMapPinLine size={18} /> Browse Campaigns
-              </button>
-              <Link to="/login" className="inline-flex items-center gap-2 rounded-xl border-2 border-white px-7 py-3 font-semibold text-white transition hover:bg-white/10">
-                Donor Login
-              </Link>
-            </div>
+            <button
+              onClick={() => document.getElementById("campaigns-list")?.scrollIntoView({ behavior: "smooth" })}
+              style={{ borderRadius: 50, background: "linear-gradient(135deg,var(--cr),var(--cr-dk))", color: "#fff", padding: "14px 32px", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 8px 28px rgba(196,30,58,.35)" }}
+            >
+              Browse Campaigns
+            </button>
           </motion.div>
         </div>
       </section>
 
-      {/* ── ALL CAMPAIGNS ────────────────────────────────────────────────── */}
-      <section id="campaigns-list" className="bg-white py-20 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-6 lg:px-12">
-          <div className="mb-12 text-center">
-            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <span className="mb-3 inline-block rounded-full bg-red-100 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-red-700 dark:bg-red-950 dark:text-red-400">
-                Donation Drives
-              </span>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 lg:text-4xl">Currently Running Campaigns</h2>
-              <p className="mx-auto mt-3 max-w-xl text-slate-600 dark:text-slate-400">
-                All active blood donation camps organised by UBTS and partner institutions across Uganda.
-              </p>
-            </motion.div>
+      {/* ── ALL CAMPAIGNS ───────────────────────────────────────────────────── */}
+      <section id="campaigns-list" style={{ background: "#fff", padding: "88px 0" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
+          {/* Header + filter */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 44 }}>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Donation Drives</p>
+              <h2 className="rh-display rh-underline" style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 800, color: "var(--ink)" }}>
+                All Campaigns
+              </h2>
+            </div>
+            {/* Filter pills */}
+            <div style={{ display: "flex", gap: 8 }}>
+              {FILTERS.map((f) => (
+                <button key={f} onClick={() => setFilter(f)}
+                  style={{ borderRadius: 50, padding: "8px 20px", fontSize: 13, fontWeight: 600, border: "1.5px solid", cursor: "pointer", transition: "all .2s",
+                    background: activeFilter === f ? "var(--cr)" : "#fff",
+                    color: activeFilter === f ? "#fff" : "var(--ink-s)",
+                    borderColor: activeFilter === f ? "var(--cr)" : "var(--rh-border)" }}>
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* Loading */}
           {loading && (
-            <div className="flex flex-col items-center justify-center gap-4 py-24 text-slate-500">
-              <RiLoaderLine size={40} className="animate-spin text-red-700" />
-              <p className="text-sm font-medium">Loading active campaigns…</p>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "80px 0" }}>
+              <RiLoaderLine size={40} style={{ color: "var(--cr)", animation: "spin 1s linear infinite" }} />
+              <p style={{ fontSize: 14, color: "var(--ink-l)" }}>Loading active campaigns…</p>
             </div>
           )}
+
+          {/* Error */}
           {!loading && error && (
-            <div className="mx-auto max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-800 dark:bg-red-950/20">
-              <p className="font-semibold text-red-700">{error}</p>
+            <div style={{ maxWidth: 480, margin: "0 auto", borderRadius: 16, border: "1px solid #FECDD3", background: "#FFF1F2", padding: "24px", textAlign: "center" }}>
+              <p style={{ fontWeight: 700, color: "var(--cr)" }}>{error}</p>
             </div>
           )}
-          {!loading && !error && camps.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                <RiCalendarLine size={36} className="text-slate-400" />
+
+          {/* Empty */}
+          {!loading && !error && filtered.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "80px 0", textAlign: "center" }}>
+              <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--rh-canvas)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <RiCalendarLine size={36} style={{ color: "var(--ink-l)" }} />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50">No Active Campaigns</h3>
-              <p className="max-w-sm text-sm text-slate-500">No active campaigns at the moment. Check back soon — new drives are added regularly across Uganda.</p>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>No {activeFilter === "All" ? "" : activeFilter + " "}Campaigns</h3>
+              <p style={{ maxWidth: 380, fontSize: 13.5, color: "var(--ink-s)", lineHeight: 1.7 }}>
+                {activeFilter === "All"
+                  ? "No active campaigns at the moment. Check back soon."
+                  : `No ${activeFilter.toLowerCase()} campaigns found. Try a different filter.`}
+              </p>
             </div>
           )}
-          {!loading && !error && camps.length > 0 && (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {camps.map((camp, index) => <CampaignCard key={camp.id} camp={camp} index={index} />)}
+
+          {/* Grid */}
+          {!loading && !error && filtered.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(480px,1fr))", gap: 20 }}>
+              {filtered.map((camp, index) => (
+                <CampItem key={camp.id} camp={camp} index={index} />
+              ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* ── SPONSORS ─────────────────────────────────────────────────────── */}
-      <section className="overflow-hidden bg-slate-100 py-16 dark:bg-slate-800">
-        <div className="mx-auto mb-10 max-w-4xl px-6 text-center">
-          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <span className="mb-3 inline-block rounded-full bg-red-100 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-red-700 dark:bg-red-950 dark:text-red-400">
-              Partners
-            </span>
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Our Partners & Sponsors</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 dark:text-slate-400">
+      {/* ── SPONSORS ────────────────────────────────────────────────────────── */}
+      <section style={{ background: "var(--rh-canvas)", padding: "80px 0" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 28px" }}>
+          <div style={{ textAlign: "center", marginBottom: 52 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Partners</p>
+            <h2 className="rh-display rh-underline" style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 800, color: "var(--ink)" }}>
+              Our Partners &amp; Sponsors
+            </h2>
+            <p style={{ maxWidth: 500, margin: "28px auto 0", fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.75 }}>
               RedHope is proudly supported by institutions committed to saving lives in Uganda.
             </p>
-          </motion.div>
-        </div>
-        <div className="overflow-hidden py-2">
-          <div ref={trackRef} className="flex will-change-transform" style={{ width: "max-content" }}>
-            {SPONSORS_LOOP.map((s, i) => <SponsorCard key={`${s.name}-${i}`} sponsor={s} />)}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 22 }}>
+            {SPONSORS.map((s) => (
+              <motion.div key={s.name} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                className="rh-sponsor-card">
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <RiDropLine size={28} style={{ color: "var(--cr)" }} />
+                </div>
+                <p className="rh-display" style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)", marginBottom: 6 }}>{s.name}</p>
+                <p style={{ fontSize: 12.5, color: "var(--ink-l)", lineHeight: 1.5, marginBottom: 14 }}>{s.subtitle}</p>
+                <a href={s.url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 12, fontWeight: 700, color: "var(--cr)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  Visit Website <RiExternalLinkLine size={12} />
+                </a>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

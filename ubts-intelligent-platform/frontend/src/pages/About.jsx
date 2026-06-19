@@ -1,258 +1,231 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   RiArrowRightLine,
-  RiAwardLine,
+  RiDropLine,
   RiGroupLine,
   RiHeartPulseLine,
   RiUserSmileLine,
+  RiAwardLine,
 } from "react-icons/ri";
 
-// ── Data ─────────────────────────────────────────────────────────────────────
+// ── Data ────────────────────────────────────────────────────────────────────────
 const TEAM = [
-  {
-    name: "Alberto Nuwarinda Grande",
-    role: "Lead Developer & AI Engineer",
-    bio: "Specializes in machine learning and intelligent systems design.",
-    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&q=80",
-  },
-  {
-    name: "Team Member 2",
-    role: "Backend Developer",
-    bio: "Expert in Django REST APIs and scalable database architecture.",
-    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&q=80",
-  },
-  {
-    name: "Team Member 3",
-    role: "Frontend Developer",
-    bio: "Passionate about crafting beautiful, accessible user interfaces.",
-    photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&h=200&fit=crop&q=80",
-  },
-  {
-    name: "Team Member 4",
-    role: "Systems Analyst",
-    bio: "Ensures our systems meet real-world blood donation requirements.",
-    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&q=80",
-  },
+  { name: "Alberto Nuwarinda Grande", initials: "AN", role: "Lead Developer & AI Engineer", dept: "AI & Systems",    color: "#C41E3A" },
+  { name: "Team Member 2",            initials: "TM", role: "Backend Developer",              dept: "Engineering",   color: "#8B1A1A" },
+  { name: "Team Member 3",            initials: "TM", role: "Frontend Developer",             dept: "Design & UI",   color: "#2c3e50" },
+  { name: "Team Member 4",            initials: "TM", role: "Systems Analyst",                dept: "Analysis",      color: "#D97706" },
 ];
 
-const DONORS = [
-  { name: "Sarah Nakato", group: "O+", donations: 12, district: "Kampala", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&q=80" },
-  { name: "James Otim", group: "A+", donations: 8, district: "Gulu", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&q=80" },
-  { name: "Grace Akinyi", group: "B+", donations: 15, district: "Wakiso", photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&h=200&fit=crop&q=80" },
-  { name: "Robert Ssempa", group: "O-", donations: 6, district: "Jinja", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&q=80" },
-  { name: "Mary Namukasa", group: "AB+", donations: 20, district: "Entebbe", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&q=80" },
-  { name: "David Okello", group: "A-", donations: 9, district: "Mbale", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop&q=80" },
+const RECOG_DONORS = [
+  { name: "Sarah Nakato",  initials: "SN", group: "O+",  donations: 24, district: "Kampala", color: "#C41E3A", role: "Champion Donor" },
+  { name: "James Otim",    initials: "JO", group: "A+",  donations: 18, district: "Gulu",    color: "#8B1A1A", role: "Regular Donor"  },
+  { name: "Grace Akinyi",  initials: "GA", group: "B+",  donations: 20, district: "Wakiso",  color: "#2c3e50", role: "Loyal Donor"    },
+  { name: "Robert Ssempa", initials: "RS", group: "O-",  donations: 15, district: "Jinja",   color: "#D97706", role: "Regular Donor"  },
+  { name: "Mary Namukasa", initials: "MN", group: "AB+", donations: 28, district: "Entebbe", color: "#C41E3A", role: "Hall of Fame"   },
+  { name: "David Okello",  initials: "DO", group: "A-",  donations: 12, district: "Mbale",   color: "#8B1A1A", role: "Regular Donor"  },
 ];
+const RECOG_LOOP = [...RECOG_DONORS, ...RECOG_DONORS];
 
 const ACHIEVEMENTS = [
-  { icon: RiUserSmileLine, value: "12,000+", label: "Success Smiles" },
-  { icon: RiGroupLine, value: "5,000+", label: "Happy Donors" },
-  { icon: RiAwardLine, value: "8", label: "Total Awards" },
-  { icon: RiHeartPulseLine, value: "15,000+", label: "Happy Recipients" },
+  { icon: RiUserSmileLine,  value: "12,000+", label: "Success Smiles"    },
+  { icon: RiGroupLine,      value: "5,000+",  label: "Happy Donors"      },
+  { icon: RiAwardLine,      value: "8",       label: "Total Awards"      },
+  { icon: RiHeartPulseLine, value: "15,000+", label: "Happy Recipients"  },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Component ───────────────────────────────────────────────────────────────────
 function About() {
-  const [donorIdx, setDonorIdx] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setDonorIdx((i) => (i + 1) % DONORS.length), 3000);
-    return () => clearInterval(t);
-  }, []);
-
-  const visibleDonors = [0, 1, 2].map((offset) => DONORS[(donorIdx + offset) % DONORS.length]);
-
   return (
-    <div className="bg-white dark:bg-slate-900">
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
 
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: "60vh" }}>
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1920&q=80')" }}
-        />
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative z-10 mx-auto max-w-4xl px-6 py-24 text-center">
+      {/* ── HERO ────────────────────────────────────────────────────────────── */}
+      <section style={{ position: "relative", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="rh-hero-overlay" style={{ position: "absolute", inset: 0 }} />
+        <div style={{ position: "relative", zIndex: 10, maxWidth: 780, padding: "96px 28px", textAlign: "center" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-400/40 bg-red-700/30 px-4 py-1.5 text-sm font-semibold uppercase tracking-widest text-red-300 backdrop-blur-sm">
-              About Us
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#fff", backdropFilter: "blur(8px)", marginBottom: 22 }}>
+              <RiDropLine size={13} /> About RedHope
             </span>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight text-white lg:text-6xl">
-              Saving Lives, <span className="text-red-400">One Drop at a Time</span>
+            <h1 className="rh-display" style={{ fontSize: "clamp(34px,6vw,64px)", fontWeight: 800, color: "#fff", lineHeight: 1.08, marginBottom: 18 }}>
+              Saving Lives,{" "}
+              <span style={{ color: "#FFB3C1" }}>One Drop at a Time</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/80">
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", lineHeight: 1.75, maxWidth: 560, margin: "0 auto" }}>
               Discover the people, mission, and technology behind RedHope — Uganda's intelligent blood donation platform.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── WHO WE ARE ──────────────────────────────────────────────────── */}
-      <section className="bg-white py-20 dark:bg-slate-900">
-        <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-              <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Our Story</p>
-              <h2 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white lg:text-4xl">Who We Are</h2>
-              <div className="mt-6 space-y-4 border-l-4 border-red-600 pl-5">
-                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                  RedHope is an AI-powered intelligent blood donation management system developed by a team of Makerere University final-year students as part of their capstone project.
-                </p>
-                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Our mission is to bridge the gap between blood donors and recipients across Uganda using machine learning, geospatial technology, and real-time data to make blood donation seamless and impactful.
-                </p>
-                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                  We believe every person deserves timely access to safe blood. RedHope makes this possible through smart donor matching, eligibility screening, and personalized donation reminders.
-                </p>
+      {/* ── WHO WE ARE ──────────────────────────────────────────────────────── */}
+      <section style={{ background: "#fff", padding: "88px 0" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+            {/* Text card */}
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <div style={{ background: "#fff", borderRadius: 20, padding: "44px", boxShadow: "0 8px 40px rgba(0,0,0,.08)", border: "1px solid var(--rh-border)" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 12 }}>Our Story</p>
+                <h2 className="rh-display" style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 800, color: "var(--ink)", marginBottom: 28 }}>Who We Are</h2>
+                <div style={{ borderLeft: "4px solid var(--cr)", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+                  <p style={{ fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.8 }}>
+                    RedHope is an AI-powered intelligent blood donation management system developed by a team of Makerere University final-year students as part of their capstone project.
+                  </p>
+                  <p style={{ fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.8 }}>
+                    Our mission is to bridge the gap between blood donors and recipients across Uganda using machine learning, geospatial technology, and real-time data to make blood donation seamless and impactful.
+                  </p>
+                  <p style={{ fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.8 }}>
+                    We believe every person deserves timely access to safe blood. RedHope makes this possible through smart donor matching, eligibility screening, and personalized donation reminders.
+                  </p>
+                </div>
+                <Link to="/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 32, borderRadius: 50, background: "linear-gradient(135deg,var(--cr),var(--cr-dk))", color: "#fff", padding: "12px 28px", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                  Join Us Today <RiArrowRightLine size={16} />
+                </Link>
               </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}
-              className="overflow-hidden rounded-2xl shadow-xl">
-              <img
-                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80"
-                alt="RedHope Team"
-                className="h-[400px] w-full object-cover"
-              />
+
+            {/* Image */}
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 56px rgba(0,0,0,.14)" }}>
+              <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=80" alt="RedHope Team"
+                style={{ width: "100%", height: 440, objectFit: "cover", display: "block" }} />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ── OUR TEAM ─────────────────────────────────────────────────────── */}
-      <section className="bg-slate-50 py-20 dark:bg-slate-800">
-        <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          <div className="mb-12 text-center">
-            <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Meet the Builders</p>
-            <h2 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white lg:text-4xl">The Minds Behind RedHope</h2>
-            <p className="mx-auto mt-3 max-w-xl text-slate-600 dark:text-slate-400">
-              A passionate team of Makerere University students dedicated to solving Uganda's blood shortage crisis.
-            </p>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {TEAM.map((member, i) => (
-              <motion.div
-                key={member.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl bg-white p-6 text-center shadow-md dark:bg-slate-900"
-              >
-                <img
-                  src={member.photo}
-                  alt={member.name}
-                  className="mx-auto h-24 w-24 rounded-full object-cover ring-4 ring-red-100 dark:ring-red-900"
-                />
-                <h3 className="mt-4 font-bold text-slate-900 dark:text-white">{member.name}</h3>
-                <p className="mt-1 text-sm text-red-700 dark:text-red-400">{member.role}</p>
-                <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{member.bio}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── DONOR RECOGNITION ───────────────────────────────────────────────── */}
+      <section style={{ position: "relative", overflow: "hidden" }}>
+        {/* Background image layer */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div style={{ position: "absolute", inset: 0, background: "rgba(139,26,26,.88)" }} />
 
-      {/* ── DONOR RECOGNITION ────────────────────────────────────────────── */}
-      <section className="relative">
-        <div className="relative h-56 overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=1920&q=80" alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-red-900/70" />
-          <div className="absolute inset-0 flex items-center justify-center text-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-red-300">Our Heroes</p>
-              <h2 className="mt-1 text-3xl font-extrabold text-white">Recognized Donors</h2>
-              <p className="mt-2 text-slate-200">Celebrating those who give the gift of life</p>
-            </div>
+        <div style={{ position: "relative", zIndex: 1, padding: "80px 0 72px" }}>
+          <div style={{ textAlign: "center", marginBottom: 52 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,179,193,.8)", marginBottom: 10 }}>Our Heroes</p>
+            <h2 className="rh-display" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 800, color: "#fff" }}>Recognized Donors</h2>
+            <p style={{ fontSize: 14.5, color: "rgba(255,255,255,.75)", marginTop: 10 }}>Celebrating those who give the gift of life</p>
           </div>
-        </div>
-        <div className="bg-white pb-16 pt-36 dark:bg-slate-900" />
-        <div className="absolute inset-x-0" style={{ top: "9rem" }}>
-          <div className="mx-auto max-w-6xl px-6 lg:px-12">
-            {/* Desktop: all 6 */}
-            <div className="hidden gap-5 lg:grid lg:grid-cols-6">
-              {DONORS.map((d, i) => (
-                <motion.div key={d.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                  className="rounded-2xl bg-white p-5 text-center shadow-xl dark:bg-slate-800">
-                  <img src={d.photo} alt={d.name} className="mx-auto h-16 w-16 rounded-full object-cover ring-4 ring-red-100" />
-                  <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{d.name}</p>
-                  <span className="mt-1 inline-block rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">{d.group}</span>
-                  <p className="mt-1 text-xs text-slate-500">{d.donations} donations</p>
-                  <p className="text-xs text-slate-400">{d.district}</p>
-                </motion.div>
-              ))}
-            </div>
-            {/* Mobile: 3 cycling cards */}
-            <div className="flex justify-center gap-4 lg:hidden">
-              {visibleDonors.map((d) => (
-                <div key={d.name} className="rounded-2xl bg-white p-4 text-center shadow-xl dark:bg-slate-800" style={{ minWidth: 110 }}>
-                  <img src={d.photo} alt={d.name} className="mx-auto h-14 w-14 rounded-full object-cover ring-2 ring-red-100" />
-                  <p className="mt-2 text-xs font-bold text-slate-900 dark:text-white">{d.name}</p>
-                  <span className="mt-1 inline-block rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">{d.group}</span>
-                  <p className="text-xs text-slate-400">{d.donations} donations</p>
+
+          {/* Marquee */}
+          <div style={{ overflow: "hidden", padding: "8px 0" }}>
+            <div className="animate-rh-marquee" style={{ display: "flex", gap: 20, width: "max-content" }}>
+              {RECOG_LOOP.map((donor, i) => (
+                <div key={i} className="rh-recog-card">
+                  {/* Photo top (colored initials) */}
+                  <div style={{ height: 170, background: donor.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span className="rh-display" style={{ fontSize: 52, fontWeight: 800, color: "#fff", opacity: 0.9 }}>{donor.initials}</span>
+                  </div>
+                  {/* Info bottom */}
+                  <div style={{ padding: "14px 18px 18px", textAlign: "center" }}>
+                    <p style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink)" }}>{donor.name}</p>
+                    <div style={{ width: 32, height: 2, background: "var(--cr)", margin: "10px auto 8px", borderRadius: 2 }} />
+                    <p style={{ fontSize: 10.5, color: "var(--ink-l)", textTransform: "uppercase", letterSpacing: ".04em" }}>{donor.role}</p>
+                    <p style={{ fontSize: 10.5, color: "var(--ink-l)", marginTop: 2 }}>{donor.district}</p>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--cr-xl)", color: "var(--cr)", borderRadius: 50, padding: "3px 10px", fontSize: 11, fontWeight: 700, marginTop: 10 }}>
+                      ❤ {donor.donations} Donations
+                    </span>
+                    <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+                      <span style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <RiDropLine size={12} style={{ color: "var(--cr)" }} />
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
+
+          <div style={{ textAlign: "center", marginTop: 48 }}>
+            <Link to="/register" style={{ borderRadius: 50, border: "2px solid rgba(255,255,255,.7)", color: "#fff", padding: "13px 36px", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+              Become a Donor
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* ── ACHIEVEMENTS ─────────────────────────────────────────────────── */}
-      <section className="bg-white py-20 dark:bg-slate-900">
-        <div className="mx-auto max-w-5xl px-6 lg:px-12">
-          <div className="mb-10 text-center">
-            <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Impact</p>
-            <h2 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">Our Achievements</h2>
-            <p className="mx-auto mt-3 max-w-xl text-slate-500 dark:text-slate-400 italic">
+      {/* ── ACHIEVEMENTS ────────────────────────────────────────────────────── */}
+      <section style={{ background: "var(--rh-canvas)", padding: "88px 0" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 28px" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Impact</p>
+            <h2 className="rh-display rh-underline" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 800, color: "var(--ink)" }}>Our Achievements</h2>
+            <p style={{ maxWidth: 500, margin: "28px auto 0", fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.75 }}>
               Since launching in 2024, RedHope has transformed blood donation management across Uganda.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 24 }}>
             {ACHIEVEMENTS.map(({ icon: Icon, value, label }, i) => (
-              <motion.div
-                key={label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-slate-200 p-6 text-center dark:border-slate-700"
-              >
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/40">
-                  <Icon size={22} className="text-red-700 dark:text-red-400" />
+              <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="rh-achieve-card">
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <Icon size={24} style={{ color: "var(--cr)" }} />
                 </div>
-                <p className="text-3xl font-extrabold text-red-700 dark:text-red-400">{value}</p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{label}</p>
+                <p className="rh-display" style={{ fontSize: 40, fontWeight: 800, color: "var(--cr)", lineHeight: 1 }}>{value}</p>
+                <p style={{ fontSize: 13, color: "var(--ink-l)", marginTop: 8, fontWeight: 500 }}>{label}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── JOIN US ───────────────────────────────────────────────────────── */}
-      <section>
-        <div className="grid lg:grid-cols-2">
-          <div className="relative min-h-[320px] overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=900&q=80"
-              alt=""
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black/30" />
+      {/* ── TEAM ────────────────────────────────────────────────────────────── */}
+      <section style={{ background: "#fff", padding: "88px 0" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 28px" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Meet the Builders</p>
+            <h2 className="rh-display rh-underline" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 800, color: "var(--ink)" }}>The Minds Behind RedHope</h2>
+            <p style={{ maxWidth: 520, margin: "28px auto 0", fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.75 }}>
+              A passionate team of Makerere University students dedicated to solving Uganda's blood shortage crisis.
+            </p>
           </div>
-          <div className="flex items-center bg-slate-100 px-8 py-20 dark:bg-slate-800">
-            <div className="max-w-sm">
-              <p className="text-sm font-semibold uppercase tracking-widest text-red-600">Get Started</p>
-              <h2 className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">Join Us and Save a Life</h2>
-              <p className="mt-4 leading-relaxed text-slate-600 dark:text-slate-400">
-                Become part of a growing community of Ugandans saving lives through blood donation. Register on RedHope today and make your first contribution.
-              </p>
-              <Link
-                to="/register"
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-red-700 px-8 py-3.5 font-bold text-white shadow-lg transition hover:bg-red-800"
-              >
-                Register Now <RiArrowRightLine size={18} />
-              </Link>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 24 }}>
+            {TEAM.map((member, i) => (
+              <motion.div key={member.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="rh-team-card">
+                {/* Colored initial top */}
+                <div style={{ height: 200, background: member.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="rh-display" style={{ fontSize: 60, fontWeight: 800, color: "#fff", opacity: 0.9 }}>{member.initials}</span>
+                </div>
+                {/* Info bottom */}
+                <div style={{ padding: "20px", textAlign: "center" }}>
+                  <div style={{ width: 32, height: 2, background: "var(--cr)", margin: "0 auto 14px", borderRadius: 2 }} />
+                  <p style={{ fontWeight: 800, fontSize: 14, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".03em", lineHeight: 1.3 }}>{member.name}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-l)", marginTop: 5 }}>{member.role}</p>
+                  <span style={{ display: "inline-block", background: "var(--cr-xl)", color: "var(--cr)", borderRadius: 50, padding: "3px 12px", fontSize: 11, fontWeight: 600, marginTop: 10 }}>
+                    {member.dept}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── JOIN US SPLIT ────────────────────────────────────────────────────── */}
+      <section>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+          {/* Image left */}
+          <div style={{ position: "relative", minHeight: 380, overflow: "hidden" }}>
+            <img src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=900&q=80" alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <div style={{ position: "absolute", inset: 0, background: "rgba(26,31,46,.3)" }} />
+          </div>
+
+          {/* Text right */}
+          <div style={{ background: "#F7F8FC", display: "flex", alignItems: "center", padding: "60px 50px" }}>
+            <div style={{ maxWidth: 420 }}>
+              <div style={{ background: "#fff", borderRadius: 20, padding: "40px", boxShadow: "0 8px 32px rgba(0,0,0,.07)", border: "1px solid var(--rh-border)" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Get Started</p>
+                <h2 className="rh-display" style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", lineHeight: 1.2, marginBottom: 16 }}>Join Us and Save a Life</h2>
+                <p style={{ fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.8, marginBottom: 28 }}>
+                  Become part of a growing community of Ugandans saving lives through blood donation. Register on RedHope today and make your first contribution.
+                </p>
+                <Link to="/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, background: "linear-gradient(135deg,var(--cr),var(--cr-dk))", color: "#fff", padding: "13px 28px", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 16px rgba(196,30,58,.28)" }}>
+                  Register Now <RiArrowRightLine size={16} />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
