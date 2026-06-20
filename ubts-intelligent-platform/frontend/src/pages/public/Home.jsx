@@ -25,6 +25,7 @@ import {
 
 import { getPublicStats, getPublicCamps } from "../../services/adminService";
 import { findNearestCampFromChatbot } from "../../services/chatbotService";
+import { useTheme } from "../../context/ThemeContext";
 
 // Fix Leaflet default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -118,6 +119,7 @@ function Home() {
   const [nearestCamp, setNearestCamp] = useState(null);
   const [campLoading, setCampLoading] = useState(false);
   const [campError, setCampError]   = useState("");
+  const { dark } = useTheme();
 
   useEffect(() => {
     getPublicStats().then(setStats).catch(() => {});
@@ -347,7 +349,7 @@ function Home() {
       </section>
 
       {/* ── 5. FIND NEAREST CAMP ────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: "88px 0" }}>
+      <section style={{ background: dark ? "#0F172A" : "#fff", padding: "88px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Near You</p>
@@ -375,7 +377,7 @@ function Home() {
               </button>
 
               {campError && (
-                <div style={{ borderRadius: 14, border: "1px solid #FECDD3", background: "#FFF1F2", padding: "14px 18px", fontSize: 13, color: "var(--cr-dk)" }}>
+                <div style={{ borderRadius: 14, border: dark ? "1px solid rgba(220,38,38,.3)" : "1px solid #FECDD3", background: dark ? "rgba(220,38,38,.1)" : "#FFF1F2", padding: "14px 18px", fontSize: 13, color: "var(--cr-dk)" }}>
                   {campError}
                 </div>
               )}
@@ -384,7 +386,7 @@ function Home() {
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  style={{ borderRadius: 16, border: "1px solid #A7F3D0", background: "#ECFDF5", padding: "20px" }}
+                  style={{ borderRadius: 16, border: dark ? "1px solid rgba(16,185,129,.25)" : "1px solid #A7F3D0", background: dark ? "rgba(16,185,129,.1)" : "#ECFDF5", padding: "20px" }}
                 >
                   <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#059669", marginBottom: 6 }}>⭐ Nearest Active Camp</p>
                   <h3 style={{ fontWeight: 800, fontSize: 16, color: "var(--ink)" }}>{nearestCamp.name}</h3>

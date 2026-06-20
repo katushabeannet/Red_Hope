@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import reddyHero from "../../assets/wallpapers/reddy.jpeg";
+import { useTheme } from "../../context/ThemeContext";
 import { motion } from "framer-motion";
 import {
   RiAlertLine,
@@ -63,8 +64,9 @@ const SERVICES = [
 
 // ── Component ───────────────────────────────────────────────────────────────────
 function Process() {
+  const { dark } = useTheme();
   return (
-    <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -86,7 +88,7 @@ function Process() {
       </section>
 
       {/* ── DONATION STEPS ──────────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: "88px 0" }}>
+      <section style={{ background: dark ? "#0F172A" : "#fff", padding: "88px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
           <div style={{ textAlign: "center", marginBottom: 60 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Step by Step</p>
@@ -115,7 +117,7 @@ function Process() {
                     onMouseEnter={e => (e.target.style.transform = "scale(1.05)")}
                     onMouseLeave={e => (e.target.style.transform = "scale(1)")}
                   />
-                  <div style={{ position: "absolute", bottom: -18, left: 22, width: 44, height: 44, borderRadius: "50%", background: "var(--cr)", border: "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                  <div style={{ position: "absolute", bottom: -18, left: 22, width: 44, height: 44, borderRadius: "50%", background: "var(--cr)", border: dark ? "3px solid #1E293B" : "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
                     <span className="rh-display" style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>{step.num}</span>
                   </div>
                 </div>
@@ -156,7 +158,7 @@ function Process() {
       </section>
 
       {/* ── BEFORE / AFTER TIPS ─────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: "80px 0" }}>
+      <section style={{ background: dark ? "#0F172A" : "#fff", padding: "80px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 28px" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Preparation</p>
@@ -180,7 +182,7 @@ function Process() {
               </ul>
             </div>
             {/* After */}
-            <div style={{ background: "#F0FDF4", borderRadius: 20, padding: "32px", border: "1px solid #BBF7D0" }}>
+            <div style={{ background: dark ? "rgba(5,150,105,.12)" : "#F0FDF4", borderRadius: 20, padding: "32px", border: dark ? "1px solid rgba(16,185,129,.2)" : "1px solid #BBF7D0" }}>
               <h3 className="rh-display" style={{ fontSize: 20, fontWeight: 800, color: "var(--ink)", marginBottom: 22 }}>
                 <span style={{ color: "#059669" }}>After</span> Donation
               </h3>

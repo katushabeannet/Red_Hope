@@ -13,14 +13,14 @@ def generate_gpt_response(system_instruction, user_content, history=None):
             input_messages.extend(history[-10:])
         input_messages.append({"role": "user", "content": user_content})
 
-        response = client.responses.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
-            input=input_messages,
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=input_messages,
             temperature=0.4,
-            max_output_tokens=250,
+            max_tokens=250,
         )
 
-        return response.output_text.strip()
+        return response.choices[0].message.content.strip()
 
     except Exception as error:
         print("GPT response generation failed:", error)
