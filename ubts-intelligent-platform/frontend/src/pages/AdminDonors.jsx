@@ -17,12 +17,7 @@ import {
   recordDonation,
   saveAdminMedicalRecord,
 } from "../services/adminDonorService";
-
 import { blastCampaignNotification } from "../services/notificationService";
-
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
 
 const initialMedicalForm = {
   donor_id: "",
@@ -39,33 +34,32 @@ const initialMedicalForm = {
 const initialDonationForm = { donor_id: "", donation_date: "", camp_name: "", notes: "" };
 
 function AdminDonors() {
-  const [donors, setDonors] = useState([]);
+  const [donors, setDonors]         = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, total_pages: 1 });
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  const [page, setPage]             = useState(1);
+  const [search, setSearch]         = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  const [selectedDonor, setSelectedDonor] = useState(null);
-  const [formData, setFormData] = useState(initialMedicalForm);
-  const [donationForm, setDonationForm] = useState(initialDonationForm);
+  const [selectedDonor, setSelectedDonor]     = useState(null);
+  const [formData, setFormData]               = useState(initialMedicalForm);
+  const [donationForm, setDonationForm]       = useState(initialDonationForm);
   const [showDonationForm, setShowDonationForm] = useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading]                     = useState(true);
+  const [saving, setSaving]                       = useState(false);
   const [recordingDonation, setRecordingDonation] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError]                         = useState("");
+  const [success, setSuccess]                     = useState("");
 
-  // Lapsed donors state
-  const [showLapsed, setShowLapsed] = useState(false);
+  const [showLapsed, setShowLapsed]   = useState(false);
   const [lapsedDonors, setLapsedDonors] = useState([]);
   const [lapsedTotal, setLapsedTotal] = useState(0);
   const [lapsedLoading, setLapsedLoading] = useState(false);
-  const [blastTitle, setBlastTitle] = useState("We Miss You — Come Back and Donate!");
+  const [blastTitle, setBlastTitle]   = useState("We Miss You — Come Back and Donate!");
   const [blastMessage, setBlastMessage] = useState(
     "It has been over 6 months since your last donation. Your blood can save lives — visit the nearest UBTS camp and donate today."
   );
-  const [blasting, setBlasting] = useState(false);
+  const [blasting, setBlasting]       = useState(false);
 
   const loadDonors = useCallback(async () => {
     try {
@@ -81,16 +75,10 @@ function AdminDonors() {
     }
   }, [page, search]);
 
-  useEffect(() => {
-    loadDonors();
-  }, [loadDonors]);
+  useEffect(() => { loadDonors(); }, [loadDonors]);
 
-  // Debounce search input
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1);
-      setSearch(searchInput);
-    }, 400);
+    const timer = setTimeout(() => { setPage(1); setSearch(searchInput); }, 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
@@ -98,30 +86,23 @@ function AdminDonors() {
     setSelectedDonor(donor);
     setSuccess("");
     setError("");
-
     setFormData({
       donor_id: donor.id,
       blood_group: donor.blood_group || "O+",
       weight_kg: donor.medical_record?.weight_kg || "",
       hemoglobin_level: donor.medical_record?.hemoglobin_level || "",
       has_recent_illness: donor.medical_record?.has_recent_illness || false,
-      has_chronic_condition:
-        donor.medical_record?.has_chronic_condition || false,
+      has_chronic_condition: donor.medical_record?.has_chronic_condition || false,
       last_donation_date: donor.medical_record?.last_donation_date || "",
       is_pregnant: donor.medical_record?.is_pregnant || false,
       is_on_medication: donor.medical_record?.is_on_medication || false,
     });
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleSaveMedicalRecord = async (e) => {
@@ -195,11 +176,7 @@ function AdminDonors() {
     try {
       setBlasting(true);
       setError("");
-      const result = await blastCampaignNotification({
-        donor_ids: ids,
-        title: blastTitle,
-        message: blastMessage,
-      });
+      const result = await blastCampaignNotification({ donor_ids: ids, title: blastTitle, message: blastMessage });
       setSuccess(`Blast sent to ${result.sent_count ?? ids.length} lapsed donor(s).`);
     } catch {
       setError("Failed to send blast notification.");
@@ -208,284 +185,183 @@ function AdminDonors() {
     }
   };
 
-  const donorsWithMedical = donors.filter((d) => d.medical_record).length;
+  const donorsWithMedical   = donors.filter((d) => d.medical_record).length;
   const donorsPendingMedical = pagination.total - donorsWithMedical;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <>
+      {/* Page header */}
+      <div className="page-head-row">
         <div>
-          <p className="text-sm font-medium text-[var(--crimson)]">
-            Donor Medical Management
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
-            Donors & Medical Records
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
-            View registered donors and record their medical information after
-            UBTS screening or donation.
-          </p>
+          <div className="page-eyebrow">Donor Medical Management</div>
+          <h1 className="page-title rh-display">Donors &amp; Medical Records</h1>
+          <p className="page-desc">View registered donors and record their medical information after UBTS screening or donation.</p>
         </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant={showLapsed ? "primary" : "secondary"}
+        <div className="page-actions">
+          <button
+            className={`btn ${showLapsed ? "btn-primary" : "btn-outline"}`}
             onClick={handleToggleLapsed}
           >
-            <RiAlarmWarningLine />
-            Lapsed Donors
-          </Button>
-          <Button variant="secondary" onClick={loadDonors}>
-            <RiRefreshLine />
-            Refresh
-          </Button>
+            <RiAlarmWarningLine size={16} /> Lapsed Donors
+          </button>
+          <button className="btn btn-outline" onClick={loadDonors}>
+            <RiRefreshLine size={16} /> Refresh
+          </button>
         </div>
       </div>
 
-      {error && (
-        <Card className="border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20">
-          {error}
-        </Card>
-      )}
+      {error   && <div className="adm-alert adm-alert-error">{error}</div>}
+      {success && <div className="adm-alert adm-alert-success">{success}</div>}
 
-      {success && (
-        <Card className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20">
-          {success}
-        </Card>
-      )}
-
-      <div className="grid gap-5 md:grid-cols-3">
-        <SummaryCard label="Total Donors" value={pagination.total} />
-        <SummaryCard label="Medical Records Added" value={donorsWithMedical} />
+      {/* Summary stat cards */}
+      <div className="stat-grid">
+        <SummaryCard label="Total Donors"            value={pagination.total} />
+        <SummaryCard label="Medical Records Added"   value={donorsWithMedical} />
         <SummaryCard label="Pending Medical Records" value={donorsPendingMedical} />
       </div>
 
+      {/* Record donation form */}
       {showDonationForm && (
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-semibold text-[var(--text-primary)]">Record a Donation</h3>
-            <Button variant="secondary" onClick={() => setShowDonationForm(false)}>Cancel</Button>
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title-row">
+              <div className="panel-title">Record a Donation</div>
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={() => setShowDonationForm(false)}>Cancel</button>
           </div>
-          <form onSubmit={handleRecordDonation} className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">Donor</label>
-              <select
-                name="donor_id"
-                value={donationForm.donor_id}
-                onChange={(e) => setDonationForm({ ...donationForm, donor_id: e.target.value })}
-                required
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
-              >
-                <option value="">Select donor</option>
-                {donors.map((d) => (
-                  <option key={d.id} value={d.id}>{d.full_name} ({d.blood_group})</option>
-                ))}
-              </select>
-            </div>
-            <Field label="Donation Date" type="date" name="donation_date"
-              value={donationForm.donation_date}
-              onChange={(e) => setDonationForm({ ...donationForm, donation_date: e.target.value })}
-              required />
-            <Field label="Camp Name (optional)" name="camp_name"
-              value={donationForm.camp_name}
-              onChange={(e) => setDonationForm({ ...donationForm, camp_name: e.target.value })} />
-            <Field label="Notes (optional)" name="notes"
-              value={donationForm.notes}
-              onChange={(e) => setDonationForm({ ...donationForm, notes: e.target.value })} />
-            <div className="md:col-span-2">
-              <Button type="submit" loading={recordingDonation}>
-                <RiHeartPulseLine /> Record Donation
-              </Button>
-            </div>
-          </form>
-        </Card>
+          <div className="panel-body">
+            <form onSubmit={handleRecordDonation}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink-s)", marginBottom: 7 }}>Donor</label>
+                  <select
+                    name="donor_id"
+                    value={donationForm.donor_id}
+                    onChange={(e) => setDonationForm({ ...donationForm, donor_id: e.target.value })}
+                    required
+                    style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13.5, color: "var(--ink)", outline: "none" }}
+                  >
+                    <option value="">Select donor</option>
+                    {donors.map((d) => (
+                      <option key={d.id} value={d.id}>{d.full_name} ({d.blood_group})</option>
+                    ))}
+                  </select>
+                </div>
+                <Field label="Donation Date" type="date" name="donation_date" value={donationForm.donation_date} onChange={(e) => setDonationForm({ ...donationForm, donation_date: e.target.value })} required />
+                <Field label="Camp Name (optional)" name="camp_name" value={donationForm.camp_name} onChange={(e) => setDonationForm({ ...donationForm, camp_name: e.target.value })} />
+                <Field label="Notes (optional)" name="notes" value={donationForm.notes} onChange={(e) => setDonationForm({ ...donationForm, notes: e.target.value })} />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={recordingDonation}>
+                {recordingDonation && <span className="btn-spin" />}
+                <RiHeartPulseLine size={16} /> Record Donation
+              </button>
+            </form>
+          </div>
+        </div>
       )}
 
+      {/* Medical record form */}
       {selectedDonor && (
-        <Card>
-          <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+        <div className="panel">
+          <div className="panel-head">
             <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                Add / Update Medical Information
-              </h3>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Selected donor:{" "}
-                <span className="font-semibold">{selectedDonor.full_name}</span>
-              </p>
+              <div className="panel-title">Add / Update Medical Information</div>
+              <div className="panel-sub">Selected donor: <strong>{selectedDonor.full_name}</strong></div>
             </div>
-
-            <Badge
-              label={selectedDonor.medical_record ? "Updating" : "New Record"}
-              variant={selectedDonor.medical_record ? "completed" : "active"}
-            />
+            <span className={`badge ${selectedDonor.medical_record ? "badge-blue" : "badge-green"}`}>
+              {selectedDonor.medical_record ? "Updating" : "New Record"}
+            </span>
           </div>
-
-          <form
-            onSubmit={handleSaveMedicalRecord}
-            className="grid gap-4 md:grid-cols-2"
-          >
-            <Select
-              label="Blood Group"
-              name="blood_group"
-              value={formData.blood_group}
-              onChange={handleChange}
-              options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
-            />
-
-            <Field
-              label="Weight (kg)"
-              type="number"
-              name="weight_kg"
-              value={formData.weight_kg}
-              onChange={handleChange}
-              required
-            />
-
-            <Field
-              label="Hemoglobin Level"
-              type="number"
-              step="any"
-              name="hemoglobin_level"
-              value={formData.hemoglobin_level}
-              onChange={handleChange}
-              required
-            />
-
-            <Field
-              label="Last Donation Date"
-              type="date"
-              name="last_donation_date"
-              value={formData.last_donation_date}
-              onChange={handleChange}
-            />
-
-            <CheckBox
-              label="Recent Illness"
-              name="has_recent_illness"
-              checked={formData.has_recent_illness}
-              onChange={handleChange}
-            />
-
-            <CheckBox
-              label="Chronic Condition"
-              name="has_chronic_condition"
-              checked={formData.has_chronic_condition}
-              onChange={handleChange}
-            />
-
-            <CheckBox
-              label="Currently Pregnant"
-              name="is_pregnant"
-              checked={formData.is_pregnant}
-              onChange={handleChange}
-            />
-
-            <CheckBox
-              label="On Medication"
-              name="is_on_medication"
-              checked={formData.is_on_medication}
-              onChange={handleChange}
-            />
-
-            <div className="flex gap-3 md:col-span-2">
-              <Button type="submit" loading={saving}>
-                <RiHeartPulseLine />
-                Save Medical Information
-              </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setSelectedDonor(null)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
+          <div className="panel-body">
+            <form onSubmit={handleSaveMedicalRecord}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                <Select label="Blood Group" name="blood_group" value={formData.blood_group} onChange={handleChange} options={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
+                <Field label="Weight (kg)" type="number" name="weight_kg" value={formData.weight_kg} onChange={handleChange} required />
+                <Field label="Hemoglobin Level" type="number" step="any" name="hemoglobin_level" value={formData.hemoglobin_level} onChange={handleChange} required />
+                <Field label="Last Donation Date" type="date" name="last_donation_date" value={formData.last_donation_date} onChange={handleChange} />
+                <CheckBox label="Recent Illness"     name="has_recent_illness"   checked={formData.has_recent_illness}   onChange={handleChange} />
+                <CheckBox label="Chronic Condition"  name="has_chronic_condition" checked={formData.has_chronic_condition} onChange={handleChange} />
+                <CheckBox label="Currently Pregnant" name="is_pregnant"           checked={formData.is_pregnant}           onChange={handleChange} />
+                <CheckBox label="On Medication"      name="is_on_medication"      checked={formData.is_on_medication}      onChange={handleChange} />
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving && <span className="btn-spin" />}
+                  <RiHeartPulseLine size={16} /> Save Medical Information
+                </button>
+                <button type="button" className="btn btn-outline" onClick={() => setSelectedDonor(null)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
-      <Card>
-        <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      {/* Donors table */}
+      <div className="panel">
+        <div className="panel-head">
           <div>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              Registered Donors
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Page {pagination.page} of {pagination.total_pages} — {pagination.total} total donors
-            </p>
+            <div className="panel-title">Registered Donors</div>
+            <div className="panel-sub">Page {pagination.page} of {pagination.total_pages} — {pagination.total} total donors</div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="secondary" onClick={async () => { try { await exportDonorsCSV(search); } catch { setError("Export failed. Please try again."); } }}>
-              <RiDownloadLine /> Export CSV
-            </Button>
-            <Button variant="secondary" onClick={() => setShowDonationForm((v) => !v)}>
-              <RiHeartPulseLine /> Record Donation
-            </Button>
-            <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3">
-              <RiSearchLine className="text-[var(--text-muted)]" />
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+            <button className="btn btn-outline btn-sm" onClick={async () => { try { await exportDonorsCSV(search); } catch { setError("Export failed."); } }}>
+              <RiDownloadLine size={14} /> Export CSV
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={() => setShowDonationForm((v) => !v)}>
+              <RiHeartPulseLine size={14} /> Record Donation
+            </button>
+            <div style={{ display: "flex", alignItems: "center", border: "1.5px solid var(--border)", borderRadius: 10, padding: "7px 12px", background: "#fff", gap: 8 }}>
+              <RiSearchLine size={15} style={{ color: "var(--ink-l)", flexShrink: 0 }} />
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search donors..."
-                className="bg-transparent p-2 text-sm text-[var(--text-primary)] outline-none"
+                style={{ border: "none", outline: "none", fontSize: 13, color: "var(--ink)", background: "transparent", width: 160 }}
               />
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-            Loading donors...
-          </div>
+          <div className="empty-state"><p>Loading donors...</p></div>
         ) : donors.length > 0 ? (
           <>
-            <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <th className="p-3 font-medium">Donor</th>
-                    <th className="p-3 font-medium">Contact</th>
-                    <th className="p-3 font-medium">Donations</th>
-                    <th className="p-3 font-medium">Churn Risk</th>
-                    <th className="p-3 font-medium">Medical Status</th>
-                    <th className="p-3 font-medium">Action</th>
+                    <th>Donor</th>
+                    <th>Contact</th>
+                    <th>Donations</th>
+                    <th>Churn Risk</th>
+                    <th>Medical Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {donors.map((donor) => (
-                    <tr key={donor.id} className="border-t border-[var(--border)]">
-                      <td className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--crimson-light)] text-[var(--crimson)]">
-                            <RiUserHeartLine />
-                          </div>
+                    <tr key={donor.id}>
+                      <td>
+                        <div className="cell-person">
+                          <div className="cell-avatar"><RiUserHeartLine size={14} style={{ color: "var(--cr)" }} /></div>
                           <div>
-                            <p className="font-semibold text-[var(--text-primary)]">{donor.full_name}</p>
-                            <p className="text-xs text-[var(--text-muted)]">{donor.email}</p>
+                            <div className="cell-name">{donor.full_name}</div>
+                            <div className="cell-sub">{donor.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="p-3 text-[var(--text-secondary)]">
-                        {donor.phone_number || "Not available"}
+                      <td>{donor.phone_number || "Not available"}</td>
+                      <td style={{ fontWeight: 700, color: "var(--ink)", textAlign: "center" }}>{donor.total_donations ?? 0}</td>
+                      <td><ChurnBadge risk={donor.churn_risk} /></td>
+                      <td>
+                        <span className={`badge ${donor.medical_record ? "badge-green" : "badge-amber"}`}>
+                          {donor.medical_record ? "Medical Added" : "Pending Medical"}
+                        </span>
                       </td>
-                      <td className="p-3 text-center font-semibold text-[var(--text-primary)]">
-                        {donor.total_donations ?? 0}
-                      </td>
-                      <td className="p-3">
-                        <ChurnBadge risk={donor.churn_risk} />
-                      </td>
-                      <td className="p-3">
-                        <Badge
-                          label={donor.medical_record ? "Medical Added" : "Pending Medical"}
-                          variant={donor.medical_record ? "eligible" : "inactive"}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <Button size="sm" variant="secondary" onClick={() => handleSelectDonor(donor)}>
+                      <td>
+                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectDonor(donor)}>
                           {donor.medical_record ? "Update" : "Add Medical"}
-                        </Button>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -494,131 +370,90 @@ function AdminDonors() {
             </div>
 
             {pagination.total_pages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-[var(--text-secondary)]">
+              <div className="pagination-row">
+                <span className="page-info">
                   Showing {((pagination.page - 1) * 20) + 1}–{Math.min(pagination.page * 20, pagination.total)} of {pagination.total}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    disabled={pagination.page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    <RiArrowLeftLine /> Prev
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    disabled={pagination.page >= pagination.total_pages}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    Next <RiArrowRightLine />
-                  </Button>
+                </span>
+                <div className="page-btns">
+                  <button className="page-btn" disabled={pagination.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                    <RiArrowLeftLine size={14} />
+                  </button>
+                  <button className="page-btn" disabled={pagination.page >= pagination.total_pages} onClick={() => setPage((p) => p + 1)}>
+                    <RiArrowRightLine size={14} />
+                  </button>
                 </div>
               </div>
             )}
           </>
         ) : (
-          <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-            No donors found.
-          </div>
+          <div className="empty-state"><p>No donors found.</p></div>
         )}
-      </Card>
+      </div>
+
+      {/* Lapsed donors */}
       {showLapsed && (
-        <Card>
-          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="panel">
+          <div className="panel-head">
             <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                Lapsed Donors
-              </h3>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                {lapsedTotal} donor{lapsedTotal !== 1 ? "s" : ""} who
-                haven&apos;t donated in 6+ months or have never donated.
-              </p>
+              <div className="panel-title">Lapsed Donors</div>
+              <div className="panel-sub">{lapsedTotal} donor{lapsedTotal !== 1 ? "s" : ""} who haven't donated in 6+ months or have never donated.</div>
             </div>
-            <Button variant="secondary" onClick={loadLapsedDonors}>
-              <RiRefreshLine /> Refresh
-            </Button>
+            <button className="btn btn-outline btn-sm" onClick={loadLapsedDonors}>
+              <RiRefreshLine size={14} /> Refresh
+            </button>
           </div>
 
           {lapsedTotal > 0 && (
-            <form
-              onSubmit={handleBlastLapsed}
-              className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
-            >
-              <p className="mb-3 text-sm font-semibold text-amber-800 dark:text-amber-400">
+            <div style={{ margin: "0 24px 16px", borderRadius: 12, border: "1.5px solid #FDE68A", background: "#FFFBEB", padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#92400E", marginBottom: 12 }}>
                 Blast Notification to All {lapsedTotal} Lapsed Donors
               </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[var(--text-primary)]">
-                    Title
-                  </label>
-                  <input
-                    value={blastTitle}
-                    onChange={(e) => setBlastTitle(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-                  />
+              <form onSubmit={handleBlastLapsed}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--ink-s)", marginBottom: 6 }}>Title</label>
+                    <input value={blastTitle} onChange={(e) => setBlastTitle(e.target.value)} required style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1.5px solid var(--border)", fontSize: 13, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--ink-s)", marginBottom: 6 }}>Message</label>
+                    <input value={blastMessage} onChange={(e) => setBlastMessage(e.target.value)} required style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1.5px solid var(--border)", fontSize: 13, outline: "none" }} />
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-[var(--text-primary)]">
-                    Message
-                  </label>
-                  <input
-                    value={blastMessage}
-                    onChange={(e) => setBlastMessage(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-                  />
-                </div>
-              </div>
-              <div className="mt-3">
-                <Button type="submit" loading={blasting}>
-                  <RiAlarmWarningLine /> Send Blast to {lapsedTotal} Donors
-                </Button>
-              </div>
-            </form>
+                <button type="submit" className="btn btn-primary" disabled={blasting}>
+                  {blasting && <span className="btn-spin" />}
+                  <RiAlarmWarningLine size={14} /> Send Blast to {lapsedTotal} Donors
+                </button>
+              </form>
+            </div>
           )}
 
           {lapsedLoading ? (
-            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-              Loading lapsed donors...
-            </div>
+            <div className="empty-state"><p>Loading lapsed donors...</p></div>
           ) : lapsedDonors.length > 0 ? (
-            <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <th className="p-3 font-medium">Donor</th>
-                    <th className="p-3 font-medium">Blood Group</th>
-                    <th className="p-3 font-medium">Last Donation</th>
-                    <th className="p-3 font-medium">Days Lapsed</th>
+                    <th>Donor</th>
+                    <th>Blood Group</th>
+                    <th>Last Donation</th>
+                    <th>Days Lapsed</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lapsedDonors.map((donor) => (
-                    <tr key={donor.id} className="border-t border-[var(--border)]">
-                      <td className="p-3">
-                        <p className="font-semibold text-[var(--text-primary)]">
-                          {donor.full_name}
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)]">{donor.email}</p>
+                    <tr key={donor.id}>
+                      <td>
+                        <div className="cell-name">{donor.full_name}</div>
+                        <div className="cell-sub">{donor.email}</div>
                       </td>
-                      <td className="p-3 font-semibold text-[var(--crimson)]">
-                        {donor.blood_group || "—"}
-                      </td>
-                      <td className="p-3 text-[var(--text-secondary)]">
-                        {donor.latest_donation_date || "Never donated"}
-                      </td>
-                      <td className="p-3">
+                      <td><span className="badge badge-red">{donor.blood_group || "—"}</span></td>
+                      <td>{donor.latest_donation_date || "Never donated"}</td>
+                      <td>
                         {donor.days_lapsed != null ? (
-                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                            {donor.days_lapsed}d ago
-                          </span>
+                          <span className="badge badge-amber">{donor.days_lapsed}d ago</span>
                         ) : (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                            Never
-                          </span>
+                          <span className="badge badge-red">Never</span>
                         )}
                       </td>
                     </tr>
@@ -627,49 +462,37 @@ function AdminDonors() {
               </table>
             </div>
           ) : (
-            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-              No lapsed donors found.
-            </div>
+            <div className="empty-state"><p>No lapsed donors found.</p></div>
           )}
-        </Card>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
 function SummaryCard({ label, value }) {
   return (
-    <Card>
-      <p className="text-sm text-[var(--text-muted)]">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-[var(--text-primary)]">
-        {value}
-      </p>
-    </Card>
+    <div className="stat-card">
+      <div className="stat-body">
+        <div className="stat-label">{label}</div>
+        <div className="stat-val" style={{ marginTop: 8 }}>{value}</div>
+      </div>
+    </div>
   );
 }
 
-function Field({
-  label,
-  name,
-  value,
-  onChange,
-  type = "text",
-  required = false,
-  step,
-}) {
+function ChurnBadge({ risk }) {
+  const cls = { HIGH: "badge-red", MEDIUM: "badge-amber", LOW: "badge-green" }[risk] ?? "badge-gray";
+  return <span className={`badge ${cls} dot`}>{risk ?? "—"}</span>;
+}
+
+function Field({ label, name, value, onChange, type = "text", required = false, step }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-        {label}
-      </label>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink-s)", marginBottom: 7 }}>{label}</label>
       <input
-        type={type}
-        step={step}
-        name={name}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
+        type={type} step={step} name={name} value={value} onChange={onChange} required={required}
+        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13.5, color: "var(--ink)", outline: "none", fontFamily: "inherit" }}
       />
     </div>
   );
@@ -678,50 +501,18 @@ function Field({
 function Select({ label, name, value, onChange, options }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-        {label}
-      </label>
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink-s)", marginBottom: 7 }}>{label}</label>
+      <select name={name} value={value} onChange={onChange} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13.5, color: "var(--ink)", outline: "none", fontFamily: "inherit" }}>
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
     </div>
   );
 }
 
-function ChurnBadge({ risk }) {
-  const cfg = {
-    HIGH:   { cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",    dot: "bg-red-500" },
-    MEDIUM: { cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500" },
-    LOW:    { cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
-  }[risk] ?? { cls: "bg-slate-100 text-slate-500", dot: "bg-slate-400" };
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.cls}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-      {risk ?? "—"}
-    </span>
-  );
-}
-
 function CheckBox({ label, name, checked, onChange }) {
   return (
-    <label className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm font-medium text-[var(--text-primary)]">
-      <input
-        type="checkbox"
-        name={name}
-        checked={checked}
-        onChange={onChange}
-        className="h-4 w-4 accent-red-700"
-      />
+    <label style={{ display: "flex", alignItems: "center", gap: 12, border: "1.5px solid var(--border)", borderRadius: 10, padding: 14, fontSize: 13, fontWeight: 500, color: "var(--ink)", cursor: "pointer" }}>
+      <input type="checkbox" name={name} checked={checked} onChange={onChange} style={{ width: 16, height: 16, accentColor: "var(--cr)" }} />
       {label}
     </label>
   );

@@ -19,45 +19,33 @@ import {
   sendBulkSMS,
 } from "../services/notificationService";
 import { useToast } from "../context/ToastContext";
+import AdminLoader from "../components/common/AdminLoader";
 
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-
-const STATUS_CONFIG = {
-  SENT:    { cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500" },
-  FAILED:  { cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", dot: "bg-red-500" },
-  SKIPPED: { cls: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400", dot: "bg-slate-400" },
+const STATUS_BADGE = {
+  SENT:    "badge-green",
+  FAILED:  "badge-red",
+  SKIPPED: "badge-gray",
 };
 
 function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.SKIPPED;
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.cls}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-      {status}
-    </span>
-  );
+  return <span className={`badge ${STATUS_BADGE[status] ?? "badge-gray"}`}>{status}</span>;
 }
 
 function AdminSMS() {
   const { showToast } = useToast();
 
-  // SMS Setting
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [settingLoading, setSettingLoading] = useState(false);
   const [settingInfo, setSettingInfo] = useState(null);
 
-  // Test SMS
   const [testPhone, setTestPhone] = useState("");
   const [testMessage, setTestMessage] = useState("");
   const [testLoading, setTestLoading] = useState(false);
 
-  // Bulk SMS
   const [bulkIds, setBulkIds] = useState("");
   const [bulkMessage, setBulkMessage] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  // Logs
   const [logs, setLogs] = useState([]);
   const [logStats, setLogStats] = useState({ total: 0, sent_count: 0, failed_count: 0, skipped_count: 0 });
   const [logPage, setLogPage] = useState(1);
@@ -90,11 +78,7 @@ function AdminSMS() {
       setSettingLoading(true);
       const data = await toggleAdminSMS(!smsEnabled);
       setSmsEnabled(data.sms_enabled);
-      showToast({
-        type: "success",
-        title: "SMS Setting Updated",
-        message: data.message,
-      });
+      showToast({ type: "success", title: "SMS Setting Updated", message: data.message });
     } catch {
       showToast({ type: "error", title: "Failed", message: "Could not update SMS setting." });
     } finally {
@@ -171,11 +155,7 @@ function AdminSMS() {
     try {
       setBulkLoading(true);
       const data = await sendBulkSMS({ donor_ids, message: bulkMessage });
-      showToast({
-        type: "success",
-        title: "Bulk SMS Complete",
-        message: `Sent: ${data.sent}, Failed: ${data.failed}, Skipped: ${data.skipped}`,
-      });
+      showToast({ type: "success", title: "Bulk SMS Complete", message: `Sent: ${data.sent}, Failed: ${data.failed}, Skipped: ${data.skipped}` });
       setBulkIds("");
       setBulkMessage("");
       loadLogs();
@@ -187,280 +167,241 @@ function AdminSMS() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-medium text-[var(--crimson)]">SMS Management</p>
-        <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
-          SMS Integration
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm text-[var(--text-secondary)]">
-          Toggle SMS delivery, send test messages, run bulk SMS campaigns, and
-          review the full delivery log.
-        </p>
+    <>
+      <div className="page-head-row">
+        <div>
+          <div className="page-eyebrow">SMS Management</div>
+          <h1 className="page-title rh-display">SMS Integration</h1>
+          <p className="page-desc">Toggle SMS delivery, send test messages, run bulk SMS campaigns, and review the full delivery log.</p>
+        </div>
       </div>
 
-      {/* Global toggle + stats row */}
-      <div className="grid gap-5 md:grid-cols-4">
-        <Card className="md:col-span-1">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
-            <RiSettings4Line size={22} />
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        {/* Status card */}
+        <div className="stat-card" style={{ flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+          <div className="stat-icon bl"><RiSettings4Line size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val" style={{ color: smsEnabled ? "var(--green,#16a34a)" : "var(--cr)" }}>
+              {smsEnabled ? "Enabled" : "Disabled"}
+            </div>
+            <div className="stat-label">SMS Status</div>
+            {settingInfo?.updated_at && (
+              <div style={{ fontSize: 11, color: "var(--ink-l)", marginTop: 2 }}>
+                Last changed: {new Date(settingInfo.updated_at).toLocaleDateString("en-GB")}
+              </div>
+            )}
           </div>
-          <p className="text-sm text-[var(--text-muted)]">SMS Status</p>
-          <p className={`mt-1 text-xl font-bold ${smsEnabled ? "text-emerald-600" : "text-red-600"}`}>
-            {smsEnabled ? "Enabled" : "Disabled"}
-          </p>
-          {settingInfo?.updated_at && (
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Last changed: {new Date(settingInfo.updated_at).toLocaleDateString("en-GB")}
-            </p>
-          )}
-          <Button
-            className="mt-4 w-full"
-            variant={smsEnabled ? "secondary" : "primary"}
-            loading={settingLoading}
+          <button
+            className={`btn btn-sm ${smsEnabled ? "btn-outline" : "btn-primary"}`}
+            style={{ marginTop: 4 }}
             onClick={handleToggle}
+            disabled={settingLoading}
           >
+            {settingLoading ? <span className="btn-spin" /> : null}
             {smsEnabled ? "Disable SMS" : "Enable SMS"}
-          </Button>
-        </Card>
+          </button>
+        </div>
 
-        <StatCard icon={RiCheckboxCircleLine} label="Total Sent" value={logStats.sent_count} tone="emerald" />
-        <StatCard icon={RiCloseCircleLine} label="Failed" value={logStats.failed_count} tone="red" />
-        <StatCard icon={RiTimeLine} label="Skipped" value={logStats.skipped_count} tone="amber" />
+        <div className="stat-card">
+          <div className="stat-icon gr"><RiCheckboxCircleLine size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val">{logStats.sent_count}</div>
+            <div className="stat-label">Total Sent</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon cr"><RiCloseCircleLine size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val">{logStats.failed_count}</div>
+            <div className="stat-label">Failed</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon am"><RiTimeLine size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val">{logStats.skipped_count}</div>
+            <div className="stat-label">Skipped</div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         {/* Test SMS */}
-        <Card>
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--crimson-light)] text-[var(--crimson)]">
-              <RiMessage2Line size={22} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[var(--text-primary)]">Send Test SMS</h3>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Verify delivery to a specific number.
-              </p>
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title-row">
+              <div className="panel-icon cr"><RiMessage2Line size={16} /></div>
+              <div>
+                <div className="panel-title">Send Test SMS</div>
+                <div className="panel-sub">Verify delivery to a specific number.</div>
+              </div>
             </div>
           </div>
-
-          <form onSubmit={handleTestSMS} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
-                Phone Number
-              </label>
-              <input
-                value={testPhone}
-                onChange={(e) => setTestPhone(e.target.value)}
-                placeholder="+256700000000 or 0700000000"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
-                Message (optional)
-              </label>
-              <textarea
-                rows={3}
-                value={testMessage}
-                onChange={(e) => setTestMessage(e.target.value)}
-                placeholder="Leave empty to use default test message…"
-                className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-              />
-            </div>
-
-            <Button type="submit" loading={testLoading}>
-              <RiSendPlaneLine />
-              Send Test SMS
-            </Button>
-          </form>
-        </Card>
+          <div className="panel-body">
+            <form onSubmit={handleTestSMS} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Phone Number</label>
+                <input
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="+256700000000 or 0700000000"
+                  style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Message (optional)</label>
+                <textarea
+                  rows={3}
+                  value={testMessage}
+                  onChange={(e) => setTestMessage(e.target.value)}
+                  placeholder="Leave empty to use default test message…"
+                  style={{ width: "100%", resize: "none", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={testLoading}>
+                {testLoading ? <span className="btn-spin" /> : <RiSendPlaneLine />} Send Test SMS
+              </button>
+            </form>
+          </div>
+        </div>
 
         {/* Bulk SMS */}
-        <Card>
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20">
-              <RiGroupLine size={22} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[var(--text-primary)]">Bulk SMS Campaign</h3>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Send SMS to multiple donors by their profile IDs.
-              </p>
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title-row">
+              <div className="panel-icon pu"><RiGroupLine size={16} /></div>
+              <div>
+                <div className="panel-title">Bulk SMS Campaign</div>
+                <div className="panel-sub">Send SMS to multiple donors by their profile IDs.</div>
+              </div>
             </div>
           </div>
-
-          <form onSubmit={handleBulkSMS} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
-                Donor Profile IDs
-              </label>
-              <textarea
-                rows={3}
-                value={bulkIds}
-                onChange={(e) => setBulkIds(e.target.value)}
-                placeholder="Comma or newline separated donor IDs, e.g.&#10;1, 2, 3"
-                className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-              />
-              <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Tip: use Campaign Targeting to get the IDs of available donors, then paste here.
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
-                Message
-              </label>
-              <textarea
-                rows={3}
-                value={bulkMessage}
-                onChange={(e) => setBulkMessage(e.target.value)}
-                placeholder="Dear donor, UBTS urgently needs your blood donation…"
-                className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-              />
-            </div>
-
-            <Button type="submit" loading={bulkLoading}>
-              <RiSendPlaneLine />
-              Send Bulk SMS
-            </Button>
-          </form>
-        </Card>
+          <div className="panel-body">
+            <form onSubmit={handleBulkSMS} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Donor Profile IDs</label>
+                <textarea
+                  rows={3}
+                  value={bulkIds}
+                  onChange={(e) => setBulkIds(e.target.value)}
+                  placeholder={"Comma or newline separated donor IDs, e.g.\n1, 2, 3"}
+                  style={{ width: "100%", resize: "none", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+                <p style={{ marginTop: 4, fontSize: 12, color: "var(--ink-l)" }}>Tip: use Campaign Targeting to get the IDs of available donors, then paste here.</p>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Message</label>
+                <textarea
+                  rows={3}
+                  value={bulkMessage}
+                  onChange={(e) => setBulkMessage(e.target.value)}
+                  placeholder="Dear donor, UBTS urgently needs your blood donation…"
+                  style={{ width: "100%", resize: "none", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={bulkLoading}>
+                {bulkLoading ? <span className="btn-spin" /> : <RiSendPlaneLine />} Send Bulk SMS
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
 
       {/* Delivery Logs */}
-      <Card>
-        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h3 className="font-semibold text-[var(--text-primary)]">SMS Delivery Logs</h3>
-            <p className="text-sm text-[var(--text-secondary)]">{logStats.total} total log entries</p>
+      <div className="panel">
+        <div className="panel-head">
+          <div className="panel-title-row">
+            <div className="panel-icon bl"><RiMessage2Line size={16} /></div>
+            <div>
+              <div className="panel-title">SMS Delivery Logs</div>
+              <div className="panel-sub">{logStats.total} total log entries</div>
+            </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={loadLogs}>
-            <RiRefreshLine /> Refresh
-          </Button>
+          <button className="btn btn-outline btn-sm" onClick={loadLogs}><RiRefreshLine /> Refresh</button>
         </div>
 
-        {/* Log filters */}
-        <form onSubmit={handleLogSearch} className="mb-5 flex flex-wrap gap-3">
-          <div className="relative flex-1" style={{ minWidth: 180 }}>
-            <RiSearchLine size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-            <input
-              value={logSearch}
-              onChange={(e) => setLogSearch(e.target.value)}
-              placeholder="Phone, message, email…"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2 pl-8 pr-3 text-sm outline-none focus:border-[var(--crimson)]"
-            />
-          </div>
-          <select
-            value={logStatus}
-            onChange={(e) => { setLogStatus(e.target.value); setLogPage(1); }}
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm outline-none focus:border-[var(--crimson)]"
-          >
-            <option value="">All Statuses</option>
-            <option value="SENT">Sent</option>
-            <option value="FAILED">Failed</option>
-            <option value="SKIPPED">Skipped</option>
-          </select>
-          <Button type="submit" size="sm" variant="secondary">
-            Search
-          </Button>
-        </form>
+        <div className="panel-body">
+          <form onSubmit={handleLogSearch} style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+            <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
+              <RiSearchLine size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink-l)" }} />
+              <input
+                value={logSearch}
+                onChange={(e) => setLogSearch(e.target.value)}
+                placeholder="Phone, message, email…"
+                style={{ width: "100%", paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <select
+              value={logStatus}
+              onChange={(e) => { setLogStatus(e.target.value); setLogPage(1); }}
+              style={{ borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "8px 12px", fontSize: 13, outline: "none" }}
+            >
+              <option value="">All Statuses</option>
+              <option value="SENT">Sent</option>
+              <option value="FAILED">Failed</option>
+              <option value="SKIPPED">Skipped</option>
+            </select>
+            <button type="submit" className="btn btn-outline btn-sm">Search</button>
+          </form>
 
-        {logsLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
-          </div>
-        ) : logs.length === 0 ? (
-          <div className="py-10 text-center text-sm text-[var(--text-secondary)]">
-            No SMS log entries found.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
-                <tr>
-                  <th className="p-3 font-medium">Phone</th>
-                  <th className="p-3 font-medium">Recipient</th>
-                  <th className="p-3 font-medium">Message</th>
-                  <th className="p-3 font-medium">Status</th>
-                  <th className="p-3 font-medium">Note</th>
-                  <th className="p-3 font-medium">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id} className="border-t border-[var(--border)]">
-                    <td className="p-3 font-mono text-xs text-[var(--text-primary)]">{log.phone_number}</td>
-                    <td className="p-3 text-xs text-[var(--text-muted)]">{log.recipient_email || "—"}</td>
-                    <td className="p-3 max-w-xs">
-                      <p className="line-clamp-2 text-xs text-[var(--text-secondary)]">{log.message}</p>
-                    </td>
-                    <td className="p-3">
-                      <StatusBadge status={log.status} />
-                    </td>
-                    <td className="p-3 max-w-xs">
-                      {log.error_message ? (
-                        <p className="line-clamp-1 text-xs text-red-500">{log.error_message}</p>
-                      ) : (
-                        <span className="text-xs text-[var(--text-muted)]">—</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-xs text-[var(--text-muted)]">
-                      {new Date(log.created_at).toLocaleString("en-GB", {
-                        day: "2-digit", month: "short", year: "numeric",
-                        hour: "2-digit", minute: "2-digit",
-                      })}
-                    </td>
+          {logsLoading ? (
+            <AdminLoader text="Loading SMS logs…" />
+          ) : logs.length === 0 ? (
+            <div className="empty-state"><RiMessage2Line size={28} /><p>No SMS log entries found.</p></div>
+          ) : (
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Phone</th>
+                    <th>Recipient</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Note</th>
+                    <th>Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id}>
+                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>{log.phone_number}</td>
+                      <td style={{ fontSize: 12, color: "var(--ink-l)" }}>{log.recipient_email || "—"}</td>
+                      <td style={{ maxWidth: 220 }}>
+                        <p style={{ fontSize: 12, color: "var(--ink-s)", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{log.message}</p>
+                      </td>
+                      <td><StatusBadge status={log.status} /></td>
+                      <td style={{ maxWidth: 160 }}>
+                        {log.error_message ? (
+                          <p style={{ fontSize: 12, color: "var(--cr)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.error_message}</p>
+                        ) : (
+                          <span style={{ fontSize: 12, color: "var(--ink-l)" }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ fontSize: 12, color: "var(--ink-l)" }}>
+                        {new Date(log.created_at).toLocaleString("en-GB", {
+                          day: "2-digit", month: "short", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {logTotalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setLogPage((p) => Math.max(1, p - 1))}
-              disabled={logPage === 1}
-            >
-              ← Prev
-            </Button>
-            <span className="text-sm text-[var(--text-secondary)]">
-              {logPage} / {logTotalPages}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setLogPage((p) => Math.min(logTotalPages, p + 1))}
-              disabled={logPage === logTotalPages}
-            >
-              Next →
-            </Button>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, tone }) {
-  const tones = {
-    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20",
-    red: "bg-red-50 text-red-600 dark:bg-red-900/20",
-    amber: "bg-amber-50 text-amber-600 dark:bg-amber-900/20",
-  };
-  return (
-    <Card>
-      <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${tones[tone] || tones.emerald}`}>
-        <Icon size={22} />
+          {logTotalPages > 1 && (
+            <div className="pagination-row">
+              <span className="page-info">{logPage} / {logTotalPages}</span>
+              <div className="page-btns">
+                <button className="page-btn" onClick={() => setLogPage((p) => Math.max(1, p - 1))} disabled={logPage === 1}>← Prev</button>
+                <button className="page-btn" onClick={() => setLogPage((p) => Math.min(logTotalPages, p + 1))} disabled={logPage === logTotalPages}>Next →</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      <p className="text-sm text-[var(--text-muted)]">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-[var(--text-primary)]">{value}</p>
-    </Card>
+    </>
   );
 }
 

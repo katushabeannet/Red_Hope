@@ -15,11 +15,8 @@ import {
   scanPersonalizedCampaignDonors,
 } from "../services/campaignService";
 import { blastCampaignNotification } from "../services/notificationService";
-
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
-import { useToast } from "../context/ToastContext"; 
+import { useToast } from "../context/ToastContext";
+import AdminLoader from "../components/common/AdminLoader";
 
 const initialFilters = {
   blood_group: "",
@@ -28,12 +25,12 @@ const initialFilters = {
 };
 
 const tabs = [
-  { key: "matched_donors", label: "All Matched", icon: RiCheckboxCircleLine },
-  { key: "available_donors", label: "Available", icon: RiCheckboxCircleLine },
-  { key: "unavailable_donors", label: "Unavailable", icon: RiTimeLine },
-  { key: "ineligible_donors", label: "Ineligible", icon: RiCloseCircleLine },
-  { key: "outside_radius_donors", label: "Outside Radius", icon: RiMapPinLine },
-  { key: "skipped_donors", label: "Skipped", icon: RiRefreshLine },
+  { key: "matched_donors",       label: "All Matched",    icon: RiCheckboxCircleLine },
+  { key: "available_donors",     label: "Available",      icon: RiCheckboxCircleLine },
+  { key: "unavailable_donors",   label: "Unavailable",    icon: RiTimeLine },
+  { key: "ineligible_donors",    label: "Ineligible",     icon: RiCloseCircleLine },
+  { key: "outside_radius_donors",label: "Outside Radius", icon: RiMapPinLine },
+  { key: "skipped_donors",       label: "Skipped",        icon: RiRefreshLine },
 ];
 
 function PersonalizedCampaign() {
@@ -53,9 +50,7 @@ function PersonalizedCampaign() {
   const [blasting, setBlasting] = useState(false);
   const [campaignPerformanceId, setCampaignPerformanceId] = useState(null);
 
-  useEffect(() => {
-    loadCamps();
-  }, []);
+  useEffect(() => { loadCamps(); }, []);
 
   const loadCamps = async () => {
     try {
@@ -63,25 +58,16 @@ function PersonalizedCampaign() {
       const data = await getCampaignCamps();
       setCamps(Array.isArray(data) ? data : data.results || []);
     } catch {
-      showToast({
-        type: "error",
-        title: "Camps Failed",
-        message: "Unable to load donation camps.",
-      });
+      showToast({ type: "error", title: "Camps Failed", message: "Unable to load donation camps." });
     } finally {
       setCampsLoading(false);
     }
   };
 
-  const selectedCamp = camps.find(
-    (camp) => String(camp.id) === String(filters.camp_id)
-  );
+  const selectedCamp = camps.find((camp) => String(camp.id) === String(filters.camp_id));
 
   const handleChange = (e) => {
-    setFilters((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleReset = () => {
@@ -99,39 +85,19 @@ function PersonalizedCampaign() {
       showToast({ type: "error", title: "Missing Message", message: "Please enter a blast message." });
       return;
     }
-
-    const targetDonors =
-      blastTarget === "available" ? availableDonors : result?.matched_donors || [];
-
-    const donor_ids = targetDonors
-      .map((d) => d.donor_id)
-      .filter(Boolean);
-
+    const targetDonors = blastTarget === "available" ? availableDonors : result?.matched_donors || [];
+    const donor_ids = targetDonors.map((d) => d.donor_id).filter(Boolean);
     if (!donor_ids.length) {
       showToast({ type: "error", title: "No Donors", message: "No donor IDs found in selected group." });
       return;
     }
-
     try {
       setBlasting(true);
-      const data = await blastCampaignNotification({
-        donor_ids,
-        title: blastTitle,
-        message: blastMessage,
-        campaign_performance_id: campaignPerformanceId,
-      });
-      showToast({
-        type: "success",
-        title: "Blast Sent",
-        message: `Notifications sent to ${data.sent_count} of ${data.total_targeted} donors.`,
-      });
+      const data = await blastCampaignNotification({ donor_ids, title: blastTitle, message: blastMessage, campaign_performance_id: campaignPerformanceId });
+      showToast({ type: "success", title: "Blast Sent", message: `Notifications sent to ${data.sent_count} of ${data.total_targeted} donors.` });
       setBlastMessage("");
     } catch (err) {
-      showToast({
-        type: "error",
-        title: "Blast Failed",
-        message: err.response?.data?.error || "Failed to send campaign blast.",
-      });
+      showToast({ type: "error", title: "Blast Failed", message: err.response?.data?.error || "Failed to send campaign blast." });
     } finally {
       setBlasting(false);
     }
@@ -139,405 +105,290 @@ function PersonalizedCampaign() {
 
   const handleScan = async (e) => {
     e.preventDefault();
-
     try {
       setLoading(true);
-
       const payload = {
         blood_group: filters.blood_group || null,
         campaign_latitude: selectedCamp?.latitude || null,
         campaign_longitude: selectedCamp?.longitude || null,
         radius_km: filters.radius_km || 10,
       };
-
       const data = await scanPersonalizedCampaignDonors(payload);
       setResult(data);
       setCampaignPerformanceId(data.campaign_performance_id || null);
       setActiveTab("matched_donors");
-
-      showToast({
-        type: "success",
-        title: "Campaign Scan Completed",
-        message: `${data.total_matches} donor(s) fully matched your campaign filters.`,
-      });
+      showToast({ type: "success", title: "Campaign Scan Completed", message: `${data.total_matches} donor(s) fully matched your campaign filters.` });
     } catch (err) {
-      showToast({
-        type: "error",
-        title: "Campaign Scan Failed",
-        message:
-          err.response?.data?.error ||
-          "Unable to complete personalized campaign scan.",
-      });
+      showToast({ type: "error", title: "Campaign Scan Failed", message: err.response?.data?.error || "Unable to complete personalized campaign scan." });
     } finally {
       setLoading(false);
     }
   };
 
-const availableDonors = useMemo(() => {
-  return result?.matched_donors?.filter((donor) => donor.is_available) || [];
-}, [result]);
+  const availableDonors = useMemo(() => result?.matched_donors?.filter((donor) => donor.is_available) || [], [result]);
+  const unavailableDonors = useMemo(() => result?.matched_donors?.filter((donor) => !donor.is_available) || [], [result]);
 
-const unavailableDonors = useMemo(() => {
-  return result?.matched_donors?.filter((donor) => !donor.is_available) || [];
-}, [result]);
+  const counts = useMemo(() => {
+    if (!result) return {};
+    return {
+      matched_donors: result.matched_donors?.length || 0,
+      available_donors: availableDonors.length,
+      unavailable_donors: unavailableDonors.length,
+      ineligible_donors: result.ineligible_donors?.length || 0,
+      outside_radius_donors: result.outside_radius_donors?.length || 0,
+      skipped_donors: result.skipped_donors?.length || 0,
+    };
+  }, [result, availableDonors, unavailableDonors]);
 
-const counts = useMemo(() => {
-  if (!result) return {};
+  const activeRows = useMemo(() => {
+    if (!result) return [];
+    if (activeTab === "available_donors") return availableDonors;
+    if (activeTab === "unavailable_donors") return unavailableDonors;
+    return result?.[activeTab] || [];
+  }, [result, activeTab, availableDonors, unavailableDonors]);
 
-  return {
-    matched_donors: result.matched_donors?.length || 0,
-    available_donors: availableDonors.length,
-    unavailable_donors: unavailableDonors.length,
-    ineligible_donors: result.ineligible_donors?.length || 0,
-    outside_radius_donors: result.outside_radius_donors?.length || 0,
-    skipped_donors: result.skipped_donors?.length || 0,
-  };
-}, [result, availableDonors, unavailableDonors]);
-
-const activeRows = useMemo(() => {
-  if (!result) return [];
-
-  if (activeTab === "available_donors") return availableDonors;
-  if (activeTab === "unavailable_donors") return unavailableDonors;
-
-  return result?.[activeTab] || [];
-}, [result, activeTab, availableDonors, unavailableDonors]);
+  const inputStyle = { width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", boxSizing: "border-box" };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <>
+      <div className="page-head-row">
         <div>
-          <p className="text-sm font-medium text-[var(--crimson)]">
-            Personalized Campaign Engine
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
-            Target Campaign-Ready Donors
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--text-secondary)]">
-            Select a donation camp, blood group, and radius. The system scans
-            donors and gives a clean summary, while detailed reasons are shown
-            only when you open a donor profile.
-          </p>
+          <div className="page-eyebrow">Personalized Campaign Engine</div>
+          <h1 className="page-title rh-display">Target Campaign-Ready Donors</h1>
+          <p className="page-desc">Select a donation camp, blood group, and radius. The system scans donors and gives a clean summary, while detailed reasons are shown only when you open a donor profile.</p>
         </div>
-
-        <Button variant="secondary" onClick={handleReset}>
-          <RiRefreshLine />
-          Reset
-        </Button>
+        <div className="page-actions">
+          <button className="btn btn-outline btn-sm" onClick={handleReset}><RiRefreshLine /> Reset</button>
+        </div>
       </div>
 
-      <Card>
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--crimson-light)] text-[var(--crimson)]">
-            <RiFilter3Line size={22} />
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-[var(--text-primary)]">
-              Campaign Filters
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Choose a camp instead of manually entering latitude and longitude.
-            </p>
+      <div className="panel">
+        <div className="panel-head">
+          <div className="panel-title-row">
+            <div className="panel-icon cr"><RiFilter3Line size={16} /></div>
+            <div>
+              <div className="panel-title">Campaign Filters</div>
+              <div className="panel-sub">Choose a camp instead of manually entering latitude and longitude.</div>
+            </div>
           </div>
         </div>
-
-        <form onSubmit={handleScan} className="grid gap-4 md:grid-cols-2">
-          <Select
-            label="Required Blood Group"
-            name="blood_group"
-            value={filters.blood_group}
-            onChange={handleChange}
-            options={["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
-            placeholder="All Blood Groups"
-          />
-
-          <Select
-            label="Donation Camp"
-            name="camp_id"
-            value={filters.camp_id}
-            onChange={handleChange}
-            options={camps.map((camp) => ({
-              value: camp.id,
-              label: `${camp.name} - ${camp.district || camp.venue}`,
-            }))}
-            placeholder={campsLoading ? "Loading camps..." : "Select Campaign Camp"}
-          />
-
-          <Field
-            label="Radius KM"
-            name="radius_km"
-            type="number"
-            value={filters.radius_km}
-            onChange={handleChange}
-            placeholder="10"
-          />
-
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-            <p className="text-sm font-medium text-[var(--text-primary)]">
-              Selected Camp Location
-            </p>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              {selectedCamp
-                ? `${selectedCamp.name}, ${selectedCamp.venue || ""} ${
-                    selectedCamp.district || ""
-                  }`
-                : "No camp selected. Location filter will not be applied."}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3 md:col-span-2">
-            <Button type="submit" loading={loading}>
-              <RiSearchEyeLine />
-              Run Personalized Scan
-            </Button>
-
-            <Button type="button" variant="secondary" onClick={handleReset}>
-              Clear Filters
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      {result && (
-        <>
-          <div className="grid gap-5 md:grid-cols-6">
-            <SummaryCard label="All Matched" value={counts.matched_donors} />
-            <SummaryCard label="Available" value={counts.available_donors} />
-            <SummaryCard label="Unavailable" value={counts.unavailable_donors} />
-            <SummaryCard label="Ineligible" value={counts.ineligible_donors} />
-            <SummaryCard label="Outside Radius" value={counts.outside_radius_donors} />
-            <SummaryCard label="Skipped" value={counts.skipped_donors} />
-          </div>
-
-          <Card>
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                Campaign Scan Summary
-              </h3>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                The table shows a summary only. Click View Details to see full
-                eligibility, availability, and exclusion reasons.
-              </p>
-            </div>
-
-            <div className="mb-5 flex flex-wrap gap-2">
-              {tabs.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition ${
-                    activeTab === key
-                      ? "border-[var(--crimson)] bg-[var(--crimson)] text-white"
-                      : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:border-[var(--crimson)] hover:text-[var(--crimson)]"
-                  }`}
-                >
-                  <Icon size={16} />
-                  {label}
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      activeTab === key
-                        ? "bg-white/20 text-white"
-                        : "bg-white text-[var(--text-secondary)] dark:bg-slate-900"
-                    }`}
-                  >
-                    {counts[key] || 0}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {activeRows.length > 0 ? (
-              <SummaryTable
-                rows={activeRows}
-                activeTab={activeTab}
-                onView={setSelectedDonor}
-              />
-            ) : (
-              <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-                No records found in this section.
-              </div>
-            )}
-          </Card>
-        </>
-      )}
-
-      {result && (
-        <Card>
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              Send Campaign Notification Blast
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Send an in-app notification, email, and SMS to the selected donor group.
-            </p>
-          </div>
-
-          <form onSubmit={handleBlast} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                  Target Group
-                </label>
-                <select
-                  value={blastTarget}
-                  onChange={(e) => setBlastTarget(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
-                >
-                  <option value="available">
-                    Available donors only ({availableDonors.length})
-                  </option>
-                  <option value="all">
-                    All matched donors ({result?.matched_donors?.length || 0})
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                  Notification Title
-                </label>
-                <input
-                  value={blastTitle}
-                  onChange={(e) => setBlastTitle(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
-                  placeholder="UBTS Campaign — Blood Donation Alert"
-                />
-              </div>
+        <div className="panel-body">
+          <form onSubmit={handleScan} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Required Blood Group</label>
+              <select name="blood_group" value={filters.blood_group} onChange={handleChange} style={inputStyle}>
+                <option value="">All Blood Groups</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                  <option key={bg} value={bg}>{bg}</option>
+                ))}
+              </select>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                Message
-              </label>
-              <textarea
-                rows={3}
-                value={blastMessage}
-                onChange={(e) => setBlastMessage(e.target.value)}
-                placeholder="Dear donor, UBTS urgently needs your blood donation. Please visit your nearest camp..."
-                className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm outline-none focus:border-[var(--crimson)]"
-              />
+              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Donation Camp</label>
+              <select name="camp_id" value={filters.camp_id} onChange={handleChange} style={inputStyle}>
+                <option value="">{campsLoading ? "Loading camps..." : "Select Campaign Camp"}</option>
+                {camps.map((camp) => (
+                  <option key={camp.id} value={camp.id}>{camp.name} - {camp.district || camp.venue}</option>
+                ))}
+              </select>
             </div>
 
-            <Button type="submit" loading={blasting}>
-              Send Blast Notification
-            </Button>
+            <div>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Radius KM</label>
+              <input type="number" name="radius_km" value={filters.radius_km} onChange={handleChange} placeholder="10" style={inputStyle} />
+            </div>
+
+            <div style={{ borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", margin: "0 0 8px" }}>Selected Camp Location</p>
+              <p style={{ fontSize: 13, color: "var(--ink-s)", margin: 0 }}>
+                {selectedCamp
+                  ? `${selectedCamp.name}, ${selectedCamp.venue || ""} ${selectedCamp.district || ""}`
+                  : "No camp selected. Location filter will not be applied."}
+              </p>
+            </div>
+
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? <span className="btn-spin" /> : <RiSearchEyeLine />} Run Personalized Scan
+              </button>
+              <button type="button" className="btn btn-outline" onClick={handleReset}>Clear Filters</button>
+            </div>
           </form>
-        </Card>
+        </div>
+      </div>
+
+      {loading && <AdminLoader text="Scanning donors…" />}
+
+      {result && !loading && (
+        <>
+          <div className="stat-grid" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+            {[
+              { label: "All Matched", key: "matched_donors", tone: "cr" },
+              { label: "Available", key: "available_donors", tone: "gr" },
+              { label: "Unavailable", key: "unavailable_donors", tone: "am" },
+              { label: "Ineligible", key: "ineligible_donors", tone: "cr" },
+              { label: "Outside Radius", key: "outside_radius_donors", tone: "bl" },
+              { label: "Skipped", key: "skipped_donors", tone: "pu" },
+            ].map((s) => (
+              <div key={s.label} className="stat-card">
+                <div className={`stat-icon ${s.tone}`}><RiCheckboxCircleLine size={16} /></div>
+                <div className="stat-body">
+                  <div className="stat-val">{counts[s.key] || 0}</div>
+                  <div className="stat-label">{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title-row">
+                <div className="panel-icon bl"><RiSearchEyeLine size={16} /></div>
+                <div>
+                  <div className="panel-title">Campaign Scan Summary</div>
+                  <div className="panel-sub">Click View Details to see full eligibility, availability, and exclusion reasons.</div>
+                </div>
+              </div>
+            </div>
+            <div className="panel-body">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+                {tabs.map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    className={activeTab === key ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+                  >
+                    <Icon size={14} /> {label}
+                    <span style={{ borderRadius: 999, padding: "1px 6px", fontSize: 11, background: activeTab === key ? "rgba(255,255,255,0.2)" : "var(--canvas)", marginLeft: 2 }}>
+                      {counts[key] || 0}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {activeRows.length > 0 ? (
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Donor</th>
+                        <th>Contact</th>
+                        <th>Blood Group</th>
+                        <th>Distance</th>
+                        <th>Summary</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeRows.map((donor, index) => (
+                        <tr key={`${donor.donor_id || donor.full_name}-${index}`}>
+                          <td>
+                            <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{donor.full_name}</p>
+                            <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{donor.email || "No email"}</p>
+                          </td>
+                          <td style={{ color: "var(--ink-s)" }}>{donor.phone_number || "Not available"}</td>
+                          <td>
+                            {donor.blood_group
+                              ? <span className="badge badge-red">{donor.blood_group}</span>
+                              : "N/A"}
+                          </td>
+                          <td style={{ color: "var(--ink-s)" }}>
+                            {donor.distance_km !== null && donor.distance_km !== undefined
+                              ? `${donor.distance_km} km`
+                              : "Not filtered"}
+                          </td>
+                          <td style={{ fontSize: 12, color: "var(--ink-s)" }}>
+                            {getShortReason(donor, activeTab)}
+                          </td>
+                          <td>
+                            <button className="btn btn-outline btn-sm" onClick={() => setSelectedDonor(donor)}>View Details</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="empty-state"><RiSearchEyeLine size={28} /><p>No records found in this section.</p></div>
+              )}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title-row">
+                <div className="panel-icon gr"><RiCheckboxCircleLine size={16} /></div>
+                <div>
+                  <div className="panel-title">Send Campaign Notification Blast</div>
+                  <div className="panel-sub">Send an in-app notification, email, and SMS to the selected donor group.</div>
+                </div>
+              </div>
+            </div>
+            <div className="panel-body">
+              <form onSubmit={handleBlast} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Target Group</label>
+                    <select value={blastTarget} onChange={(e) => setBlastTarget(e.target.value)} style={inputStyle}>
+                      <option value="available">Available donors only ({availableDonors.length})</option>
+                      <option value="all">All matched donors ({result?.matched_donors?.length || 0})</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Notification Title</label>
+                    <input value={blastTitle} onChange={(e) => setBlastTitle(e.target.value)} placeholder="UBTS Campaign — Blood Donation Alert" style={inputStyle} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Message</label>
+                  <textarea
+                    rows={3}
+                    value={blastMessage}
+                    onChange={(e) => setBlastMessage(e.target.value)}
+                    placeholder="Dear donor, UBTS urgently needs your blood donation. Please visit your nearest camp..."
+                    style={{ ...inputStyle, resize: "none" }}
+                  />
+                </div>
+                <div>
+                  <button type="submit" className="btn btn-primary" disabled={blasting}>
+                    {blasting ? <span className="btn-spin" /> : null} Send Blast Notification
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
       )}
 
       {selectedDonor && (
-        <DonorDetailsModal
-          donor={selectedDonor}
-          onClose={() => setSelectedDonor(null)}
-        />
+        <DonorDetailsModal donor={selectedDonor} onClose={() => setSelectedDonor(null)} />
       )}
-    </div>
-  );
-}
-
-function SummaryTable({ rows, activeTab, onView }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-      <table className="w-full border-collapse text-left text-sm">
-        <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
-          <tr>
-            <th className="p-3 font-medium">Donor</th>
-            <th className="p-3 font-medium">Contact</th>
-            <th className="p-3 font-medium">Blood Group</th>
-            <th className="p-3 font-medium">Distance</th>
-            <th className="p-3 font-medium">Summary</th>
-            <th className="p-3 font-medium">Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {rows.map((donor, index) => (
-            <tr
-              key={`${donor.donor_id || donor.full_name}-${index}`}
-              className="border-t border-[var(--border)]"
-            >
-              <td className="p-3">
-                <p className="font-semibold text-[var(--text-primary)]">
-                  {donor.full_name}
-                </p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {donor.email || "No email"}
-                </p>
-              </td>
-
-              <td className="p-3 text-[var(--text-secondary)]">
-                {donor.phone_number || "Not available"}
-              </td>
-
-              <td className="p-3">
-                {donor.blood_group ? (
-                  <Badge label={donor.blood_group} variant="donor" />
-                ) : (
-                  "N/A"
-                )}
-              </td>
-
-              <td className="p-3 text-[var(--text-secondary)]">
-                {donor.distance_km !== null && donor.distance_km !== undefined
-                  ? `${donor.distance_km} km`
-                  : "Not filtered"}
-              </td>
-
-              <td className="p-3 text-[var(--text-secondary)]">
-                {getShortReason(donor, activeTab)}
-              </td>
-
-              <td className="p-3">
-                <Button size="sm" variant="secondary" onClick={() => onView(donor)}>
-                  View Details
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    </>
   );
 }
 
 function DonorDetailsModal({ donor, onClose }) {
   return (
-    <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[var(--border)] p-5">
+    <div style={{ position: "fixed", inset: 0, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: "0 16px" }}>
+      <div style={{ maxHeight: "90vh", width: "100%", maxWidth: 720, overflowY: "auto", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface,#fff)", boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", padding: "20px 24px" }}>
           <div>
-            <h3 className="text-lg font-bold text-[var(--text-primary)]">
-              {donor.full_name}
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)]">
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>{donor.full_name}</h3>
+            <p style={{ fontSize: 13, color: "var(--ink-s)", margin: "2px 0 0" }}>
               {donor.email || "No email"} • {donor.phone_number || "No phone"}
             </p>
           </div>
-
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--surface-2)]"
-          >
+          <button onClick={onClose} style={{ borderRadius: 8, padding: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-l)" }}>
             <RiCloseLine size={22} />
           </button>
         </div>
 
-        <div className="space-y-5 p-5">
-          <div className="grid gap-4 md:grid-cols-3">
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
             <DetailBox label="Blood Group" value={donor.blood_group} />
-            <DetailBox
-              label="Distance"
-              value={
-                donor.distance_km !== null && donor.distance_km !== undefined
-                  ? `${donor.distance_km} km`
-                  : "Not filtered"
-              }
-            />
-            <DetailBox
-              label="Donations"
-              value={donor.total_donations ?? "Not recorded"}
-            />
+            <DetailBox label="Distance" value={donor.distance_km !== null && donor.distance_km !== undefined ? `${donor.distance_km} km` : "Not filtered"} />
+            <DetailBox label="Donations" value={donor.total_donations ?? "Not recorded"} />
           </div>
 
           <DetailSection
@@ -555,16 +406,16 @@ function DonorDetailsModal({ donor, onClose }) {
           />
 
           {donor.exclusion_reason && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
-              <p className="font-semibold">Exclusion Reason</p>
-              <p className="mt-2 text-sm">{donor.exclusion_reason}</p>
+            <div style={{ borderRadius: 12, border: "1px solid #fecaca", background: "#fef2f2", padding: 16, color: "#dc2626" }}>
+              <p style={{ fontWeight: 600, margin: "0 0 8px" }}>Exclusion Reason</p>
+              <p style={{ fontSize: 13, margin: 0 }}>{donor.exclusion_reason}</p>
             </div>
           )}
 
           {donor.reason && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-              <p className="font-semibold">Skipped Reason</p>
-              <p className="mt-2 text-sm">{donor.reason}</p>
+            <div style={{ borderRadius: 12, border: "1px solid #fde68a", background: "#fffbeb", padding: 16, color: "#92400e" }}>
+              <p style={{ fontWeight: 600, margin: "0 0 8px" }}>Skipped Reason</p>
+              <p style={{ fontSize: 13, margin: 0 }}>{donor.reason}</p>
             </div>
           )}
         </div>
@@ -574,25 +425,17 @@ function DonorDetailsModal({ donor, onClose }) {
 }
 
 function DetailSection({ title, status, summary, reasons }) {
+  const isPositive = !status.includes("Not");
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h4 className="font-semibold text-[var(--text-primary)]">{title}</h4>
-        <Badge
-          label={status}
-          variant={status.includes("Not") ? "ineligible" : "eligible"}
-        />
+    <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--canvas)", padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <h4 style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{title}</h4>
+        <span className={`badge ${isPositive ? "badge-green" : "badge-red"}`}>{status}</span>
       </div>
-
-      <p className="text-sm leading-6 text-[var(--text-secondary)]">
-        {summary || "No summary available."}
-      </p>
-
+      <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-s)", margin: 0 }}>{summary || "No summary available."}</p>
       {reasons?.length > 0 && (
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--text-secondary)]">
-          {reasons.map((reason, index) => (
-            <li key={index}>{reason}</li>
-          ))}
+        <ul style={{ marginTop: 12, paddingLeft: 20, fontSize: 13, color: "var(--ink-s)" }}>
+          {reasons.map((reason, index) => <li key={index}>{reason}</li>)}
         </ul>
       )}
     </div>
@@ -601,11 +444,9 @@ function DetailSection({ title, status, summary, reasons }) {
 
 function DetailBox({ label, value }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-      <p className="text-xs text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 font-semibold text-[var(--text-primary)]">
-        {value || "N/A"}
-      </p>
+    <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--canvas)", padding: 16 }}>
+      <p style={{ fontSize: 12, color: "var(--ink-l)", margin: "0 0 4px" }}>{label}</p>
+      <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{value || "N/A"}</p>
     </div>
   );
 }
@@ -618,73 +459,6 @@ function getShortReason(donor, tab) {
   if (tab === "outside_radius_donors") return "Outside selected campaign radius";
   if (tab === "skipped_donors") return donor.reason || "Missing required data";
   return donor.match_status || "Reviewed";
-}
-
-function SummaryCard({ label, value }) {
-  return (
-    <Card>
-      <p className="text-sm text-[var(--text-muted)]">{label}</p>
-      <h3 className="mt-2 text-3xl font-bold text-[var(--text-primary)]">
-        {value}
-      </h3>
-    </Card>
-  );
-}
-
-function Field({ label, name, value, onChange, type = "text", placeholder = "" }) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-        {label}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-      />
-    </div>
-  );
-}
-
-function Select({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-  placeholder = "Select option",
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-        {label}
-      </label>
-
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-      >
-        <option value="">{placeholder}</option>
-
-        {options.map((option) =>
-          typeof option === "string" ? (
-            <option key={option || "all"} value={option}>
-              {option || placeholder}
-            </option>
-          ) : (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          )
-        )}
-      </select>
-    </div>
-  );
 }
 
 export default PersonalizedCampaign;

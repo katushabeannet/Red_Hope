@@ -4,7 +4,6 @@ import {
   RiAlertLine,
   RiCheckboxCircleLine,
   RiCloseLine,
-  RiDeleteBinLine,
   RiEdit2Line,
   RiNotification3Line,
   RiRefreshLine,
@@ -20,37 +19,32 @@ import {
   reNotifyBloodDemandAlert,
 } from "../services/notificationService";
 import { useToast } from "../context/ToastContext";
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
+import AdminLoader from "../components/common/AdminLoader";
+import DeleteBtn from "../components/common/DeleteBtn";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-const URGENCY_CFG = {
-  CRITICAL: { cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",      dot: "bg-red-500",    label: "Critical" },
-  HIGH:     { cls: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400", dot: "bg-orange-500", label: "High" },
-  MEDIUM:   { cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",    dot: "bg-amber-500",  label: "Medium" },
-  LOW:      { cls: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400",       dot: "bg-slate-400",  label: "Low" },
+const URGENCY_BADGE = {
+  CRITICAL: "badge-red",
+  HIGH:     "badge-amber",
+  MEDIUM:   "badge-amber",
+  LOW:      "badge-gray",
 };
-
-const STATUS_CFG = {
-  ACTIVE:   { cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", label: "Active" },
-  RESOLVED: { cls: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",            label: "Resolved" },
-};
+const URGENCY_LABEL = { CRITICAL: "Critical", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
 
 function UrgencyBadge({ level }) {
-  const cfg = URGENCY_CFG[level] ?? URGENCY_CFG.HIGH;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.cls}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
+    <span className={`badge ${URGENCY_BADGE[level] ?? "badge-amber"}`}>
+      {URGENCY_LABEL[level] ?? level}
     </span>
   );
 }
 
 function StatusBadge({ status }) {
-  const cfg = STATUS_CFG[status] ?? STATUS_CFG.ACTIVE;
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.cls}`}>{cfg.label}</span>
+    <span className={`badge ${status === "ACTIVE" ? "badge-green" : "badge-gray"}`}>
+      {status === "ACTIVE" ? "Active" : "Resolved"}
+    </span>
   );
 }
 
@@ -70,20 +64,17 @@ function AdminBloodDemand() {
   const [meta, setMeta] = useState({ total: 0, page: 1, total_pages: 1, active_count: 0, resolved_count: 0 });
   const [loading, setLoading] = useState(false);
 
-  // Filters
   const [filterStatus, setFilterStatus] = useState("");
   const [filterBG, setFilterBG] = useState("");
   const [filterUrgency, setFilterUrgency] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Create/Edit modal
   const [showForm, setShowForm] = useState(false);
   const [editAlert, setEditAlert] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  // Confirm delete
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -149,11 +140,7 @@ function AdminBloodDemand() {
         showToast({ type: "success", title: "Updated", message: "Alert updated." });
       } else {
         const result = await createBloodDemandAlert(form);
-        showToast({
-          type: "success",
-          title: "Alert Created",
-          message: `Alert created. ${result.notified_count} donor(s) notified.`,
-        });
+        showToast({ type: "success", title: "Alert Created", message: `Alert created. ${result.notified_count} donor(s) notified.` });
         setPage(1);
         load();
       }
@@ -202,211 +189,202 @@ function AdminBloodDemand() {
 
   const fld = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const selectStyle = { width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" };
+  const inputStyle = { ...selectStyle };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <>
+      <div className="page-head-row">
         <div>
-          <p className="text-sm font-medium text-[var(--crimson)]">Notifications</p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">Blood Demand Management</h1>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--text-secondary)]">
-            Raise blood demand alerts, set urgency levels, and notify matching eligible donors.
-          </p>
+          <div className="page-eyebrow">Notifications</div>
+          <h1 className="page-title rh-display">Blood Demand Management</h1>
+          <p className="page-desc">Raise blood demand alerts, set urgency levels, and notify matching eligible donors.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={load}><RiRefreshLine /> Refresh</Button>
-          <Button onClick={openCreate}><RiAddLine /> New Alert</Button>
+        <div className="page-actions">
+          <button className="btn btn-outline btn-sm" onClick={load}><RiRefreshLine /> Refresh</button>
+          <button className="btn btn-primary btn-sm" onClick={openCreate}><RiAddLine /> New Alert</button>
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: "Total Alerts",    value: meta.total,          color: "text-[var(--text-primary)]" },
-          { label: "Active",          value: meta.active_count,   color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Resolved",        value: meta.resolved_count, color: "text-slate-500" },
-        ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-            <p className="text-xs text-[var(--text-muted)]">{s.label}</p>
-            <p className={`mt-1 text-3xl font-bold ${s.color}`}>{s.value}</p>
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <div className="stat-card">
+          <div className="stat-icon cr"><RiAlertLine size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val">{meta.total}</div>
+            <div className="stat-label">Total Alerts</div>
           </div>
-        ))}
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon gr"><RiCheckboxCircleLine size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val">{meta.active_count}</div>
+            <div className="stat-label">Active</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon bl"><RiCheckboxCircleLine size={18} /></div>
+          <div className="stat-body">
+            <div className="stat-val">{meta.resolved_count}</div>
+            <div className="stat-label">Resolved</div>
+          </div>
+        </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
-          <div className="flex-1" style={{ minWidth: 180 }}>
-            <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Search</label>
-            <div className="relative">
-              <RiSearchLine size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-              <input
-                value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Title, message, hospital…"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[var(--crimson)]"
-              />
+      <div className="panel">
+        <div className="panel-body">
+          <form onSubmit={handleSearch} style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Search</label>
+              <div style={{ position: "relative" }}>
+                <RiSearchLine size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink-l)" }} />
+                <input
+                  value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Title, message, hospital…"
+                  style={{ ...inputStyle, paddingLeft: 30 }}
+                />
+              </div>
             </div>
-          </div>
-          {[
-            { label: "Status", value: filterStatus, set: setFilterStatus, opts: [["", "All Status"], ["ACTIVE", "Active"], ["RESOLVED", "Resolved"]] },
-            { label: "Blood Group", value: filterBG, set: setFilterBG, opts: [["", "All Groups"], ...BLOOD_GROUPS.map((g) => [g, g])] },
-            { label: "Urgency", value: filterUrgency, set: setFilterUrgency, opts: [["", "All Urgency"], ["CRITICAL", "Critical"], ["HIGH", "High"], ["MEDIUM", "Medium"], ["LOW", "Low"]] },
-          ].map((f) => (
-            <div key={f.label}>
-              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">{f.label}</label>
-              <select
-                value={f.value}
-                onChange={(e) => { f.set(e.target.value); setPage(1); }}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-              >
-                {f.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            </div>
-          ))}
-          <Button type="submit"><RiSearchLine /> Search</Button>
-        </form>
-      </Card>
+            {[
+              { label: "Status", value: filterStatus, set: setFilterStatus, opts: [["", "All Status"], ["ACTIVE", "Active"], ["RESOLVED", "Resolved"]] },
+              { label: "Blood Group", value: filterBG, set: setFilterBG, opts: [["", "All Groups"], ...BLOOD_GROUPS.map((g) => [g, g])] },
+              { label: "Urgency", value: filterUrgency, set: setFilterUrgency, opts: [["", "All Urgency"], ["CRITICAL", "Critical"], ["HIGH", "High"], ["MEDIUM", "Medium"], ["LOW", "Low"]] },
+            ].map((f) => (
+              <div key={f.label}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>{f.label}</label>
+                <select value={f.value} onChange={(e) => { f.set(e.target.value); setPage(1); }} style={{ borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none" }}>
+                  {f.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            ))}
+            <button type="submit" className="btn btn-primary btn-sm"><RiSearchLine /> Search</button>
+          </form>
+        </div>
+      </div>
 
-      <div className="flex items-center justify-between text-sm text-[var(--text-secondary)]">
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-s)" }}>
         <span>{meta.total} alert{meta.total !== 1 ? "s" : ""}</span>
         <span>Page {meta.page} of {meta.total_pages}</span>
       </div>
 
-      {/* Table */}
-      <Card>
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
-          </div>
-        ) : alerts.length === 0 ? (
-          <div className="py-12 text-center">
-            <RiAlertLine size={36} className="mx-auto mb-3 text-[var(--text-muted)]" />
-            <p className="text-sm text-[var(--text-secondary)]">No blood demand alerts found.</p>
-            <Button className="mt-4" onClick={openCreate}><RiAddLine /> Create First Alert</Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
-                <tr>
-                  <th className="p-3 font-medium">Blood Group</th>
-                  <th className="p-3 font-medium">Title</th>
-                  <th className="p-3 font-medium">Urgency</th>
-                  <th className="p-3 font-medium">Units</th>
-                  <th className="p-3 font-medium">Hospital</th>
-                  <th className="p-3 font-medium">Status</th>
-                  <th className="p-3 font-medium">Notified</th>
-                  <th className="p-3 font-medium">Created</th>
-                  <th className="p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {alerts.map((a) => (
-                  <tr key={a.id} className="border-t border-[var(--border)] hover:bg-[var(--surface-2)]">
-                    <td className="p-3">
-                      <span className="rounded-full bg-[var(--crimson)] px-2.5 py-0.5 text-xs font-bold text-white">
-                        {a.blood_group}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <p className="max-w-[200px] font-medium text-[var(--text-primary)] truncate">{a.title}</p>
-                      {a.message && (
-                        <p className="max-w-[200px] truncate text-xs text-[var(--text-muted)]">{a.message}</p>
-                      )}
-                    </td>
-                    <td className="p-3"><UrgencyBadge level={a.urgency_level} /></td>
-                    <td className="p-3 font-semibold text-[var(--text-primary)]">{a.units_needed}</td>
-                    <td className="p-3 text-xs text-[var(--text-secondary)]">{a.hospital_name || "—"}</td>
-                    <td className="p-3"><StatusBadge status={a.status} /></td>
-                    <td className="p-3 text-center font-semibold text-[var(--text-primary)]">{a.notified_count}</td>
-                    <td className="p-3 text-xs text-[var(--text-muted)]">
-                      {new Date(a.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openEdit(a)}
-                          title="Edit"
-                          className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
-                        >
-                          <RiEdit2Line size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleResolve(a)}
-                          title={a.status === "ACTIVE" ? "Mark Resolved" : "Reactivate"}
-                          className={`rounded-lg p-1.5 hover:bg-[var(--surface-2)] ${
-                            a.status === "ACTIVE"
-                              ? "text-emerald-600 hover:text-emerald-700"
-                              : "text-amber-600 hover:text-amber-700"
-                          }`}
-                        >
-                          <RiCheckboxCircleLine size={16} />
-                        </button>
-                        {a.status === "ACTIVE" && (
-                          <button
-                            onClick={() => handleReNotify(a)}
-                            title="Re-notify donors"
-                            className="rounded-lg p-1.5 text-blue-500 hover:bg-[var(--surface-2)] hover:text-blue-700"
-                          >
-                            <RiNotification3Line size={16} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setDeleteTarget(a)}
-                          title="Delete"
-                          className="rounded-lg p-1.5 text-red-400 hover:bg-[var(--surface-2)] hover:text-red-600"
-                        >
-                          <RiDeleteBinLine size={16} />
-                        </button>
-                      </div>
-                    </td>
+      <div className="panel">
+        <div className="panel-body">
+          {loading ? (
+            <AdminLoader text="Loading blood demand alerts…" />
+          ) : alerts.length === 0 ? (
+            <div className="empty-state">
+              <RiAlertLine size={36} />
+              <p>No blood demand alerts found.</p>
+              <button className="btn btn-primary btn-sm" onClick={openCreate}><RiAddLine /> Create First Alert</button>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Blood Group</th>
+                    <th>Title</th>
+                    <th>Urgency</th>
+                    <th>Units</th>
+                    <th>Hospital</th>
+                    <th>Status</th>
+                    <th>Notified</th>
+                    <th>Created</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {alerts.map((a) => (
+                    <tr key={a.id}>
+                      <td>
+                        <span style={{ borderRadius: 999, background: "var(--cr)", padding: "2px 10px", fontSize: 12, fontWeight: 700, color: "#fff" }}>
+                          {a.blood_group}
+                        </span>
+                      </td>
+                      <td>
+                        <p style={{ maxWidth: 200, fontWeight: 600, color: "var(--ink)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
+                        {a.message && (
+                          <p style={{ maxWidth: 200, fontSize: 12, color: "var(--ink-l)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.message}</p>
+                        )}
+                      </td>
+                      <td><UrgencyBadge level={a.urgency_level} /></td>
+                      <td style={{ fontWeight: 600 }}>{a.units_needed}</td>
+                      <td style={{ fontSize: 12, color: "var(--ink-s)" }}>{a.hospital_name || "—"}</td>
+                      <td><StatusBadge status={a.status} /></td>
+                      <td style={{ textAlign: "center", fontWeight: 600 }}>{a.notified_count}</td>
+                      <td style={{ fontSize: 12, color: "var(--ink-l)" }}>
+                        {new Date(a.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <button
+                            onClick={() => openEdit(a)}
+                            title="Edit"
+                            style={{ borderRadius: 8, padding: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-l)" }}
+                          >
+                            <RiEdit2Line size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleResolve(a)}
+                            title={a.status === "ACTIVE" ? "Mark Resolved" : "Reactivate"}
+                            style={{ borderRadius: 8, padding: 6, border: "none", background: "transparent", cursor: "pointer", color: a.status === "ACTIVE" ? "#16a34a" : "#d97706" }}
+                          >
+                            <RiCheckboxCircleLine size={16} />
+                          </button>
+                          {a.status === "ACTIVE" && (
+                            <button
+                              onClick={() => handleReNotify(a)}
+                              title="Re-notify donors"
+                              style={{ borderRadius: 8, padding: 6, border: "none", background: "transparent", cursor: "pointer", color: "#2563eb" }}
+                            >
+                              <RiNotification3Line size={16} />
+                            </button>
+                          )}
+                          <DeleteBtn onClick={() => setDeleteTarget(a)} title="Delete alert" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {meta.total_pages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>← Prev</Button>
-            <span className="text-sm text-[var(--text-secondary)]">{page} / {meta.total_pages}</span>
-            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(meta.total_pages, p + 1))} disabled={page === meta.total_pages}>Next →</Button>
-          </div>
-        )}
-      </Card>
+          {meta.total_pages > 1 && (
+            <div className="pagination-row">
+              <span className="page-info">{page} / {meta.total_pages}</span>
+              <div className="page-btns">
+                <button className="page-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+                <button className="page-btn" onClick={() => setPage((p) => Math.min(meta.total_pages, p + 1))} disabled={page === meta.total_pages}>Next →</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Create / Edit modal */}
       {showForm && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[var(--border)] p-5">
-              <h3 className="font-bold text-[var(--text-primary)]">
+        <div style={{ position: "fixed", inset: 0, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: "0 16px" }}>
+          <div style={{ maxHeight: "90vh", width: "100%", maxWidth: 520, overflowY: "auto", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface,#fff)", boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", padding: "20px 24px" }}>
+              <h3 style={{ fontWeight: 700, color: "var(--ink)", margin: 0 }}>
                 {editAlert ? "Edit Alert" : "New Blood Demand Alert"}
               </h3>
-              <button onClick={() => setShowForm(false)} className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--surface-2)]">
+              <button onClick={() => setShowForm(false)} style={{ borderRadius: 8, padding: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-l)" }}>
                 <RiCloseLine size={22} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4 p-5">
-              {/* Blood group + Urgency row */}
-              <div className="grid gap-4 sm:grid-cols-2">
+            <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16, padding: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Blood Group *</label>
-                  <select
-                    value={form.blood_group} onChange={fld("blood_group")}
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-                  >
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Blood Group *</label>
+                  <select value={form.blood_group} onChange={fld("blood_group")} style={selectStyle}>
                     {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Urgency Level *</label>
-                  <select
-                    value={form.urgency_level} onChange={fld("urgency_level")}
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-                  >
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Urgency Level *</label>
+                  <select value={form.urgency_level} onChange={fld("urgency_level")} style={selectStyle}>
                     <option value="CRITICAL">🔴 Critical</option>
                     <option value="HIGH">🟠 High</option>
                     <option value="MEDIUM">🟡 Medium</option>
@@ -415,56 +393,38 @@ function AdminBloodDemand() {
                 </div>
               </div>
 
-              {/* Units + Hospital row */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Units Needed</label>
-                  <input
-                    type="number" min={1} value={form.units_needed}
-                    onChange={fld("units_needed")}
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-                  />
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Units Needed</label>
+                  <input type="number" min={1} value={form.units_needed} onChange={fld("units_needed")} style={inputStyle} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Hospital / Facility</label>
-                  <input
-                    type="text" value={form.hospital_name} onChange={fld("hospital_name")}
-                    placeholder="e.g. Mulago National Referral"
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-                  />
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Hospital / Facility</label>
+                  <input type="text" value={form.hospital_name} onChange={fld("hospital_name")} placeholder="e.g. Mulago National Referral" style={inputStyle} />
                 </div>
               </div>
 
-              {/* Title */}
               <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Title *</label>
-                <input
-                  type="text" required value={form.title} onChange={fld("title")}
-                  placeholder="e.g. Urgent: O+ Blood Needed"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-                />
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Title *</label>
+                <input type="text" required value={form.title} onChange={fld("title")} placeholder="e.g. Urgent: O+ Blood Needed" style={inputStyle} />
               </div>
 
-              {/* Message */}
               <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Message *</label>
-                <textarea
-                  rows={4} required value={form.message} onChange={fld("message")}
-                  placeholder="Describe the urgency and appeal to donors…"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-                />
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Message *</label>
+                <textarea rows={4} required value={form.message} onChange={fld("message")} placeholder="Describe the urgency and appeal to donors…" style={{ ...inputStyle, resize: "vertical" }} />
                 {!editAlert && (
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">
+                  <p style={{ marginTop: 4, fontSize: 12, color: "var(--ink-l)" }}>
                     All eligible {form.blood_group || "matching"} donors will be notified in-app automatically.
                   </p>
                 )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-                <Button type="submit" loading={saving}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, paddingTop: 8 }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? <span className="btn-spin" /> : null}
                   {editAlert ? "Save Changes" : "Create & Notify Donors"}
-                </Button>
+                </button>
               </div>
             </form>
           </div>
@@ -473,30 +433,23 @@ function AdminBloodDemand() {
 
       {/* Delete confirm */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-900/30">
-              <RiDeleteBinLine size={22} />
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: "0 16px" }}>
+          <div style={{ width: "100%", maxWidth: 380, borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface,#fff)", padding: 24, boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, color: "#dc2626" }}>
+              <RiAlertLine size={22} />
             </div>
-            <h3 className="font-bold text-[var(--text-primary)]">Delete Alert</h3>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            <h3 style={{ fontWeight: 700, color: "var(--ink)", margin: 0 }}>Delete Alert</h3>
+            <p style={{ marginTop: 8, fontSize: 13, color: "var(--ink-s)" }}>
               Are you sure you want to delete <strong>"{deleteTarget.title}"</strong>? This cannot be undone.
             </p>
-            <div className="mt-5 flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-              <Button
-                variant="danger"
-                loading={deleting}
-                onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Delete
-              </Button>
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button className="btn btn-outline" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <DeleteBtn onClick={confirmDelete} title={deleting ? "Deleting…" : "Confirm Delete"} />
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

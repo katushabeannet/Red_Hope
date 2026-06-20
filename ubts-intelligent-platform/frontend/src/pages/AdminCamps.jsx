@@ -3,7 +3,6 @@ import {
   RiAddLine,
   RiCalendarLine,
   RiCloseLine,
-  RiDeleteBinLine,
   RiEditLine,
   RiListCheck,
   RiMapPinLine,
@@ -26,9 +25,8 @@ import {
   getCampQR,
 } from "../services/campService";
 
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
+import AdminLoader from "../components/common/AdminLoader";
+import DeleteBtn from "../components/common/DeleteBtn";
 
 const calLocalizer = dateFnsLocalizer({
   format,
@@ -54,6 +52,8 @@ const initialForm = {
   contact_phone: "",
   status: "ACTIVE",
 };
+
+const STATUS_BADGE = { ACTIVE: "badge-green", INACTIVE: "badge-amber", COMPLETED: "badge-blue" };
 
 function AdminCamps() {
   const [camps, setCamps] = useState([]);
@@ -108,29 +108,24 @@ function AdminCamps() {
       contact_phone: camp.contact_phone || "",
       status: camp.status || "ACTIVE",
     });
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       setLoading(true);
       setError("");
-
       const payload = {
         ...formData,
         latitude: Number(formData.latitude),
         longitude: Number(formData.longitude),
       };
-
       if (editingId) {
         await updateCamp({ ...payload, id: editingId });
       } else {
         await createCamp(payload);
       }
-
       resetForm();
       await loadCamps();
     } catch {
@@ -143,7 +138,6 @@ function AdminCamps() {
   const handleDelete = async (campId) => {
     const confirmed = window.confirm("Delete this donation camp?");
     if (!confirmed) return;
-
     try {
       setError("");
       await deleteCamp(campId);
@@ -195,433 +189,274 @@ function AdminCamps() {
   const completedCount = camps.filter((camp) => camp.status === "COMPLETED").length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <>
+      <div className="page-head-row">
         <div>
-          <p className="text-sm font-medium text-[var(--crimson)]">
-            Camp Management
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
-            Donation Camp Locations
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
-            Create, update, activate, deactivate, and remove blood donation camp
-            locations used by the nearest-camp recommendation engine.
-          </p>
+          <div className="page-eyebrow">Camp Management</div>
+          <h1 className="page-title rh-display">Donation Camp Locations</h1>
+          <p className="page-desc">Create, update, activate, deactivate, and remove blood donation camp locations used by the nearest-camp recommendation engine.</p>
         </div>
-
-        <div className="flex gap-2">
-          <Button variant={viewMode === "table" ? "primary" : "secondary"} onClick={() => setViewMode("table")}>
+        <div className="page-actions">
+          <button className={`btn btn-sm ${viewMode === "table" ? "btn-primary" : "btn-outline"}`} onClick={() => setViewMode("table")}>
             <RiListCheck /> Table
-          </Button>
-          <Button variant={viewMode === "calendar" ? "primary" : "secondary"} onClick={() => setViewMode("calendar")}>
+          </button>
+          <button className={`btn btn-sm ${viewMode === "calendar" ? "btn-primary" : "btn-outline"}`} onClick={() => setViewMode("calendar")}>
             <RiCalendarLine /> Calendar
-          </Button>
-          <Button variant="secondary" onClick={loadCamps}>
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={loadCamps}>
             <RiRefreshLine /> Refresh
-          </Button>
+          </button>
         </div>
       </div>
 
-      {error && (
-        <Card className="border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20">
-          {error}
-        </Card>
-      )}
+      {error && <div className="adm-alert adm-alert-error">{error}</div>}
 
-      <div className="grid gap-5 md:grid-cols-3">
-        <SummaryCard label="Active Camps" value={activeCount} variant="active" />
-        <SummaryCard label="Inactive Camps" value={inactiveCount} variant="inactive" />
-        <SummaryCard
-          label="Completed Camps"
-          value={completedCount}
-          variant="completed"
-        />
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <SummaryCard label="Active Camps" value={activeCount} tone="cr" />
+        <SummaryCard label="Inactive Camps" value={inactiveCount} tone="am" />
+        <SummaryCard label="Completed Camps" value={completedCount} tone="bl" />
       </div>
 
-      <Card>
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              {editingId ? "Edit Donation Camp" : "Add New Donation Camp"}
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Provide camp details and exact coordinates for map-based
-              recommendations.
-            </p>
-          </div>
-
-          {editingId && (
-            <Badge label="Editing" variant="completed" />
-          )}
-        </div>
-
-        <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-          <Field
-            label="Camp Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Kampala Central Blood Drive"
-            required
-          />
-
-          <Field
-            label="Region"
-            name="region"
-            value={formData.region}
-            onChange={handleChange}
-            placeholder="Central"
-          />
-
-          <Field
-            label="District"
-            name="district"
-            value={formData.district}
-            onChange={handleChange}
-            placeholder="Kampala"
-          />
-
-          <Field
-            label="Venue"
-            name="venue"
-            value={formData.venue}
-            onChange={handleChange}
-            placeholder="City Square"
-            required
-          />
-
-          <Field
-            label="Latitude"
-            name="latitude"
-            value={formData.latitude}
-            onChange={handleChange}
-            placeholder="0.3136"
-            type="number"
-            step="any"
-            required
-          />
-
-          <Field
-            label="Longitude"
-            name="longitude"
-            value={formData.longitude}
-            onChange={handleChange}
-            placeholder="32.5811"
-            type="number"
-            step="any"
-            required
-          />
-
-          <Field
-            label="Start Date"
-            name="start_date"
-            value={formData.start_date}
-            onChange={handleChange}
-            type="date"
-            required
-          />
-
-          <Field
-            label="End Date"
-            name="end_date"
-            value={formData.end_date}
-            onChange={handleChange}
-            type="date"
-            required
-          />
-
-          <Field
-            label="Contact Phone"
-            name="contact_phone"
-            value={formData.contact_phone}
-            onChange={handleChange}
-            placeholder="0800123456"
-          />
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-              Status
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-            >
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-              <option value="COMPLETED">COMPLETED</option>
-            </select>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Brief description of the donation camp"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
-              rows="3"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-3 md:col-span-2">
-            <Button type="submit" loading={loading}>
-              {editingId ? <RiEditLine /> : <RiAddLine />}
-              {editingId ? "Update Camp" : "Create Camp"}
-            </Button>
-
-            {editingId && (
-              <Button type="button" variant="secondary" onClick={resetForm}>
-                Cancel Edit
-              </Button>
-            )}
-          </div>
-        </form>
-      </Card>
-
-      {viewMode === "calendar" && (
-        <Card>
-          <div className="mb-5 flex items-center justify-between">
+      <div className="panel">
+        <div className="panel-head">
+          <div className="panel-title-row">
+            <div className="panel-icon cr"><RiAddLine size={16} /></div>
             <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Camp Calendar</h3>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Drag events to reschedule. Click an event to edit it.
-              </p>
+              <div className="panel-title">{editingId ? "Edit Donation Camp" : "Add New Donation Camp"}</div>
+              <div className="panel-sub">Provide camp details and exact coordinates for map-based recommendations.</div>
             </div>
-            <Badge label={`${camps.length} camps`} variant="donor" />
           </div>
+          {editingId && <span className="badge badge-amber">Editing</span>}
+        </div>
 
-          {tableLoading ? (
-            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-              Loading camps...
+        <div className="panel-body">
+          <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label="Camp Name" name="name" value={formData.name} onChange={handleChange} placeholder="Kampala Central Blood Drive" required />
+            <Field label="Region" name="region" value={formData.region} onChange={handleChange} placeholder="Central" />
+            <Field label="District" name="district" value={formData.district} onChange={handleChange} placeholder="Kampala" />
+            <Field label="Venue" name="venue" value={formData.venue} onChange={handleChange} placeholder="City Square" required />
+            <Field label="Latitude" name="latitude" value={formData.latitude} onChange={handleChange} placeholder="0.3136" type="number" step="any" required />
+            <Field label="Longitude" name="longitude" value={formData.longitude} onChange={handleChange} placeholder="32.5811" type="number" step="any" required />
+            <Field label="Start Date" name="start_date" value={formData.start_date} onChange={handleChange} type="date" required />
+            <Field label="End Date" name="end_date" value={formData.end_date} onChange={handleChange} type="date" required />
+            <Field label="Contact Phone" name="contact_phone" value={formData.contact_phone} onChange={handleChange} placeholder="0800123456" />
+
+            <div>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none" }}
+              >
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
+                <option value="COMPLETED">COMPLETED</option>
+              </select>
             </div>
-          ) : calendarEvents.length > 0 ? (
-            <div style={{ height: 560 }} className="overflow-hidden rounded-xl">
-              <DnDCalendar
-                localizer={calLocalizer}
-                events={calendarEvents}
-                startAccessor="start"
-                endAccessor="end"
-                defaultView="month"
-                views={["month", "week", "agenda"]}
-                style={{ height: "100%" }}
-                draggableAccessor={() => true}
-                onEventDrop={handleEventDrop}
-                onSelectEvent={(event) => handleEdit(event.resource)}
-                eventPropGetter={(event) => ({
-                  style: {
-                    backgroundColor:
-                      event.resource?.status === "ACTIVE"
-                        ? "#C0162C"
-                        : event.resource?.status === "COMPLETED"
-                        ? "#64748b"
-                        : "#f59e0b",
-                    borderRadius: "6px",
-                    border: "none",
-                    fontSize: "12px",
-                  },
-                })}
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Brief description of the donation camp"
+                rows="3"
+                style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", resize: "vertical", boxSizing: "border-box" }}
               />
             </div>
-          ) : (
-            <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-              No camps with dates set. Add start and end dates to see them on the calendar.
+
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? <span className="btn-spin" /> : editingId ? <RiEditLine /> : <RiAddLine />}
+                {editingId ? "Update Camp" : "Create Camp"}
+              </button>
+              {editingId && (
+                <button type="button" className="btn btn-outline" onClick={resetForm}>Cancel Edit</button>
+              )}
             </div>
-          )}
-        </Card>
+          </form>
+        </div>
+      </div>
+
+      {viewMode === "calendar" && (
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title-row">
+              <div className="panel-icon bl"><RiCalendarLine size={16} /></div>
+              <div>
+                <div className="panel-title">Camp Calendar</div>
+                <div className="panel-sub">Drag events to reschedule. Click an event to edit it.</div>
+              </div>
+            </div>
+            <span className="badge badge-gray">{camps.length} camps</span>
+          </div>
+          <div className="panel-body">
+            {tableLoading ? (
+              <AdminLoader text="Loading camps…" />
+            ) : calendarEvents.length > 0 ? (
+              <div style={{ height: 560, overflow: "hidden", borderRadius: 12 }}>
+                <DnDCalendar
+                  localizer={calLocalizer}
+                  events={calendarEvents}
+                  startAccessor="start"
+                  endAccessor="end"
+                  defaultView="month"
+                  views={["month", "week", "agenda"]}
+                  style={{ height: "100%" }}
+                  draggableAccessor={() => true}
+                  onEventDrop={handleEventDrop}
+                  onSelectEvent={(event) => handleEdit(event.resource)}
+                  eventPropGetter={(event) => ({
+                    style: {
+                      backgroundColor:
+                        event.resource?.status === "ACTIVE"
+                          ? "#C0162C"
+                          : event.resource?.status === "COMPLETED"
+                          ? "#64748b"
+                          : "#f59e0b",
+                      borderRadius: "6px",
+                      border: "none",
+                      fontSize: "12px",
+                    },
+                  })}
+                />
+              </div>
+            ) : (
+              <div className="empty-state"><RiCalendarLine size={28} /><p>No camps with dates set. Add start and end dates to see them on the calendar.</p></div>
+            )}
+          </div>
+        </div>
       )}
 
       {viewMode === "table" && (
-      <Card>
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              Existing Donation Camps
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              These camps are used by donor and chatbot nearest-camp workflows.
-            </p>
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title-row">
+              <div className="panel-icon cr"><RiListCheck size={16} /></div>
+              <div>
+                <div className="panel-title">Existing Donation Camps</div>
+                <div className="panel-sub">These camps are used by donor and chatbot nearest-camp workflows.</div>
+              </div>
+            </div>
+            <span className="badge badge-gray">{camps.length} total</span>
           </div>
-
-          <Badge label={`${camps.length} total`} variant="donor" />
+          <div className="panel-body">
+            {tableLoading ? (
+              <AdminLoader text="Loading donation camps…" />
+            ) : camps.length > 0 ? (
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Camp</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Dates</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {camps.map((camp) => (
+                      <tr key={camp.id}>
+                        <td>
+                          <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{camp.name}</p>
+                          <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{camp.contact_phone || "No contact"}</p>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ink-s)" }}>
+                            <RiMapPinLine style={{ marginTop: 2, flexShrink: 0 }} />
+                            <div>
+                              <p style={{ margin: 0 }}>{camp.venue}</p>
+                              <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{camp.district}, {camp.region}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${STATUS_BADGE[camp.status] ?? "badge-gray"}`}>{camp.status}</span>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", color: "var(--ink-s)" }}>
+                            <RiCalendarLine style={{ marginTop: 2, flexShrink: 0 }} />
+                            <div>
+                              <p style={{ margin: 0 }}>{camp.start_date}</p>
+                              <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>to {camp.end_date}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            <button className="btn btn-outline btn-sm" onClick={() => handleEdit(camp)}>
+                              <RiEditLine /> Edit
+                            </button>
+                            <button className="btn btn-outline btn-sm" onClick={() => handleGetQR(camp)} disabled={qrLoading}>
+                              {qrLoading ? <span className="btn-spin-dk" /> : <RiQrCodeLine />} QR
+                            </button>
+                            <DeleteBtn onClick={() => handleDelete(camp.id)} title="Delete camp" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state"><RiMapPinLine size={28} /><p>No donation camps found.</p></div>
+            )}
+          </div>
         </div>
-
-        {tableLoading ? (
-          <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-            Loading donation camps...
-          </div>
-        ) : camps.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
-                <tr>
-                  <th className="p-3 font-medium">Camp</th>
-                  <th className="p-3 font-medium">Location</th>
-                  <th className="p-3 font-medium">Status</th>
-                  <th className="p-3 font-medium">Dates</th>
-                  <th className="p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {camps.map((camp) => (
-                  <tr
-                    key={camp.id}
-                    className="border-t border-[var(--border)]"
-                  >
-                    <td className="p-3">
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {camp.name}
-                      </p>
-                      <p className="text-xs text-[var(--text-muted)]">
-                        {camp.contact_phone || "No contact"}
-                      </p>
-                    </td>
-
-                    <td className="p-3">
-                      <div className="flex gap-2 text-[var(--text-secondary)]">
-                        <RiMapPinLine className="mt-0.5 shrink-0" />
-                        <div>
-                          <p>{camp.venue}</p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            {camp.district}, {camp.region}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="p-3">
-                      <Badge
-                        label={camp.status}
-                        variant={camp.status.toLowerCase()}
-                      />
-                    </td>
-
-                    <td className="p-3">
-                      <div className="flex gap-2 text-[var(--text-secondary)]">
-                        <RiCalendarLine className="mt-0.5 shrink-0" />
-                        <div>
-                          <p>{camp.start_date}</p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            to {camp.end_date}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="p-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleEdit(camp)}
-                        >
-                          <RiEditLine />
-                          Edit
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          loading={qrLoading}
-                          onClick={() => handleGetQR(camp)}
-                        >
-                          <RiQrCodeLine />
-                          QR
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => handleDelete(camp.id)}
-                        >
-                          <RiDeleteBinLine />
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-            No donation camps found.
-          </div>
-        )}
-      </Card>
       )}
 
       {qrModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", padding: 16 }}
           onClick={() => setQrModal(null)}
         >
           <div
-            className="relative w-full max-w-sm rounded-2xl bg-[var(--surface)] p-6 shadow-2xl"
+            style={{ position: "relative", width: "100%", maxWidth: 360, borderRadius: 20, background: "var(--surface,#fff)", padding: 24, boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setQrModal(null)}
-              className="absolute right-4 top-4 rounded-full p-1 text-[var(--text-muted)] hover:bg-[var(--surface-2)]"
+              style={{ position: "absolute", right: 16, top: 16, borderRadius: 999, padding: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-l)" }}
             >
               <RiCloseLine size={20} />
             </button>
 
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              Camp Check-in QR Code
-            </h3>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              {qrModal.camp_name}
-            </p>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Camp Check-in QR Code</h3>
+            <p style={{ marginTop: 4, fontSize: 13, color: "var(--ink-s)" }}>{qrModal.camp_name}</p>
 
-            <div className="mt-4 flex justify-center rounded-xl bg-white p-4">
+            <div style={{ marginTop: 16, display: "flex", justifyContent: "center", borderRadius: 12, background: "#fff", padding: 16 }}>
               <img
                 src={`data:image/png;base64,${qrModal.qr_image_base64}`}
                 alt="Camp QR Code"
-                className="h-56 w-56"
+                style={{ width: 224, height: 224 }}
               />
             </div>
 
-            <p className="mt-3 break-all text-center text-xs text-[var(--text-muted)]">
+            <p style={{ marginTop: 12, wordBreak: "break-all", textAlign: "center", fontSize: 12, color: "var(--ink-l)" }}>
               {qrModal.checkin_url}
             </p>
 
             <a
               href={`data:image/png;base64,${qrModal.qr_image_base64}`}
               download={`camp_${qrModal.camp_id}_qr.png`}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface)]"
+              style={{ marginTop: 16, display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 16px", fontSize: 13, fontWeight: 500, color: "var(--ink)", textDecoration: "none", boxSizing: "border-box" }}
             >
               <RiQrCodeLine /> Download QR PNG
             </a>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-function Field({
-  label,
-  name,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  required = false,
-  step,
-}) {
+function Field({ label, name, value, onChange, placeholder, type = "text", required = false, step }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-        {label}
-      </label>
+      <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{label}</label>
       <input
         name={name}
         value={value}
@@ -630,21 +465,21 @@ function Field({
         type={type}
         step={step}
         required={required}
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
+        style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
       />
     </div>
   );
 }
 
-function SummaryCard({ label, value, variant }) {
+function SummaryCard({ label, value, tone }) {
   return (
-    <Card>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm text-[var(--text-muted)]">{label}</p>
-        <Badge label={label.split(" ")[0]} variant={variant} />
+    <div className="stat-card">
+      <div className={`stat-icon ${tone}`}><RiMapPinLine size={18} /></div>
+      <div className="stat-body">
+        <div className="stat-val">{value}</div>
+        <div className="stat-label">{label}</div>
       </div>
-      <p className="text-3xl font-bold text-[var(--text-primary)]">{value}</p>
-    </Card>
+    </div>
   );
 }
 
