@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  RiCpuLine,
   RiMapPinLine,
   RiRobot2Line,
   RiSendPlaneLine,
@@ -10,147 +11,123 @@ import {
   askChatbot,
   findNearestCampFromChatbot,
 } from "../../services/chatbotService";
-
-import Card from "../../components/common/Card";
-import Button from "../../components/common/Button";
-import Badge from "../../components/common/Badge";
 import NearestCampMap from "../../components/NearestCampMap";
 
-const STORAGE_KEY = "ubts_chat_history";
+const STORAGE_KEY       = "ubts_chat_history";
 const MAX_HISTORY_TURNS = 5;
 
-function Chatbot() {
-  const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  });
-  const [nearestCamp, setNearestCamp] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [error, setError] = useState("");
-  const chatEndRef = useRef(null);
+const QUICK_PROMPTS = [
+  "Is blood donation safe?",
+  "Who can donate blood?",
+  "How often can I donate?",
+  "Find a donation camp near me",
+];
 
-  // Build GPT-format history from the messages array (last N turns)
+function Chatbot() {
+  const [query, setQuery]                = useState("");
+  const [messages, setMessages]          = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]"); }
+    catch { return []; }
+  });
+  const [nearestCamp, setNearestCamp]    = useState(null);
+  const [loading, setLoading]            = useState(false);
+  const [locationLoading, setLocLoading] = useState(false);
+  const [error, setError]                = useState("");
+  const chatEndRef                       = useRef(null);
+
   const buildHistory = (msgs) =>
-    msgs
-      .slice(-MAX_HISTORY_TURNS * 2)
-      .map((m) => ({
-        role: m.sender === "user" ? "user" : "assistant",
-        content: m.text,
-      }));
+    msgs.slice(-MAX_HISTORY_TURNS * 2).map((m) => ({
+      role:    m.sender === "user" ? "user" : "assistant",
+      content: m.text,
+    }));
 
   const addMessage = (sender, text) => {
     setMessages((prev) => {
       const next = [...prev, { sender, text }];
-      try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {}
+      try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
   };
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!query.trim()) return;
-
-    const userQuestion = query;
-    setQuery("");
-    setError("");
-
-    // Capture history BEFORE adding the new user message
+    const userQuestion    = query;
+    setQuery(""); setError("");
     const historySnapshot = buildHistory(messages);
     addMessage("user", userQuestion);
-
     try {
       setLoading(true);
-
       const data = await askChatbot(userQuestion, historySnapshot);
-
       addMessage("assistant", data.assistant_response || data.message);
-
-      if (data.action_type === "REQUEST_LOCATION") {
-        handleLocationRequest();
-      }
-    } catch {
-      setError("Failed to get chatbot response.");
-    } finally {
-      setLoading(false);
-    }
+      if (data.action_type === "REQUEST_LOCATION") handleLocationRequest();
+    } catch { setError("Failed to get a response. Please try again."); }
+    finally { setLoading(false); }
   };
 
   const handleLocationRequest = () => {
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by this browser.");
-      return;
-    }
-
-    setLocationLoading(true);
-
+    if (!navigator.geolocation) { setError("Geolocation is not supported by this browser."); return; }
+    setLocLoading(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const data = await findNearestCampFromChatbot({
-            latitude: position.coords.latitude,
+            latitude:  position.coords.latitude,
             longitude: position.coords.longitude,
           });
-
           setNearestCamp(data);
           addMessage("assistant", data.assistant_response);
-        } catch {
-          setError("Failed to find nearest donation camp.");
-        } finally {
-          setLocationLoading(false);
-        }
+        } catch { setError("Failed to find nearest donation camp."); }
+        finally { setLocLoading(false); }
       },
-      () => {
-        setError("Location access was denied.");
-        setLocationLoading(false);
-      }
+      () => { setError("Location access was denied."); setLocLoading(false); }
     );
   };
 
-  const quickPrompts = [
-    "Is blood donation safe?",
-    "Who can donate blood?",
-    "How often can I donate blood?",
-    "Where can I donate blood near me?",
-  ];
+  const clearChat = () => {
+    setMessages([]);
+    sessionStorage.removeItem(STORAGE_KEY);
+    setNearestCamp(null);
+  };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px", display: "flex", flexDirection: "column", gap: 28 }}>
+
+      {/* ── Page header ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <p className="text-sm font-medium text-[var(--crimson)]">
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--cr)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
             Conversational Assistant
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">
+          </div>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 800, color: "var(--ink)", margin: "0 0 10px", lineHeight: 1.2 }}>
             UBTS Intelligent Chatbot
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
+          <p style={{ fontSize: 14, color: "var(--ink-s)", lineHeight: 1.6, margin: 0, maxWidth: 500 }}>
             Ask general blood donation questions or request nearby donation camp
             recommendations using location intelligence.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Badge label="MPNet + Action Router" variant="donor" />
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "#F0FDF4", color: "var(--green)", borderRadius: 999,
+            padding: "5px 13px", fontSize: 11, fontWeight: 700, border: "1.5px solid #BBF7D0",
+          }}>
+            <RiCpuLine size={13} /> MPNet + Action Router
+          </span>
           {messages.length > 0 && (
-            <button
-              onClick={() => {
-                setMessages([]);
-                sessionStorage.removeItem(STORAGE_KEY);
-              }}
-              className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)] hover:border-red-300 hover:text-red-600"
+            <button onClick={clearChat} style={{
+              background: "none", border: "1.5px solid var(--border)",
+              borderRadius: 999, padding: "5px 14px", fontSize: 12,
+              color: "var(--ink-l)", cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--cr)"; e.currentTarget.style.color = "var(--cr)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--ink-l)"; }}
             >
               Clear chat
             </button>
@@ -158,177 +135,233 @@ function Chatbot() {
         </div>
       </div>
 
+      {/* ── Error strip ── */}
       {error && (
-        <Card className="border-red-200 bg-red-50 text-red-700 dark:bg-red-900/20">
+        <div style={{
+          background: "#FFF5F5", border: "1.5px solid #FECACA",
+          borderLeft: "4px solid var(--cr)", borderRadius: 12,
+          padding: "12px 16px", fontSize: 13, color: "var(--cr)",
+        }}>
           {error}
-        </Card>
+        </div>
       )}
 
-      <Card noPad className="overflow-hidden">
-        <div className="border-b border-[var(--border)] bg-[var(--surface)] p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--crimson-light)] text-[var(--crimson)]">
-              <RiRobot2Line size={22} />
-            </div>
+      {/* ── Chat panel ── */}
+      <div style={{ borderRadius: 22, border: "1.5px solid var(--border)", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,.07)" }}>
 
-            <div>
-              <h2 className="font-semibold text-[var(--text-primary)]">
-                Blood Donation Assistant
-              </h2>
-              <p className="text-xs text-[var(--text-muted)]">
-                Retrieval answers, role-aware routing, and nearest-camp actions
-              </p>
-            </div>
+        {/* Panel header */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "16px 24px", borderBottom: "1px solid var(--border)", background: "#fff",
+        }}>
+          <div style={{ width: 46, height: 46, borderRadius: 14, background: "#FDEEF1", color: "var(--cr)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <RiRobot2Line size={24} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontWeight: 700, color: "var(--ink)", fontSize: 15, margin: 0 }}>
+              Blood Donation Assistant
+            </h2>
+            <p style={{ fontSize: 12, color: "var(--ink-l)", margin: "3px 0 0" }}>
+              Retrieval answers, role-aware routing, and nearest-camp actions
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)" }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-l)" }}>Online</span>
           </div>
         </div>
 
-        <div className="h-[460px] space-y-5 overflow-y-auto bg-[var(--surface-2)] p-5">
+        {/* Message area */}
+        <div style={{
+          height: 480, overflowY: "auto", background: "var(--canvas)",
+          padding: "24px", display: "flex", flexDirection: "column", gap: 16,
+        }}>
           {messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="max-w-md text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--crimson-light)] text-[var(--crimson)]">
-                  <RiRobot2Line size={28} />
-                </div>
-
-                <h3 className="font-semibold text-[var(--text-primary)]">
-                  Start a conversation
-                </h3>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                  Try asking about donation safety, eligibility, donation
-                  frequency, or nearby donation camps.
-                </p>
-
-                <div className="mt-5 flex flex-wrap justify-center gap-2">
-                  {quickPrompts.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => setQuery(prompt)}
-                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:border-[var(--crimson)] hover:text-[var(--crimson)]"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <EmptyState onPickPrompt={setQuery} />
           ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`flex max-w-[85%] gap-3 ${
-                    message.sender === "user" ? "flex-row-reverse" : ""
-                  }`}
-                >
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                      message.sender === "user"
-                        ? "bg-[var(--crimson)] text-white"
-                        : "bg-[var(--surface)] text-[var(--crimson)]"
-                    }`}
-                  >
-                    {message.sender === "user" ? (
-                      <RiUser3Line size={16} />
-                    ) : (
-                      <RiRobot2Line size={16} />
-                    )}
-                  </div>
-
-                  <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
-                      message.sender === "user"
-                        ? "bg-[var(--crimson)] text-white"
-                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]"
-                    }`}
-                  >
-                    {message.text}
-                  </div>
-                </div>
-              </div>
-            ))
+            messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)
           )}
 
-          {loading && (
-            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
-              Assistant is thinking...
-            </div>
-          )}
-
-          {locationLoading && (
-            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-              <RiMapPinLine />
-              Getting your location and finding nearest camp...
-            </div>
-          )}
+          {loading       && <TypingDots text="Assistant is thinking…" />}
+          {locationLoading && <TypingDots icon={<RiMapPinLine size={14} />} text="Getting your location and finding nearest camp…" />}
 
           <div ref={chatEndRef} />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-3 border-t border-[var(--border)] bg-[var(--surface)] p-4 sm:flex-row"
-        >
+        {/* Input row */}
+        <form onSubmit={handleSubmit} style={{
+          display: "flex", gap: 10, padding: "14px 20px",
+          borderTop: "1px solid var(--border)", background: "#fff",
+        }}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type your question..."
-            className="min-h-[46px] flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--crimson)]"
+            placeholder="Type your question…"
+            style={{
+              flex: 1, borderRadius: 12, border: "1.5px solid var(--border)",
+              background: "var(--canvas)", padding: "11px 16px",
+              fontSize: 13, color: "var(--ink)", outline: "none", fontFamily: "inherit",
+              transition: "border-color .15s",
+            }}
+            onFocus={(e) => { e.target.style.borderColor = "var(--cr)"; }}
+            onBlur={(e)  => { e.target.style.borderColor = "var(--border)"; }}
           />
-
-          <Button type="submit" loading={loading}>
-            <RiSendPlaneLine />
-            Send
-          </Button>
+          <button type="submit" disabled={loading || !query.trim()} style={{
+            display: "flex", alignItems: "center", gap: 7, borderRadius: 12,
+            background: "var(--cr)", color: "#fff", border: "none", cursor: "pointer",
+            padding: "11px 22px", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+            opacity: loading || !query.trim() ? 0.5 : 1,
+            transition: "opacity .15s, background .15s",
+          }}
+            onMouseEnter={(e) => { if (!loading && query.trim()) e.currentTarget.style.background = "var(--cr-dk)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--cr)"; }}
+          >
+            <RiSendPlaneLine size={16} /> Send
+          </button>
         </form>
-      </Card>
+      </div>
 
+      {/* ── Nearest camp result ── */}
       {nearestCamp && (
-        <Card className="space-y-5">
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+        <div style={{ borderRadius: 22, border: "1.5px solid var(--border)", overflow: "hidden", background: "#fff", boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, padding: "20px 24px", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
             <div>
-              <h3 className="text-xl font-bold text-[var(--text-primary)]">
+              <h3 style={{ fontWeight: 700, color: "var(--ink)", fontSize: 16, margin: "0 0 6px" }}>
                 Nearest Donation Camp
               </h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+              <p style={{ fontSize: 13, color: "var(--ink-s)", lineHeight: 1.6, margin: 0 }}>
                 {nearestCamp.assistant_response}
               </p>
             </div>
-
-            <Badge label={`${nearestCamp.distance_km} km away`} variant="active" />
+            <span className="badge badge-green">{nearestCamp.distance_km} km away</span>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <CampDetail label="Camp" value={nearestCamp.nearest_camp?.name} />
-            <CampDetail label="Venue" value={nearestCamp.nearest_camp?.venue} />
-            <CampDetail
-              label="District"
-              value={nearestCamp.nearest_camp?.district}
-            />
-            <CampDetail
-              label="Contact"
-              value={nearestCamp.nearest_camp?.contact_phone || "Not provided"}
-            />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px,1fr))", gap: 12, padding: "20px 24px" }}>
+            {[
+              { label: "Camp",     value: nearestCamp.nearest_camp?.name },
+              { label: "Venue",    value: nearestCamp.nearest_camp?.venue },
+              { label: "District", value: nearestCamp.nearest_camp?.district },
+              { label: "Contact",  value: nearestCamp.nearest_camp?.contact_phone || "Not provided" },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px" }}>
+                <div style={{ fontSize: 11, color: "var(--ink-l)", marginBottom: 5 }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{value || "N/A"}</div>
+              </div>
+            ))}
           </div>
 
-          <NearestCampMap camp={nearestCamp.nearest_camp} />
-        </Card>
+          <div style={{ padding: "0 24px 24px" }}>
+            <NearestCampMap camp={nearestCamp.nearest_camp} />
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function CampDetail({ label, value }) {
+/* ── Empty state with quick prompts ── */
+function EmptyState({ onPickPrompt }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-      <p className="text-xs text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 font-semibold text-[var(--text-primary)]">
-        {value || "Not available"}
-      </p>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ textAlign: "center", maxWidth: 400 }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 20, background: "#FDEEF1", color: "var(--cr)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 18px", boxShadow: "0 4px 20px rgba(185,28,28,.12)",
+        }}>
+          <RiRobot2Line size={32} />
+        </div>
+        <h3 style={{ fontWeight: 700, color: "var(--ink)", fontSize: 17, margin: "0 0 10px" }}>
+          Start a conversation
+        </h3>
+        <p style={{ fontSize: 13, color: "var(--ink-s)", lineHeight: 1.65, margin: "0 0 22px" }}>
+          Ask about donation safety, eligibility, frequency, or request nearby donation camps using your location.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+          {QUICK_PROMPTS.map((p) => (
+            <button key={p} onClick={() => onPickPrompt(p)} style={{
+              background: "#fff", border: "1.5px solid var(--border)", borderRadius: 999,
+              padding: "7px 16px", fontSize: 12, color: "var(--ink-s)", cursor: "pointer",
+              fontFamily: "inherit", fontWeight: 600, transition: "border-color .15s, color .15s",
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--cr)"; e.currentTarget.style.color = "var(--cr)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--ink-s)"; }}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Individual message bubble ── */
+function MessageBubble({ msg }) {
+  const isUser = msg.sender === "user";
+  return (
+    <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", gap: 10, alignItems: "flex-end" }}>
+      {!isUser && (
+        <div style={{
+          width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+          background: "#FDEEF1", color: "var(--cr)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <RiRobot2Line size={17} />
+        </div>
+      )}
+      <div style={{
+        maxWidth: "78%",
+        borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+        padding: "12px 16px", fontSize: 13, lineHeight: 1.7,
+        background: isUser
+          ? "linear-gradient(135deg, var(--cr) 0%, var(--cr-dk) 100%)"
+          : "#fff",
+        color:  isUser ? "#fff" : "var(--ink)",
+        border: isUser ? "none" : "1.5px solid var(--border)",
+        boxShadow: "0 2px 8px rgba(0,0,0,.06)",
+      }}>
+        {msg.text}
+      </div>
+      {isUser && (
+        <div style={{
+          width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+          background: "var(--cr)", color: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <RiUser3Line size={17} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Animated typing indicator ── */
+function TypingDots({ icon, text }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+        background: "#FDEEF1", color: "var(--cr)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {icon || <RiRobot2Line size={17} />}
+      </div>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: "#fff", border: "1.5px solid var(--border)",
+        borderRadius: "18px 18px 18px 4px", padding: "10px 16px",
+      }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{
+              width: 6, height: 6, borderRadius: "50%", background: "var(--ink-l)",
+              animation: `typing-dot .85s ${i * 0.18}s infinite ease-in-out`,
+            }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 12, color: "var(--ink-l)" }}>{text}</span>
+      </div>
     </div>
   );
 }
