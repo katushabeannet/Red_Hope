@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import reddyHero    from "../../assets/wallpapers/reddy.jpeg";
+import { useTheme } from "../../context/ThemeContext";
 import albertPhoto  from "../../assets/team/Albert.jpeg";
 import annetPhoto   from "../../assets/team/Annet-cropped.jpeg";
 import yakubPhoto   from "../../assets/team/kubi.jpg";
@@ -41,8 +42,9 @@ const ACHIEVEMENTS = [
 
 // ── Component ───────────────────────────────────────────────────────────────────
 function About() {
+  const { dark } = useTheme();
   return (
-    <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -64,12 +66,12 @@ function About() {
       </section>
 
       {/* ── WHO WE ARE ──────────────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: "88px 0" }}>
+      <section style={{ background: dark ? "#0F172A" : "#fff", padding: "88px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
             {/* Text card */}
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-              <div style={{ background: "#fff", borderRadius: 20, padding: "44px", boxShadow: "0 8px 40px rgba(0,0,0,.08)", border: "1px solid var(--rh-border)" }}>
+              <div style={{ background: dark ? "#1E293B" : "#fff", borderRadius: 20, padding: "44px", boxShadow: "0 8px 40px rgba(0,0,0,.08)", border: "1px solid var(--rh-border)" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 12 }}>Our Story</p>
                 <h2 className="rh-display" style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 800, color: "var(--ink)", marginBottom: 28 }}>Who We Are</h2>
                 <div style={{ borderLeft: "4px solid var(--cr)", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -175,7 +177,7 @@ function About() {
       </section>
 
       {/* ── TEAM ────────────────────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: "88px 0" }}>
+      <section style={{ background: dark ? "#0F172A" : "#fff", padding: "88px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 28px" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Meet the Builders</p>
@@ -219,9 +221,9 @@ function About() {
           </div>
 
           {/* Text right */}
-          <div style={{ background: "#F7F8FC", display: "flex", alignItems: "center", padding: "60px 50px" }}>
+          <div style={{ background: dark ? "#0A0F1E" : "#F7F8FC", display: "flex", alignItems: "center", padding: "60px 50px" }}>
             <div style={{ maxWidth: 420 }}>
-              <div style={{ background: "#fff", borderRadius: 20, padding: "40px", boxShadow: "0 8px 32px rgba(0,0,0,.07)", border: "1px solid var(--rh-border)" }}>
+              <div style={{ background: dark ? "#1E293B" : "#fff", borderRadius: 20, padding: "40px", boxShadow: "0 8px 32px rgba(0,0,0,.07)", border: "1px solid var(--rh-border)" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Get Started</p>
                 <h2 className="rh-display" style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", lineHeight: 1.2, marginBottom: 16 }}>Join Us and Save a Life</h2>
                 <p style={{ fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.8, marginBottom: 28 }}>

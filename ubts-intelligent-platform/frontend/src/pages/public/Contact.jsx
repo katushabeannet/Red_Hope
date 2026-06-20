@@ -1,5 +1,6 @@
 import { useState } from "react";
 import reddyHero from "../../assets/wallpapers/reddy.jpeg";
+import { useTheme } from "../../context/ThemeContext";
 import { motion } from "framer-motion";
 import {
   RiCheckboxCircleLine,
@@ -35,6 +36,7 @@ const SUBJECTS = ["General Inquiry", "Blood Donation", "Partnership", "Technical
 
 // ── Contact Form ─────────────────────────────────────────────────────────────────
 function ContactForm() {
+  const { dark } = useTheme();
   const [form, setForm]       = useState({ name: "", email: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -50,7 +52,7 @@ function ContactForm() {
     width: "100%",
     borderRadius: 12,
     border: "1.5px solid var(--rh-border)",
-    background: "#fff",
+    background: dark ? "#1E293B" : "#fff",
     padding: "12px 16px",
     fontSize: 14,
     color: "var(--ink)",
@@ -65,7 +67,7 @@ function ContactForm() {
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, borderRadius: 20, border: "1px solid #A7F3D0", background: "#ECFDF5", padding: "52px 32px", textAlign: "center" }}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, borderRadius: 20, border: dark ? "1px solid rgba(16,185,129,.25)" : "1px solid #A7F3D0", background: dark ? "rgba(16,185,129,.1)" : "#ECFDF5", padding: "52px 32px", textAlign: "center" }}
       >
         <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <RiCheckboxCircleLine size={34} style={{ color: "#059669" }} />
@@ -77,7 +79,7 @@ function ContactForm() {
         </p>
         <button
           onClick={() => { setSubmitted(false); setForm({ name: "", email: "", subject: "", message: "" }); }}
-          style={{ borderRadius: 50, border: "1.5px solid #6EE7B7", padding: "10px 24px", fontSize: 13, fontWeight: 700, color: "#065F46", background: "none", cursor: "pointer" }}
+          style={{ borderRadius: 50, border: dark ? "1.5px solid rgba(16,185,129,.4)" : "1.5px solid #6EE7B7", padding: "10px 24px", fontSize: 13, fontWeight: 700, color: dark ? "#6EE7B7" : "#065F46", background: "none", cursor: "pointer" }}
         >
           Send Another Message
         </button>
@@ -150,8 +152,9 @@ function ContactForm() {
 
 // ── Main Component ───────────────────────────────────────────────────────────────
 function Contact() {
+  const { dark } = useTheme();
   return (
-    <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "55vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -173,7 +176,7 @@ function Contact() {
       </section>
 
       {/* ── 4 INFO CARDS ────────────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: "72px 0 0" }}>
+      <section style={{ background: dark ? "#0F172A" : "#fff", padding: "72px 0 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
             {CONTACT_INFO.map(({ icon: Icon, label, value, href, color }, i) => (
@@ -229,7 +232,7 @@ function Contact() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              style={{ borderRadius: 20, border: "1px solid var(--rh-border)", background: "#fff", padding: "40px", boxShadow: "0 8px 32px rgba(0,0,0,.07)" }}
+              style={{ borderRadius: 20, border: "1px solid var(--rh-border)", background: dark ? "#1E293B" : "#fff", padding: "40px", boxShadow: "0 8px 32px rgba(0,0,0,.07)" }}
             >
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Message Us</p>
               <h2 className="rh-display" style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", marginBottom: 8 }}>Send Us a Message</h2>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import reddyHero from "../../assets/wallpapers/reddy.jpeg";
+import { useTheme } from "../../context/ThemeContext";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -44,6 +45,7 @@ function fmtDate(str) {
 
 // ── Sub-components ───────────────────────────────────────────────────────────────
 function CampItem({ camp, index }) {
+  const { dark } = useTheme();
   const img = CAMPAIGN_IMAGES[index % CAMPAIGN_IMAGES.length];
   const mapsUrl = camp.latitude && camp.longitude
     ? `https://www.google.com/maps/search/?api=1&query=${camp.latitude},${camp.longitude}`
@@ -73,7 +75,7 @@ function CampItem({ camp, index }) {
       {/* Text (right) */}
       <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
         {/* Status badge */}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, width: "fit-content", background: isActive ? "#D1FAE5" : "#FEF3C7", color: isActive ? "#065F46" : "#92400E", borderRadius: 4, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, width: "fit-content", background: dark ? (isActive ? "rgba(16,185,129,.18)" : "rgba(217,119,6,.18)") : (isActive ? "#D1FAE5" : "#FEF3C7"), color: dark ? (isActive ? "#6EE7B7" : "#FCD34D") : (isActive ? "#065F46" : "#92400E"), borderRadius: 4, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "#10B981" : "#D97706" }} />
           {isActive ? "Active Now" : "Upcoming"}
         </span>
@@ -114,6 +116,7 @@ function CampItem({ camp, index }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────────
 function Campaigns() {
+  const { dark } = useTheme();
   const [camps, setCamps]       = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
@@ -134,7 +137,7 @@ function Campaigns() {
   });
 
   return (
-    <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "58vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -162,7 +165,7 @@ function Campaigns() {
       </section>
 
       {/* ── ALL CAMPAIGNS ───────────────────────────────────────────────────── */}
-      <section id="campaigns-list" style={{ background: "#fff", padding: "88px 0" }}>
+      <section id="campaigns-list" style={{ background: dark ? "#0F172A" : "#fff", padding: "88px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
           {/* Header + filter */}
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 44 }}>
@@ -177,7 +180,7 @@ function Campaigns() {
               {FILTERS.map((f) => (
                 <button key={f} onClick={() => setFilter(f)}
                   style={{ borderRadius: 50, padding: "8px 20px", fontSize: 13, fontWeight: 600, border: "1.5px solid", cursor: "pointer", transition: "all .2s",
-                    background: activeFilter === f ? "var(--cr)" : "#fff",
+                    background: activeFilter === f ? "var(--cr)" : (dark ? "#1E293B" : "#fff"),
                     color: activeFilter === f ? "#fff" : "var(--ink-s)",
                     borderColor: activeFilter === f ? "var(--cr)" : "var(--rh-border)" }}>
                   {f}
@@ -196,7 +199,7 @@ function Campaigns() {
 
           {/* Error */}
           {!loading && error && (
-            <div style={{ maxWidth: 480, margin: "0 auto", borderRadius: 16, border: "1px solid #FECDD3", background: "#FFF1F2", padding: "24px", textAlign: "center" }}>
+            <div style={{ maxWidth: 480, margin: "0 auto", borderRadius: 16, border: dark ? "1px solid rgba(220,38,38,.3)" : "1px solid #FECDD3", background: dark ? "rgba(220,38,38,.1)" : "#FFF1F2", padding: "24px", textAlign: "center" }}>
               <p style={{ fontWeight: 700, color: "var(--cr)" }}>{error}</p>
             </div>
           )}

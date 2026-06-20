@@ -190,7 +190,21 @@ def route_chatbot_query(query, user=None, conversation_history=None):
             "assistant_response": with_fallback(gpt_text, fallback),
         }
 
-    retriever_result = retrieve_blood_donation_answer(query)
+    try:
+        retriever_result = retrieve_blood_donation_answer(query)
+    except Exception as retriever_error:
+        print("MPNET retriever failed:", retriever_error)
+        return {
+            "intent": "retriever_fallback",
+            "mode": "CONVERSATIONAL",
+            "role": role,
+            "action_required": False,
+            "assistant_response": (
+                "I'm having trouble accessing my knowledge base right now. "
+                "For blood donation questions, please visit ubts.go.ug or contact "
+                "UBTS on +256 414 347 980. I apologize for the inconvenience."
+            ),
+        }
 
     if (
         retriever_result.get("confidence") in LOW_CONFIDENCE_VALUES

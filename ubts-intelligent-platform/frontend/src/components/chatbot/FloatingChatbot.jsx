@@ -14,6 +14,7 @@ import {
   findNearestCampFromChatbot,
 } from "../../services/chatbotService";
 import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 import redHopeLogo from "../../assets/logo/redhope.png";
 
 const WELCOME =
@@ -28,6 +29,7 @@ const QUICK_REPLIES = [
 
 function FloatingChatbot() {
   const { showToast } = useToast();
+  const { dark } = useTheme();
 
   const [open, setOpen]               = useState(false);
   const [messages, setMessages]       = useState([{ from: "bot", text: WELCOME }]);
@@ -211,9 +213,9 @@ function FloatingChatbot() {
               width: 420, height: "75vh", maxHeight: 720, minHeight: 480,
               display: "flex", flexDirection: "column",
               borderRadius: 22, overflow: "hidden",
-              border: "1.5px solid rgba(255,255,255,.2)",
+              border: dark ? "1.5px solid #334155" : "1.5px solid rgba(255,255,255,.2)",
               boxShadow: "0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.1)",
-              background: "#fff",
+              background: dark ? "#1E293B" : "#fff",
             }}
           >
             {/* Header */}
@@ -253,7 +255,7 @@ function FloatingChatbot() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: "auto", background: "#F8F9FB", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+            <div style={{ flex: 1, overflowY: "auto", background: dark ? "#0F172A" : "#F8F9FB", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
               {/* Logo watermark */}
               <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "60%", maxWidth: 180, opacity: 0.06, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
               {messages.map((msg, i) => (
@@ -264,13 +266,13 @@ function FloatingChatbot() {
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                    background: "#FDEEF1", color: "var(--cr)",
+                    background: dark ? "rgba(196,30,58,.2)" : "#FDEEF1", color: "var(--cr)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     {locationLoading ? <RiMapPinLine size={13} /> : <RiRobot2Line size={13} />}
                   </div>
                   <div style={{
-                    background: "#fff", border: "1.5px solid #E8EAF0",
+                    background: dark ? "#1E293B" : "#fff", border: dark ? "1.5px solid #334155" : "1.5px solid #E8EAF0",
                     borderRadius: "14px 14px 14px 4px", padding: "9px 14px",
                     display: "flex", alignItems: "center", gap: 8,
                   }}>
@@ -296,11 +298,11 @@ function FloatingChatbot() {
             {messages.length <= 1 && !isTyping && (
               <div style={{
                 display: "flex", flexWrap: "wrap", gap: 6, padding: "10px 12px",
-                borderTop: "1px solid #E8EAF0", background: "#F8F9FB", flexShrink: 0,
+                borderTop: dark ? "1px solid #334155" : "1px solid #E8EAF0", background: dark ? "#1E293B" : "#F8F9FB", flexShrink: 0,
               }}>
                 {QUICK_REPLIES.map((reply) => (
                   <button key={reply} onClick={() => send(reply)} style={{
-                    background: "#fff", border: "1.5px solid #E2E8F0",
+                    background: dark ? "#0F172A" : "#fff", border: dark ? "1.5px solid #334155" : "1.5px solid #E2E8F0",
                     borderRadius: 999, padding: "5px 12px", fontSize: 11,
                     fontWeight: 600, color: "var(--ink-s)", cursor: "pointer",
                     fontFamily: "inherit", transition: "border-color .15s, color .15s",
@@ -317,7 +319,7 @@ function FloatingChatbot() {
             {/* Input row */}
             <div style={{
               display: "flex", gap: 8, padding: "10px 12px",
-              borderTop: "1px solid #E8EAF0", background: "#fff", flexShrink: 0,
+              borderTop: dark ? "1px solid #334155" : "1px solid #E8EAF0", background: dark ? "#1E293B" : "#fff", flexShrink: 0,
             }}>
               <input
                 value={input}
@@ -325,13 +327,13 @@ function FloatingChatbot() {
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 placeholder="Ask about donation…"
                 style={{
-                  flex: 1, borderRadius: 10, border: "1.5px solid #E2E8F0",
-                  background: "#F8F9FB", padding: "9px 13px",
+                  flex: 1, borderRadius: 10, border: dark ? "1.5px solid #334155" : "1.5px solid #E2E8F0",
+                  background: dark ? "#0F172A" : "#F8F9FB", padding: "9px 13px",
                   fontSize: 12, color: "var(--ink)", outline: "none", fontFamily: "inherit",
                   transition: "border-color .15s",
                 }}
                 onFocus={(e) => { e.target.style.borderColor = "var(--cr)"; }}
-                onBlur={(e)  => { e.target.style.borderColor = "#E2E8F0"; }}
+                onBlur={(e)  => { e.target.style.borderColor = dark ? "#334155" : "#E2E8F0"; }}
               />
               <button
                 onClick={() => send()}
@@ -358,13 +360,14 @@ function FloatingChatbot() {
 
 /* ── Individual chat bubble with optional meta card ── */
 function ChatBubble({ msg }) {
+  const { dark } = useTheme();
   const isUser = msg.from === "user";
   return (
     <div style={{ display: "flex", gap: 8, justifyContent: isUser ? "flex-end" : "flex-start", alignItems: "flex-end" }}>
       {!isUser && (
         <div style={{
           width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-          background: "#FDEEF1", color: "var(--cr)",
+          background: dark ? "rgba(196,30,58,.2)" : "#FDEEF1", color: "var(--cr)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <RiRobot2Line size={13} />
@@ -377,9 +380,9 @@ function ChatBubble({ msg }) {
           padding: "10px 13px", fontSize: 12, lineHeight: 1.65, fontWeight: 500,
           background: isUser
             ? "linear-gradient(135deg, var(--cr), var(--cr-dk))"
-            : "#fff",
+            : (dark ? "#1E293B" : "#fff"),
           color:  isUser ? "#fff" : "var(--ink)",
-          border: isUser ? "none" : "1.5px solid #E8EAF0",
+          border: isUser ? "none" : (dark ? "1.5px solid #334155" : "1.5px solid #E8EAF0"),
           boxShadow: "0 1px 4px rgba(0,0,0,.06)",
         }}>
           {msg.text}
@@ -403,19 +406,20 @@ function ChatBubble({ msg }) {
 
 /* ── Structured data card inside bot messages ── */
 function MetaCard({ meta }) {
+  const { dark } = useTheme();
   const statusColor =
-    meta.statusType === "success" ? { bg: "#DCFCE7", text: "#15803d" }
-    : meta.statusType === "error"   ? { bg: "#FEE2E2", text: "#b91c1c" }
-    : { bg: "#EFF6FF", text: "var(--blue)" };
+    meta.statusType === "success" ? { bg: dark ? "rgba(21,128,61,.2)" : "#DCFCE7", text: dark ? "#86efac" : "#15803d" }
+    : meta.statusType === "error"   ? { bg: dark ? "rgba(185,28,28,.2)" : "#FEE2E2", text: dark ? "#fca5a5" : "#b91c1c" }
+    : { bg: dark ? "rgba(59,130,246,.15)" : "#EFF6FF", text: "var(--blue)" };
 
   return (
     <div style={{
-      background: "#fff", borderRadius: 12,
-      border: "1.5px solid #E8EAF0", overflow: "hidden",
+      background: dark ? "#0F172A" : "#fff", borderRadius: 12,
+      border: dark ? "1.5px solid #334155" : "1.5px solid #E8EAF0", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,.05)", fontSize: 11,
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", borderBottom: "1px solid #F1F5F9" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", borderBottom: dark ? "1px solid #1E293B" : "1px solid #F1F5F9" }}>
         <span style={{ fontWeight: 700, color: "var(--ink)", fontSize: 11 }}>{meta.title}</span>
         {meta.status && (
           <span style={{
@@ -435,8 +439,8 @@ function MetaCard({ meta }) {
           </p>
           {meta.reasons.map((r, i) => (
             <div key={i} style={{
-              background: "#F8F9FB", borderRadius: 7, padding: "6px 9px",
-              fontSize: 11, color: "var(--ink-s)", lineHeight: 1.5, border: "1px solid #E8EAF0",
+              background: dark ? "#1E293B" : "#F8F9FB", borderRadius: 7, padding: "6px 9px",
+              fontSize: 11, color: "var(--ink-s)", lineHeight: 1.5, border: dark ? "1px solid #334155" : "1px solid #E8EAF0",
             }}>
               {r}
             </div>
@@ -448,7 +452,7 @@ function MetaCard({ meta }) {
       {meta.items && (
         <div style={{ padding: "8px 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
           {meta.items.map(([label, value]) => (
-            <div key={label} style={{ background: "#F8F9FB", borderRadius: 7, padding: "6px 9px", border: "1px solid #E8EAF0" }}>
+            <div key={label} style={{ background: dark ? "#1E293B" : "#F8F9FB", borderRadius: 7, padding: "6px 9px", border: dark ? "1px solid #334155" : "1px solid #E8EAF0" }}>
               <p style={{ fontSize: 10, color: "var(--ink-l)", margin: "0 0 2px", fontWeight: 500 }}>{label}</p>
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ink)", margin: 0 }}>{value || "N/A"}</p>
             </div>
