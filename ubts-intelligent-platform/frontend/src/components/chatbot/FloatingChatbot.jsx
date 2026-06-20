@@ -28,11 +28,11 @@ const QUICK_REPLIES = [
 function FloatingChatbot() {
   const { showToast } = useToast();
 
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([{ from: "bot", text: WELCOME }]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
+  const [open, setOpen]               = useState(false);
+  const [messages, setMessages]       = useState([{ from: "bot", text: WELCOME }]);
+  const [input, setInput]             = useState("");
+  const [isTyping, setIsTyping]       = useState(false);
+  const [locationLoading, setLocLoad] = useState(false);
 
   const endRef = useRef(null);
 
@@ -42,87 +42,55 @@ function FloatingChatbot() {
     }
   }, [messages, open, isTyping, locationLoading]);
 
-  const addBotMessage = (text, meta = null) => {
+  const addBotMessage  = (text, meta = null) =>
     setMessages((prev) => [...prev, { from: "bot", text, meta }]);
-  };
 
-  const addUserMessage = (text) => {
+  const addUserMessage = (text) =>
     setMessages((prev) => [...prev, { from: "user", text }]);
-  };
 
   const formatBackendResponse = (data) => {
     if (data.mode === "ELIGIBILITY" && data.eligibility_result) {
-      const result = data.eligibility_result;
-
+      const r = data.eligibility_result;
       return {
         text: data.assistant_response,
         meta: {
-          title: "Eligibility Result",
-          status: result.is_eligible ? "Eligible" : "Not Eligible",
-          statusType: result.is_eligible ? "success" : "error",
-          reasons: result.reasons || [],
+          title:      "Eligibility Result",
+          status:     r.is_eligible ? "Eligible" : "Not Eligible",
+          statusType: r.is_eligible ? "success" : "error",
+          reasons:    r.reasons || [],
         },
       };
     }
-
     if (data.mode === "AVAILABILITY" && data.availability_result) {
-      const result = data.availability_result;
-
+      const r = data.availability_result;
       return {
         text: data.assistant_response,
         meta: {
           title: "Availability Prediction",
           items: [
-            ["Status", result.is_available ? "Available" : "Not Available"],
-            [
-              "Probability",
-              result.availability_probability !== null &&
-              result.availability_probability !== undefined
-                ? result.availability_probability
-                : "Not provided",
-            ],
+            ["Status",      r.is_available ? "Available" : "Not Available"],
+            ["Probability", r.availability_probability != null
+              ? `${Math.round(r.availability_probability * 100)}%`
+              : "Not provided"],
           ],
         },
       };
     }
-
     if (data.mode === "COMBINED") {
       return {
         text: data.assistant_response,
         meta: {
           title: "Donor Readiness Check",
           items: [
-            [
-              "Eligibility",
-              data.eligibility_result?.is_eligible ? "Eligible" : "Not Eligible",
-            ],
-            [
-              "Availability",
-              data.availability_result?.is_available
-                ? "Available"
-                : "Not Available",
-            ],
-            [
-              "Campaign Ready",
-              data.is_campaign_ready ? "Yes" : "No",
-            ],
+            ["Eligibility",    data.eligibility_result?.is_eligible   ? "Eligible"  : "Not Eligible"],
+            ["Availability",   data.availability_result?.is_available ? "Available" : "Not Available"],
+            ["Campaign Ready", data.is_campaign_ready                 ? "Yes"       : "No"],
           ],
         },
       };
     }
-
-    if (data.mode === "CONVERSATIONAL" && data.retriever_result) {
     return {
-      text: data.assistant_response,
-      meta: null,
-    };
-  }
-
-    return {
-      text:
-        data.assistant_response ||
-        data.message ||
-        "I received a response from the backend.",
+      text: data.assistant_response || data.message || "I received a response from the backend.",
       meta: null,
     };
   };
@@ -130,70 +98,48 @@ function FloatingChatbot() {
   const requestLocation = () => {
     if (!navigator.geolocation) {
       addBotMessage("Geolocation is not supported by this browser.");
-      showToast({
-        type: "error",
-        title: "Location Unsupported",
-        message: "Your browser does not support geolocation.",
-      });
+      showToast({ type: "error", title: "Location Unsupported", message: "Your browser does not support geolocation." });
       return;
     }
 
-    setLocationLoading(true);
+    setLocLoad(true);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const data = await findNearestCampFromChatbot({
-            latitude: position.coords.latitude,
+            latitude:  position.coords.latitude,
             longitude: position.coords.longitude,
           });
-
           const camp = data.nearest_camp;
-
           const responseText = camp
             ? `The nearest active donation camp is ${camp.name}, located at ${camp.venue} in ${camp.district}. It is about ${data.distance_km} km away from your current location.`
             : "I could not find an active donation camp near your location.";
 
           addBotMessage(responseText, {
-            title: "Nearest Donation Camp",
-            status: camp?.status || "Active",
+            title:      "Nearest Donation Camp",
+            status:     camp?.status || "Active",
             statusType: "success",
             items: [
-              ["Camp", camp?.name],
-              ["Venue", camp?.venue],
+              ["Camp",     camp?.name],
+              ["Venue",    camp?.venue],
               ["District", camp?.district],
-              ["Region", camp?.region],
+              ["Region",   camp?.region],
               ["Distance", `${data.distance_km} km away`],
-              ["Contact", camp?.contact_phone],
+              ["Contact",  camp?.contact_phone],
             ],
           });
 
-          showToast({
-            type: "success",
-            title: "Nearest Camp Found",
-            message: data.nearest_camp?.name || "A nearby camp was found.",
-          });
+          showToast({ type: "success", title: "Nearest Camp Found", message: data.nearest_camp?.name || "A nearby camp was found." });
         } catch {
           addBotMessage("Sorry, I could not find the nearest donation camp.");
-
-          showToast({
-            type: "error",
-            title: "Camp Search Failed",
-            message: "Unable to find the nearest donation camp.",
-          });
-        } finally {
-          setLocationLoading(false);
-        }
+          showToast({ type: "error", title: "Camp Search Failed", message: "Unable to find the nearest donation camp." });
+        } finally { setLocLoad(false); }
       },
       () => {
         addBotMessage("Location access was denied.");
-        setLocationLoading(false);
-
-        showToast({
-          type: "error",
-          title: "Location Denied",
-          message: "Please allow location access to find nearby donation camps.",
-        });
+        setLocLoad(false);
+        showToast({ type: "error", title: "Location Denied", message: "Please allow location access to find nearby donation camps." });
       }
     );
   };
@@ -208,183 +154,134 @@ function FloatingChatbot() {
 
     try {
       const data = await askChatbot(messageText);
-
       if (data.action_type === "REQUEST_LOCATION" || data.mode === "GEOSPATIAL") {
         addBotMessage(data.assistant_response);
         requestLocation();
         return;
       }
-
       const formatted = formatBackendResponse(data);
       addBotMessage(formatted.text, formatted.meta);
     } catch (err) {
       addBotMessage("Sorry, I failed to get a response from the backend.");
-
       showToast({
-        type: "error",
-        title: "Chatbot Error",
-        message:
-          err.response?.data?.error ||
-          err.response?.data?.detail ||
-          "The chatbot backend could not process your request.",
+        type:    "error",
+        title:   "Chatbot Error",
+        message: err.response?.data?.error || err.response?.data?.detail || "The chatbot backend could not process your request.",
       });
-    } finally {
-      setIsTyping(false);
-    }
+    } finally { setIsTyping(false); }
   };
 
   return (
     <>
+      {/* ── FAB ── */}
       <AnimatePresence>
         {!open && (
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.93 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-red-700 text-white shadow-2xl transition-colors hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700"
+            style={{
+              position: "fixed", bottom: 24, right: 24, zIndex: 50,
+              width: 58, height: 58, borderRadius: "50%", border: "none",
+              background: "linear-gradient(135deg, var(--cr), var(--cr-dk))",
+              color: "#fff", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 8px 32px rgba(185,28,28,.35), 0 2px 8px rgba(0,0,0,.15)",
+            }}
           >
-            <RiMessage3Line size={24} />
+            <RiMessage3Line size={26} />
           </motion.button>
         )}
       </AnimatePresence>
 
+      {/* ── Chat window ── */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.88, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed bottom-6 right-6 z-50 flex max-h-[560px] w-[400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+            exit={{ opacity: 0, scale: 0.88, y: 24 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            style={{
+              position: "fixed", bottom: 24, right: 24, zIndex: 50,
+              width: 400, maxHeight: 580,
+              display: "flex", flexDirection: "column",
+              borderRadius: 22, overflow: "hidden",
+              border: "1.5px solid rgba(255,255,255,.2)",
+              boxShadow: "0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.1)",
+              background: "#fff",
+            }}
           >
-            <div className="flex items-center justify-between bg-gradient-to-r from-red-700 to-red-600 px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
-                  <RiRobot2Line size={18} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    UBTS Assistant
-                  </p>
-                  <p className="flex items-center gap-1 text-xs text-white/80">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    Connected to AI backend
-                  </p>
-                </div>
+            {/* Header */}
+            <div style={{
+              background: "linear-gradient(135deg, var(--cr) 0%, var(--cr-dk) 100%)",
+              padding: "14px 16px", flexShrink: 0,
+              display: "flex", alignItems: "center", gap: 12,
+            }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                background: "rgba(255,255,255,.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <RiRobot2Line size={20} style={{ color: "#fff" }} />
               </div>
-
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 700, fontSize: 13, color: "#fff", margin: 0 }}>
+                  UBTS Assistant
+                </p>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,.75)", margin: "2px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", display: "inline-block", flexShrink: 0 }} />
+                  Connected to AI backend
+                </p>
+              </div>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 text-white transition-colors hover:bg-white/20"
+                style={{
+                  background: "rgba(255,255,255,.18)", border: "none", cursor: "pointer",
+                  borderRadius: 8, padding: 6, color: "#fff", lineHeight: 0, flexShrink: 0,
+                  transition: "background .15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.3)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.18)"; }}
               >
-                <RiCloseLine size={20} />
+                <RiCloseLine size={18} />
               </button>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4 dark:bg-slate-900">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex gap-2 ${
-                    message.from === "user" ? "flex-row-reverse" : ""
-                  }`}
-                >
-                  <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                      message.from === "bot"
-                        ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                        : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    {message.from === "bot" ? (
-                      <RiRobot2Line size={14} />
-                    ) : (
-                      <RiUser3Line size={14} />
-                    )}
-                  </div>
-
-                  <div
-                    className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm font-medium leading-relaxed ${
-                      message.from === "user"
-                        ? "rounded-br-none bg-red-700 text-white"
-                        : "rounded-bl-none border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-50"
-                    }`}
-                  >
-                    <p>{message.text}</p>
-
-                    {message.meta && (
-                      <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-slate-900">
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                          <p className="font-semibold text-slate-800 dark:text-slate-100">
-                            {message.meta.title}
-                          </p>
-
-                          {message.meta.status && (
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                message.meta.statusType === "success"
-                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                              }`}
-                            >
-                              {message.meta.status}
-                            </span>
-                          )}
-                        </div>
-
-                        {message.meta.reasons ? (
-                          <div>
-                            <p className="mb-2 font-medium text-slate-500 dark:text-slate-400">
-                              Reasons
-                            </p>
-
-                            <ul className="space-y-2">
-                              {message.meta.reasons.map((reason, index) => (
-                                <li
-                                  key={index}
-                                  className="rounded-lg border border-slate-200 bg-white p-2 leading-5 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                >
-                                  {reason}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : (
-                        <div className="space-y-2">
-                          {message.meta.items.map(([label, value]) => (
-                            <div
-                              key={label}
-                              className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800"
-                            >
-                              <p className="text-[11px] font-medium text-slate-500">{label}</p>
-                              <p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">
-                                {value || "N/A"}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", background: "#F8F9FB", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              {messages.map((msg, i) => (
+                <ChatBubble key={i} msg={msg} />
               ))}
 
               {(isTyping || locationLoading) && (
-                <div className="flex gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">
-                    {locationLoading ? (
-                      <RiMapPinLine size={14} />
-                    ) : (
-                      <RiRobot2Line size={14} />
-                    )}
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                    background: "#FDEEF1", color: "var(--cr)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {locationLoading ? <RiMapPinLine size={13} /> : <RiRobot2Line size={13} />}
                   </div>
-
-                  <div className="rounded-2xl rounded-bl-none border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    {locationLoading ? "Finding nearest camp..." : "Thinking..."}
+                  <div style={{
+                    background: "#fff", border: "1.5px solid #E8EAF0",
+                    borderRadius: "14px 14px 14px 4px", padding: "9px 14px",
+                    display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} style={{
+                          width: 5, height: 5, borderRadius: "50%", background: "#94a3b8",
+                          animation: `typing-dot .85s ${i * 0.18}s infinite ease-in-out`,
+                        }} />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                      {locationLoading ? "Finding nearest camp…" : "Thinking…"}
+                    </span>
                   </div>
                 </div>
               )}
@@ -392,13 +289,21 @@ function FloatingChatbot() {
               <div ref={endRef} />
             </div>
 
+            {/* Quick replies */}
             {messages.length <= 1 && !isTyping && (
-              <div className="flex flex-wrap gap-1.5 border-t border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
+              <div style={{
+                display: "flex", flexWrap: "wrap", gap: 6, padding: "10px 12px",
+                borderTop: "1px solid #E8EAF0", background: "#F8F9FB", flexShrink: 0,
+              }}>
                 {QUICK_REPLIES.map((reply) => (
-                  <button
-                    key={reply}
-                    onClick={() => send(reply)}
-                    className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-red-700 hover:text-red-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  <button key={reply} onClick={() => send(reply)} style={{
+                    background: "#fff", border: "1.5px solid #E2E8F0",
+                    borderRadius: 999, padding: "5px 12px", fontSize: 11,
+                    fontWeight: 600, color: "var(--ink-s)", cursor: "pointer",
+                    fontFamily: "inherit", transition: "border-color .15s, color .15s",
+                  }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--cr)"; e.currentTarget.style.color = "var(--cr)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.color = "var(--ink-s)"; }}
                   >
                     {reply}
                   </button>
@@ -406,27 +311,148 @@ function FloatingChatbot() {
               </div>
             )}
 
-            <div className="flex gap-2 border-t border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-800">
+            {/* Input row */}
+            <div style={{
+              display: "flex", gap: 8, padding: "10px 12px",
+              borderTop: "1px solid #E8EAF0", background: "#fff", flexShrink: 0,
+            }}>
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask about donation..."
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-red-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+                placeholder="Ask about donation…"
+                style={{
+                  flex: 1, borderRadius: 10, border: "1.5px solid #E2E8F0",
+                  background: "#F8F9FB", padding: "9px 13px",
+                  fontSize: 12, color: "var(--ink)", outline: "none", fontFamily: "inherit",
+                  transition: "border-color .15s",
+                }}
+                onFocus={(e) => { e.target.style.borderColor = "var(--cr)"; }}
+                onBlur={(e)  => { e.target.style.borderColor = "#E2E8F0"; }}
               />
-
               <button
                 onClick={() => send()}
                 disabled={!input.trim() || isTyping}
-                className="rounded-lg bg-red-700 p-2 text-white transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                  background: "var(--cr)", color: "#fff", border: "none",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: !input.trim() || isTyping ? 0.5 : 1,
+                  transition: "opacity .15s, background .15s",
+                }}
+                onMouseEnter={(e) => { if (input.trim() && !isTyping) e.currentTarget.style.background = "var(--cr-dk)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "var(--cr)"; }}
               >
-                <RiSendPlaneLine size={18} />
+                <RiSendPlaneLine size={17} />
               </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+/* ── Individual chat bubble with optional meta card ── */
+function ChatBubble({ msg }) {
+  const isUser = msg.from === "user";
+  return (
+    <div style={{ display: "flex", gap: 8, justifyContent: isUser ? "flex-end" : "flex-start", alignItems: "flex-end" }}>
+      {!isUser && (
+        <div style={{
+          width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+          background: "#FDEEF1", color: "var(--cr)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <RiRobot2Line size={13} />
+        </div>
+      )}
+
+      <div style={{ maxWidth: "78%", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{
+          borderRadius: isUser ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+          padding: "10px 13px", fontSize: 12, lineHeight: 1.65, fontWeight: 500,
+          background: isUser
+            ? "linear-gradient(135deg, var(--cr), var(--cr-dk))"
+            : "#fff",
+          color:  isUser ? "#fff" : "var(--ink)",
+          border: isUser ? "none" : "1.5px solid #E8EAF0",
+          boxShadow: "0 1px 4px rgba(0,0,0,.06)",
+        }}>
+          {msg.text}
+        </div>
+
+        {msg.meta && <MetaCard meta={msg.meta} />}
+      </div>
+
+      {isUser && (
+        <div style={{
+          width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+          background: "var(--cr)", color: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <RiUser3Line size={13} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Structured data card inside bot messages ── */
+function MetaCard({ meta }) {
+  const statusColor =
+    meta.statusType === "success" ? { bg: "#DCFCE7", text: "#15803d" }
+    : meta.statusType === "error"   ? { bg: "#FEE2E2", text: "#b91c1c" }
+    : { bg: "#EFF6FF", text: "var(--blue)" };
+
+  return (
+    <div style={{
+      background: "#fff", borderRadius: 12,
+      border: "1.5px solid #E8EAF0", overflow: "hidden",
+      boxShadow: "0 1px 4px rgba(0,0,0,.05)", fontSize: 11,
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", borderBottom: "1px solid #F1F5F9" }}>
+        <span style={{ fontWeight: 700, color: "var(--ink)", fontSize: 11 }}>{meta.title}</span>
+        {meta.status && (
+          <span style={{
+            background: statusColor.bg, color: statusColor.text,
+            borderRadius: 999, padding: "2px 9px", fontSize: 10, fontWeight: 700,
+          }}>
+            {meta.status}
+          </span>
+        )}
+      </div>
+
+      {/* Reasons */}
+      {meta.reasons && meta.reasons.length > 0 && (
+        <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 5 }}>
+          <p style={{ fontSize: 10, fontWeight: 600, color: "var(--ink-l)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Reasons
+          </p>
+          {meta.reasons.map((r, i) => (
+            <div key={i} style={{
+              background: "#F8F9FB", borderRadius: 7, padding: "6px 9px",
+              fontSize: 11, color: "var(--ink-s)", lineHeight: 1.5, border: "1px solid #E8EAF0",
+            }}>
+              {r}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Key-value items */}
+      {meta.items && (
+        <div style={{ padding: "8px 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+          {meta.items.map(([label, value]) => (
+            <div key={label} style={{ background: "#F8F9FB", borderRadius: 7, padding: "6px 9px", border: "1px solid #E8EAF0" }}>
+              <p style={{ fontSize: 10, color: "var(--ink-l)", margin: "0 0 2px", fontWeight: 500 }}>{label}</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ink)", margin: 0 }}>{value || "N/A"}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

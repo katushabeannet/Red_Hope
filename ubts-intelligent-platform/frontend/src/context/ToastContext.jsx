@@ -8,44 +8,56 @@ import {
 
 const ToastContext = createContext();
 
-const durations = {
-  success: 3500,
-  info: 5000,
-  error: 7000,
+const DURATIONS = { success: 3500, info: 5000, error: 7000 };
+
+const TOAST_STYLES = {
+  success: {
+    icon:   RiCheckboxCircleLine,
+    accent: "var(--green)",
+    iconBg: "#DCFCE7",
+    border: "#BBF7D0",
+    barBg:  "#D1FAE5",
+  },
+  info: {
+    icon:   RiInformationLine,
+    accent: "var(--blue)",
+    iconBg: "#DBEAFE",
+    border: "#BFDBFE",
+    barBg:  "#EFF6FF",
+  },
+  error: {
+    icon:   RiErrorWarningLine,
+    accent: "var(--cr)",
+    iconBg: "#FDEEF1",
+    border: "#FECACA",
+    barBg:  "#FEE2E2",
+  },
 };
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
   const showToast = ({ type = "info", title, message }) => {
-    const id = Date.now() + Math.random();
-    const duration = durations[type] || durations.info;
-
-    setToasts((prev) => [
-      ...prev,
-      {
-        id,
-        type,
-        title,
-        message,
-        duration,
-      },
-    ]);
-
+    const id       = Date.now() + Math.random();
+    const duration = DURATIONS[type] || DURATIONS.info;
+    setToasts((prev) => [...prev, { id, type, title, message, duration }]);
     setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, duration);
   };
 
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
+  const removeToast = (id) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id));
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
-      <div className="fixed right-5 top-5 z-[9999] w-full max-w-sm space-y-3">
+      <div style={{
+        position: "fixed", right: 20, top: 20, zIndex: 9999,
+        width: 360, display: "flex", flexDirection: "column", gap: 10,
+        pointerEvents: "none",
+      }}>
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onClose={removeToast} />
         ))}
@@ -55,74 +67,69 @@ export function ToastProvider({ children }) {
 }
 
 function ToastCard({ toast, onClose }) {
-  const styles = {
-    success: {
-      icon: RiCheckboxCircleLine,
-      border: "border-emerald-200 dark:border-emerald-800",
-      bg: "bg-white dark:bg-slate-900",
-      iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30",
-      bar: "bg-emerald-500",
-      title: "Success",
-    },
-    info: {
-      icon: RiInformationLine,
-      border: "border-blue-200 dark:border-blue-800",
-      bg: "bg-white dark:bg-slate-900",
-      iconBg: "bg-blue-50 text-blue-600 dark:bg-blue-900/30",
-      bar: "bg-blue-500",
-      title: "Information",
-    },
-    error: {
-      icon: RiErrorWarningLine,
-      border: "border-red-200 dark:border-red-800",
-      bg: "bg-white dark:bg-slate-900",
-      iconBg: "bg-red-50 text-red-600 dark:bg-red-900/30",
-      bar: "bg-red-500",
-      title: "Error",
-    },
-  };
-
-  const current = styles[toast.type] || styles.info;
-  const Icon = current.icon;
+  const cfg  = TOAST_STYLES[toast.type] || TOAST_STYLES.info;
+  const Icon = cfg.icon;
+  const defaultTitle =
+    toast.type === "success" ? "Success"
+    : toast.type === "error" ? "Error"
+    : "Information";
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border ${current.border} ${current.bg} p-4 shadow-2xl`}
-    >
-      <div className="flex gap-3">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${current.iconBg}`}
-        >
-          <Icon size={22} />
+    <div style={{
+      background: "#fff",
+      borderRadius: 16,
+      border: `1.5px solid ${cfg.border}`,
+      borderLeft: `4px solid ${cfg.accent}`,
+      boxShadow: "0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.05)",
+      overflow: "hidden",
+      pointerEvents: "all",
+      animation: "toast-slide-in .28s cubic-bezier(.16,1,.3,1)",
+    }}>
+      {/* Content row */}
+      <div style={{ display: "flex", gap: 14, padding: "14px 14px 16px", alignItems: "flex-start" }}>
+        {/* Icon */}
+        <div style={{
+          width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+          background: cfg.iconBg, color: cfg.accent,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Icon size={21} />
         </div>
 
-        <div className="min-w-0 flex-1">
-          <h4 className="font-semibold text-slate-900 dark:text-white">
-            {toast.title || current.title}
+        {/* Text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h4 style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)", margin: 0 }}>
+            {toast.title || defaultTitle}
           </h4>
-
           {toast.message && (
-            <p className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-400">
+            <p style={{ fontSize: 12, color: "var(--ink-s)", margin: "5px 0 0", lineHeight: 1.55 }}>
               {toast.message}
             </p>
           )}
         </div>
 
+        {/* Close */}
         <button
           onClick={() => onClose(toast.id)}
-          className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: "var(--ink-l)", padding: "3px 3px 0", borderRadius: 6,
+            flexShrink: 0, lineHeight: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ink)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-l)"; }}
         >
-          <RiCloseLine size={18} />
+          <RiCloseLine size={17} />
         </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 h-1 w-full bg-slate-100 dark:bg-slate-800">
-        <div
-          className={`h-full ${current.bar}`}
-          style={{
-            animation: `toast-progress ${toast.duration}ms linear forwards`,
-          }}
-        />
+      {/* Progress bar */}
+      <div style={{ height: 3, background: cfg.barBg }}>
+        <div style={{
+          height: "100%",
+          background: cfg.accent,
+          animation: `toast-progress ${toast.duration}ms linear forwards`,
+        }} />
       </div>
     </div>
   );
