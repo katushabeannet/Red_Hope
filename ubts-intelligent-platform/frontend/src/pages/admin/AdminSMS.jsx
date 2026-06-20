@@ -19,6 +19,7 @@ import {
   sendBulkSMS,
 } from "../../services/notificationService";
 import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 import AdminLoader from "../../components/common/AdminLoader";
 
 const STATUS_BADGE = {
@@ -31,8 +32,41 @@ function StatusBadge({ status }) {
   return <span className={`badge ${STATUS_BADGE[status] ?? "badge-gray"}`}>{status}</span>;
 }
 
+const _SMS_SPARK = [25, 55, 45, 80, 60, 70, 50];
+
+function SmsTierCard({ icon: Icon, label, value, tone = "blue", tier = "sub", dark, children }) {
+  const accentMap  = { blue: "var(--blue)", green: "var(--green)", amber: "var(--amber)", red: "var(--cr)" };
+  const accentXlLt = { blue: "#EFF6FF", green: "#F0FDF4", amber: "#FFFBEB", red: "#FDEEF1" };
+  const accentXlDk = { blue: "rgba(37,99,235,.18)", green: "rgba(22,163,74,.18)", amber: "rgba(217,119,6,.18)", red: "rgba(196,30,58,.18)" };
+  const accent   = accentMap[tone]  || "var(--blue)";
+  const accentXl = (dark ? accentXlDk : accentXlLt)[tone] || (dark ? "rgba(37,99,235,.18)" : "#EFF6FF");
+
+  if (tier === "sub") {
+    return (
+      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+        <div className="card-sub-icon"><Icon size={20} /></div>
+        <div className="card-sub-val">{value ?? "—"}</div>
+        <div className="card-sub-label">{label}</div>
+        {children ? <div style={{ marginTop: 8 }}>{children}</div> : (
+          <div className="card-sub-sparkline">
+            {_SMS_SPARK.map((h, i) => <div key={i} className="card-sub-bar" style={{ height: `${h}%` }} />)}
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+      <div className="card-norm-icon"><Icon size={18} /></div>
+      <div className="card-norm-val">{value ?? "—"}</div>
+      <div className="card-norm-label">{label}</div>
+    </div>
+  );
+}
+
 function AdminSMS() {
   const { showToast } = useToast();
+  const { dark } = useTheme();
 
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [settingLoading, setSettingLoading] = useState(false);
@@ -176,53 +210,21 @@ function AdminSMS() {
         </div>
       </div>
 
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-        {/* Status card */}
-        <div className="stat-card" style={{ flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
-          <div className="stat-icon bl"><RiSettings4Line size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val" style={{ color: smsEnabled ? "var(--green,#16a34a)" : "var(--cr)" }}>
-              {smsEnabled ? "Enabled" : "Disabled"}
-            </div>
-            <div className="stat-label">SMS Status</div>
-            {settingInfo?.updated_at && (
-              <div style={{ fontSize: 11, color: "var(--ink-l)", marginTop: 2 }}>
-                Last changed: {new Date(settingInfo.updated_at).toLocaleDateString("en-GB")}
-              </div>
-            )}
-          </div>
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 28 }}>
+        <SmsTierCard icon={RiSettings4Line} label="SMS Status" value={smsEnabled ? "Enabled" : "Disabled"} tone="blue" tier="sub" dark={dark}>
           <button
             className={`btn btn-sm ${smsEnabled ? "btn-outline" : "btn-primary"}`}
-            style={{ marginTop: 4 }}
             onClick={handleToggle}
             disabled={settingLoading}
+            style={{ fontSize: 12 }}
           >
             {settingLoading ? <span className="btn-spin" /> : null}
-            {smsEnabled ? "Disable SMS" : "Enable SMS"}
+            {smsEnabled ? "Disable" : "Enable"}
           </button>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon gr"><RiCheckboxCircleLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{logStats.sent_count}</div>
-            <div className="stat-label">Total Sent</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon cr"><RiCloseCircleLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{logStats.failed_count}</div>
-            <div className="stat-label">Failed</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon am"><RiTimeLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{logStats.skipped_count}</div>
-            <div className="stat-label">Skipped</div>
-          </div>
-        </div>
+        </SmsTierCard>
+        <SmsTierCard icon={RiCheckboxCircleLine} label="Total Sent"  value={logStats.sent_count}    tone="green" tier="sub"    dark={dark} />
+        <SmsTierCard icon={RiCloseCircleLine}    label="Failed"      value={logStats.failed_count}   tone="red"   tier="normal" dark={dark} />
+        <SmsTierCard icon={RiTimeLine}           label="Skipped"     value={logStats.skipped_count}  tone="amber" tier="normal" dark={dark} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>

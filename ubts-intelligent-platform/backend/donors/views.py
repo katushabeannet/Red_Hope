@@ -882,3 +882,81 @@ def donor_camp_checkin_view(request, camp_id):
         "camp_name": camp.name,
         "total_donations": donor.total_donations,
     })
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_walkin_donor_register_view(request):
+    """
+    Register a walk-in donor: creates user account, donor profile, and optional medical record.
+    Only accessible by admin users (UBTS staff).
+    """
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    data = request.data
+
+    email     = (data.get("email") or "").strip().lower()
+    full_name = (data.get("full_name") or "").strip()
+    password  = (data.get("password") or "").strip()
+
+    if not email:
+        return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if not full_name:
+        return Response({"error": "Full name is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if not password or len(password) < 6:
+        return Response({"error": "Password must be at least 6 characters."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if User.objects.filter(email=email).exists():
+        return Response(
+            {"error": f"A donor account with email '{email}' already exists."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    base_username = email.split("@")[0]
+    username = base_username
+    counter = 1
+    while User.objects.filter(username=username).exists():
+        username = f"{base_username}{counter}"
+        counter += 1
+
+    user = User(email=email, username=username, full_name=full_name, role="DONOR")
+    user.set_password(password)
+    user.save()
+
+    profile = DonorProfile.objects.create(
+        user=user,
+        phone_number=(data.get("phone_number") or "").strip(),
+        blood_group=data.get("blood_group") or "",
+        date_of_birth=data.get("date_of_birth") or None,
+        gender=(data.get("gender") or "").strip(),
+        address=(data.get("address") or "").strip(),
+        whatsapp_number=(data.get("whatsapp_number") or "").strip(),
+        whatsapp_consent=bool(data.get("whatsapp_consent", False)),
+    )
+
+    medical_fields = ["weight_kg", "hemoglobin_level", "last_donation_date",
+                      "has_recent_illness", "has_chronic_condition",
+                      "is_pregnant", "is_on_medication"]
+    has_medical = any(data.get(f) for f in medical_fields)
+
+    if has_medical:
+        DonorMedicalRecord.objects.create(
+            donor=profile,
+            weight_kg=float(data["weight_kg"]) if data.get("weight_kg") else None,
+            hemoglobin_level=float(data["hemoglobin_level"]) if data.get("hemoglobin_level") else None,
+            has_recent_illness=bool(data.get("has_recent_illness", False)),
+            has_chronic_condition=bool(data.get("has_chronic_condition", False)),
+            last_donation_date=data.get("last_donation_date") or None,
+            is_pregnant=bool(data.get("is_pregnant", False)),
+            is_on_medication=bool(data.get("is_on_medication", False)),
+        )
+
+    return Response(
+        {
+            "message": "Walk-in donor registered successfully.",
+            "donor_id": profile.id,
+            "user": {"id": user.id, "email": user.email, "full_name": user.full_name},
+        },
+        status=status.HTTP_201_CREATED,
+    )

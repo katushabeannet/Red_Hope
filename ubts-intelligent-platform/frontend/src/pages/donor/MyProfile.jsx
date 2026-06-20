@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiCloseLine,
   RiEditLine,
@@ -15,6 +16,7 @@ import AdminLoader from "../../components/common/AdminLoader";
 
 function MyProfile() {
   const { showToast } = useToast();
+  const { dark } = useTheme();
 
   const [profile, setProfile]       = useState(null);
   const [medical, setMedical]       = useState(null);
@@ -202,8 +204,8 @@ function MyProfile() {
           <div className="panel-body">
             {!medical ? (
               <div style={{
-                borderRadius: 12, border: "1px solid #FCD34D", background: "#FFFBEB",
-                padding: "16px 18px", fontSize: 13, color: "#92400E", lineHeight: 1.6,
+                borderRadius: 12, border: dark ? "1px solid rgba(217,119,6,.3)" : "1px solid #FCD34D", background: dark ? "rgba(217,119,6,.1)" : "#FFFBEB",
+                padding: "16px 18px", fontSize: 13, color: dark ? "#FCD34D" : "#92400E", lineHeight: 1.6,
               }}>
                 Medical information has not yet been recorded by UBTS. This will be completed after your donation or screening.
               </div>
@@ -250,7 +252,7 @@ function MyProfile() {
         </div>
         <div className="panel-body">
           <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 0" }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "#EFF6FF", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: dark ? "rgba(37,99,235,.18)" : "#EFF6FF", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <RiLockLine size={20} />
             </div>
             <div>
@@ -269,7 +271,7 @@ function MyProfile() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
         }}>
           <div style={{
-            background: "#fff", borderRadius: 20, width: "100%", maxWidth: 520,
+            background: dark ? "#1E293B" : "#fff", borderRadius: 20, width: "100%", maxWidth: 520,
             boxShadow: "0 24px 60px rgba(0,0,0,.2)", overflow: "hidden",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
@@ -310,7 +312,7 @@ function MyProfile() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
         }}>
           <div style={{
-            background: "#fff", borderRadius: 20, width: "100%", maxWidth: 440,
+            background: dark ? "#1E293B" : "#fff", borderRadius: 20, width: "100%", maxWidth: 440,
             boxShadow: "0 24px 60px rgba(0,0,0,.2)", overflow: "hidden",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>

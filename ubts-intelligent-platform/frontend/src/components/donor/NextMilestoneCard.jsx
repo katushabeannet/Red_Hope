@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiBarChartBoxLine,
   RiFlagLine,
@@ -11,6 +12,7 @@ const MILESTONE_LEVELS = { 5: "Silver", 10: "Gold", 20: "Platinum" };
 const BADGE_NAMES      = { 1: "First Life Saver", 5: "Regular Donor", 10: "Community Hero", 20: "Gold Donor" };
 
 function NextMilestoneCard({ totalDonations = 0, nextMilestone, nextBadge }) {
+  const { dark } = useTheme();
   const [showInfo, setShowInfo] = useState(false);
 
   const safeMilestone = nextMilestone || 5;
@@ -29,7 +31,7 @@ function NextMilestoneCard({ totalDonations = 0, nextMilestone, nextBadge }) {
     >
       {/* Main card */}
       <div style={{
-        borderRadius: 16, border: "1.5px solid var(--border)", background: "#fff",
+        borderRadius: 16, border: "1.5px solid var(--border)", background: dark ? "#1E293B" : "#fff",
         padding: "22px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.04)",
         transition: "transform .2s, box-shadow .2s",
       }}
@@ -44,7 +46,7 @@ function NextMilestoneCard({ totalDonations = 0, nextMilestone, nextBadge }) {
         {!completed && badgeName && (
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6,
-            background: "#F0FDF4", borderRadius: 999, padding: "4px 12px",
+            background: dark ? "rgba(22,163,74,.18)" : "#F0FDF4", borderRadius: 999, padding: "4px 12px",
             marginBottom: 8,
           }}>
             <RiMedalLine size={12} style={{ color: "var(--green)" }} />
@@ -64,7 +66,7 @@ function NextMilestoneCard({ totalDonations = 0, nextMilestone, nextBadge }) {
         </p>
 
         {/* Progress bar */}
-        <div style={{ height: 8, borderRadius: 999, background: "#e2e8f0", overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ height: 8, borderRadius: 999, background: dark ? "#334155" : "#e2e8f0", overflow: "hidden", marginBottom: 8 }}>
           <div style={{
             height: "100%", borderRadius: 999,
             background: "linear-gradient(90deg, var(--green), #4ade80)",
