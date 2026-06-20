@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import reddyHero from "../../assets/wallpapers/reddy.jpeg";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -137,8 +138,7 @@ function Campaigns() {
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "58vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center" }} />
-        <div className="rh-hero-overlay" style={{ position: "absolute", inset: 0 }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${reddyHero})`, backgroundSize: "cover", backgroundPosition: "center" }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780, padding: "96px 28px", textAlign: "center" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#fff", backdropFilter: "blur(8px)", marginBottom: 22 }}>

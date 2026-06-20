@@ -1,4 +1,9 @@
 import { Link } from "react-router-dom";
+import reddyHero    from "../../assets/wallpapers/reddy.jpeg";
+import albertPhoto  from "../../assets/team/Albert.jpeg";
+import annetPhoto   from "../../assets/team/Annet-cropped.jpeg";
+import yakubPhoto   from "../../assets/team/kubi.jpg";
+import wilfredPhoto from "../../assets/team/wilfred1.jpg";
 import { motion } from "framer-motion";
 import {
   RiArrowRightLine,
@@ -11,10 +16,10 @@ import {
 
 // ── Data ────────────────────────────────────────────────────────────────────────
 const TEAM = [
-  { name: "Alberto Nuwarinda Grande", initials: "AN", role: "Lead Developer & AI Engineer", dept: "AI & Systems",    color: "#C41E3A" },
-  { name: "Team Member 2",            initials: "TM", role: "Backend Developer",              dept: "Engineering",   color: "#8B1A1A" },
-  { name: "Team Member 3",            initials: "TM", role: "Frontend Developer",             dept: "Design & UI",   color: "#2c3e50" },
-  { name: "Team Member 4",            initials: "TM", role: "Systems Analyst",                dept: "Analysis",      color: "#D97706" },
+  { name: "Nuwarinda Albert",   photo: albertPhoto,  role: "Developer",                  dept: "Lead Developer & AI Engineer", color: "#C41E3A" },
+  { name: "Okwii Yakub",        photo: yakubPhoto,   role: "Developer",                  dept: "Backend Engineering",          color: "#8B1A1A" },
+  { name: "Katswamba Wilfred",  photo: wilfredPhoto, role: "Developer",                  dept: "Frontend & UI Design",         color: "#2c3e50" },
+  { name: "Katushabe Annet",    photo: annetPhoto,   role: "Developer & System Analyst", dept: "Systems Analysis",             color: "#D97706" },
 ];
 
 const RECOG_DONORS = [
@@ -41,8 +46,7 @@ function About() {
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section style={{ position: "relative", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center" }} />
-        <div className="rh-hero-overlay" style={{ position: "absolute", inset: 0 }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${reddyHero})`, backgroundSize: "cover", backgroundPosition: "center" }} />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780, padding: "96px 28px", textAlign: "center" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#fff", backdropFilter: "blur(8px)", marginBottom: 22 }}>
@@ -184,18 +188,19 @@ function About() {
             {TEAM.map((member, i) => (
               <motion.div key={member.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className="rh-team-card">
-                {/* Colored initial top */}
-                <div style={{ height: 200, background: member.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span className="rh-display" style={{ fontSize: 60, fontWeight: 800, color: "#fff", opacity: 0.9 }}>{member.initials}</span>
-                </div>
-                {/* Info bottom */}
-                <div style={{ padding: "20px", textAlign: "center" }}>
-                  <div style={{ width: 32, height: 2, background: "var(--cr)", margin: "0 auto 14px", borderRadius: 2 }} />
-                  <p style={{ fontWeight: 800, fontSize: 14, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".03em", lineHeight: 1.3 }}>{member.name}</p>
-                  <p style={{ fontSize: 12, color: "var(--ink-l)", marginTop: 5 }}>{member.role}</p>
-                  <span style={{ display: "inline-block", background: "var(--cr-xl)", color: "var(--cr)", borderRadius: 50, padding: "3px 12px", fontSize: 11, fontWeight: 600, marginTop: 10 }}>
+                {/* Team photo */}
+                <div style={{ height: 220, position: "relative", overflow: "hidden" }}>
+                  <img src={member.photo} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(26,31,46,.75) 0%, transparent 55%)" }} />
+                  <span style={{ position: "absolute", bottom: 12, left: 14, background: member.color, color: "#fff", padding: "3px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
                     {member.dept}
                   </span>
+                </div>
+                {/* Info bottom */}
+                <div style={{ padding: "18px 20px", textAlign: "center" }}>
+                  <div style={{ width: 32, height: 2, background: "var(--cr)", margin: "0 auto 12px", borderRadius: 2 }} />
+                  <p style={{ fontWeight: 800, fontSize: 14, color: "var(--ink)", lineHeight: 1.3 }}>{member.name}</p>
+                  <p style={{ fontSize: 12, color: "var(--ink-l)", marginTop: 4 }}>{member.role}</p>
                 </div>
               </motion.div>
             ))}

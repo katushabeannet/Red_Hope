@@ -14,9 +14,10 @@ import {
   findNearestCampFromChatbot,
 } from "../../services/chatbotService";
 import { useToast } from "../../context/ToastContext";
+import redHopeLogo from "../../assets/logo/redhope.png";
 
 const WELCOME =
-  "Hello! I'm the UBTS Assistant. Ask me about eligibility, availability, blood donation questions, or nearby donation camps.";
+  "Hello! I'm RedHope AI. Ask me about eligibility, availability, blood donation questions, or nearby donation camps.";
 
 const QUICK_REPLIES = [
   "Is blood donation safe?",
@@ -207,7 +208,7 @@ function FloatingChatbot() {
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             style={{
               position: "fixed", bottom: 24, right: 24, zIndex: 50,
-              width: 400, maxHeight: 580,
+              width: 420, height: "75vh", maxHeight: 720, minHeight: 480,
               display: "flex", flexDirection: "column",
               borderRadius: 22, overflow: "hidden",
               border: "1.5px solid rgba(255,255,255,.2)",
@@ -230,7 +231,7 @@ function FloatingChatbot() {
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 700, fontSize: 13, color: "#fff", margin: 0 }}>
-                  UBTS Assistant
+                  RedHope AI
                 </p>
                 <p style={{ fontSize: 11, color: "rgba(255,255,255,.75)", margin: "2px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", display: "inline-block", flexShrink: 0 }} />
@@ -252,7 +253,9 @@ function FloatingChatbot() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: "auto", background: "#F8F9FB", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ flex: 1, overflowY: "auto", background: "#F8F9FB", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+              {/* Logo watermark */}
+              <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "60%", maxWidth: 180, opacity: 0.06, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
               {messages.map((msg, i) => (
                 <ChatBubble key={i} msg={msg} />
               ))}

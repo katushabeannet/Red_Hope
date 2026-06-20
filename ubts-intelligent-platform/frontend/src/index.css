@@ -31,6 +31,7 @@
 }
 
 .dark {
+  /* ── Admin design tokens ── */
   --surface: #0f172a;
   --surface-2: #1e293b;
   --border: #334155;
@@ -39,6 +40,188 @@
   --text-muted: #64748b;
   --crimson: #dc2626;
   --crimson-light: #1f0a0e;
+
+  /* ── Public-page design tokens ── */
+  --rh-canvas:   #0F172A;
+  --rh-border:   #334155;
+  --ink:         #F1F5F9;
+  --ink-s:       #94A3B8;
+  --ink-l:       #64748B;
+  --cr-xl:       rgba(196,30,58,.22);
+  --footer-bg:   #080D18;
+  --footer-text: #64748B;
+
+  /* ── Admin shell tokens ── */
+  --canvas: #0F172A;
+}
+
+/* ─── Dark: public header ──────────────────────────────────────── */
+.dark .rh-header {
+  background: rgba(10,15,30,.96) !important;
+  border-bottom-color: #1E293B;
+  box-shadow: 0 2px 20px rgba(0,0,0,.3);
+}
+.dark .rh-brand-name   { color: #F1F5F9; }
+.dark .rh-brand-tagline { color: #64748B; }
+.dark .rh-nav-link     { color: #94A3B8; }
+.dark .rh-nav-link:hover, .dark .rh-nav-link.active { color: var(--cr); background: var(--cr-xl); }
+.dark .rh-btn-login    { background: #1E293B; color: #F1F5F9; border-color: #334155; }
+.dark .rh-btn-login:hover { border-color: var(--cr); color: var(--cr); }
+.dark .rh-hamburger span { background: #F1F5F9; }
+.dark .rh-mobile-nav   { background: rgba(10,15,30,.98); }
+
+/* ─── Dark: public cards & sections ───────────────────────────── */
+.dark .rh-how-card     { background: #1E293B; border-color: #334155; }
+.dark .rh-team-card    { background: #1E293B; border-color: #334155; }
+.dark .rh-recog-card   { background: #1E293B; }
+.dark .rh-process-card { background: #1E293B; border-color: #334155; }
+.dark .rh-camp-item    { background: #1E293B; border-color: #334155; }
+.dark .rh-info-card    { background: #1E293B; border-color: #334155; }
+.dark .rh-achieve-card { background: #1E293B; border-color: #334155; }
+.dark .rh-sponsor-card { background: #1E293B; border-color: #334155; }
+.dark .rh-service-item { background: #1E293B; border-color: #334155; }
+.dark .rh-stat-item    { background: #1E293B; }
+
+/* ─── Dark: section backgrounds (white → dark surface) ────────── */
+.rh-section-white  { background: #ffffff; }
+.dark .rh-section-white { background: #0F172A; }
+
+/* Stats section border top stays crimson, content adapts */
+.dark .rh-stats-section  { background: #0F172A; border-top-color: var(--cr); }
+.dark .rh-stats-section .rh-stat-item { border-right-color: #334155; border-bottom-color: #334155; }
+
+/* FAQ accordion cards */
+.rh-faq-card { background: #ffffff; border-radius: 14px; border: 1px solid var(--rh-border); overflow: hidden; }
+.dark .rh-faq-card { background: #1E293B; border-color: #334155; }
+.dark .rh-faq-card button { color: var(--ink); }
+.dark .rh-faq-card .rh-faq-answer { color: var(--ink-s); }
+
+/* Nearest camp section white */
+.dark .rh-camp-finder-section { background: #0F172A; }
+.dark .rh-camp-finder-section .rh-camp-info-box { background: #1E293B; border-color: #334155; }
+
+/* Heroes / donor recognition section */
+.dark .rh-heroes-section    { background: #0F172A; }
+.dark .rh-heroes-bottom     { background: #0F172A !important; }
+.dark .rh-donor-card        { background: #1E293B !important; }
+
+/* Contact page white sections */
+.dark .rh-contact-section   { background: #0F172A; }
+
+/* About / Who We Are white sections */
+.dark .rh-about-section     { background: #0F172A; }
+.dark .rh-about-card        { background: #1E293B !important; border-color: #334155 !important; }
+
+/* Chatbot page */
+.dark .rh-chatbot-panel     { background: #1E293B !important; border-color: #334155 !important; }
+.dark .rh-chatbot-messages  { background: #0F172A !important; }
+.dark .rh-chatbot-input     { background: #1E293B !important; border-top-color: #334155 !important; }
+.dark .rh-chatbot-input input { background: #0F172A !important; color: var(--ink) !important; border-color: #334155 !important; }
+.dark .rh-chatbot-bubble-bot { background: #1E293B !important; border-color: #334155 !important; color: var(--ink) !important; }
+
+/* Auth right panel dark */
+.dark .auth-right { background: #0A0F1E; }
+.dark .auth-form-box { color: var(--ink); }
+
+/* Logo watermark utility — set --wm-url as inline CSS var on the element */
+.rh-wm {
+  position: relative;
+  overflow: hidden;
+}
+.rh-wm::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--wm-url);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 48% auto;
+  opacity: 0.055;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Chatbot message area watermark */
+.rh-chatbot-msg-area {
+  position: relative;
+  overflow: hidden;
+}
+.rh-chatbot-msg-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--rh-wm-logo);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 50% auto;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Dark: auth pages ─────────────────────────────────────────── */
+.dark .auth-right { background: #0A0F1E; }
+.dark .auth-field input,
+.dark .auth-field select { background: #1E293B; color: #F1F5F9; border-color: #334155; }
+.dark .auth-field input::placeholder { color: #64748B; }
+.dark .auth-field label  { color: #94A3B8; }
+.dark .auth-back-btn { background: #1E293B; border-color: #334155; color: #94A3B8; }
+.dark .auth-back-btn:hover { border-color: var(--cr); color: var(--cr); }
+.dark .auth-ps-circle { background: #1E293B; border-color: #334155; color: #64748B; }
+.dark .auth-flash.danger  { background: rgba(220,38,38,.12); border-color: rgba(220,38,38,.3); color: #fca5a5; }
+.dark .auth-flash.success { background: rgba(22,163,74,.12); border-color: rgba(22,163,74,.3); color: #86efac; }
+@media (max-width: 768px) {
+  .dark .auth-right { background: #0A0F1E; }
+}
+
+/* ─── Back-to-top floating button ──────────────────────────────── */
+.rh-back-top {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgb(20, 20, 20);
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 0px 4px rgba(180, 160, 255, 0.253);
+  cursor: pointer;
+  transition-duration: 0.3s;
+  overflow: hidden;
+  position: relative;
+}
+.rh-btt-icon {
+  width: 12px;
+  transition-duration: 0.3s;
+  fill: white;
+}
+.rh-back-top:hover {
+  width: 140px;
+  border-radius: 50px;
+  transition-duration: 0.3s;
+  background-color: rgb(181, 160, 255);
+  align-items: center;
+}
+.rh-back-top:hover .rh-btt-icon {
+  transition-duration: 0.3s;
+  transform: translateY(-200%);
+}
+.rh-back-top::before {
+  position: absolute;
+  bottom: -20px;
+  content: "Back to Top";
+  color: white;
+  font-size: 0px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rh-back-top:hover::before {
+  font-size: 13px;
+  opacity: 1;
+  bottom: unset;
+  transition-duration: 0.3s;
 }
 
 /* ─── Base ─────────────────────────────────────────────────────── */

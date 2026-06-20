@@ -6,6 +6,7 @@ import { loginUser } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useTheme } from "../../context/ThemeContext";
+import redHopeLogo from "../../assets/logo/redhope.png";
 
 const FEATURES = [
   "AI-powered eligibility check in seconds",
@@ -128,11 +129,14 @@ function Login() {
 
       {/* ── RIGHT PANEL ── */}
       <div className="auth-right">
-        <button onClick={toggle} style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)" }} aria-label="Toggle dark mode">
+        {/* Logo watermark */}
+        <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "55%", maxWidth: 320, opacity: 0.055, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
+
+        <button onClick={toggle} style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)", zIndex: 2 }} aria-label="Toggle dark mode">
           {dark ? <RiSunLine size={16} /> : <RiMoonLine size={16} />}
         </button>
 
-        <div className="auth-form-box">
+        <div className="auth-form-box" style={{ position: "relative", zIndex: 1 }}>
           <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Donor Access</p>
           <h1 className="rh-display" style={{ fontSize: "clamp(24px,3vw,34px)", fontWeight: 800, color: "var(--ink)", marginBottom: 6, lineHeight: 1.2 }}>Sign In</h1>
           <p style={{ fontSize: 14, color: "var(--ink-l)", marginBottom: 30 }}>
