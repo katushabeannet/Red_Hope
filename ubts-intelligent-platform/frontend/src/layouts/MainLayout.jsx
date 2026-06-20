@@ -35,6 +35,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import FloatingChatbot from "../components/chatbot/FloatingChatbot";
+import BackToTop from "../components/common/BackToTop";
 
 // ─── Blood Drop SVG ────────────────────────────────────────────────────────────
 function DropSVG({ gradId = "dropG1", size = 28 }) {
@@ -404,6 +405,7 @@ function MainLayout() {
 
         <Footer />
         <FloatingChatbot />
+        <BackToTop />
       </div>
     );
   }

@@ -1,4 +1,6 @@
+import React from "react";
 import { Routes, Route } from "react-router-dom";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 import MainLayout  from "./layouts/MainLayout";
 import AuthLayout  from "./layouts/AuthLayout";
@@ -40,6 +42,8 @@ import BloodDemandAlerts from "./pages/donor/BloodDemandAlerts";
 
 function App() {
   return (
+    <>
+    <ScrollToTop />
     <Routes>
       {/* Standalone auth pages */}
       <Route path="/login"                        element={<Login />} />
@@ -110,6 +114,7 @@ function App() {
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 }
 

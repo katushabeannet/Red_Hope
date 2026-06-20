@@ -12,6 +12,7 @@ import {
   findNearestCampFromChatbot,
 } from "../../services/chatbotService";
 import NearestCampMap from "../../components/NearestCampMap";
+import redHopeLogo from "../../assets/logo/redhope.png";
 
 const STORAGE_KEY       = "ubts_chat_history";
 const MAX_HISTORY_TURNS = 5;
@@ -104,7 +105,7 @@ function Chatbot() {
             Conversational Assistant
           </div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 800, color: "var(--ink)", margin: "0 0 10px", lineHeight: 1.2 }}>
-            UBTS Intelligent Chatbot
+            RedHope AI
           </h1>
           <p style={{ fontSize: 14, color: "var(--ink-s)", lineHeight: 1.6, margin: 0, maxWidth: 500 }}>
             Ask general blood donation questions or request nearby donation camp
@@ -159,7 +160,7 @@ function Chatbot() {
           </div>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontWeight: 700, color: "var(--ink)", fontSize: 15, margin: 0 }}>
-              Blood Donation Assistant
+              RedHope AI
             </h2>
             <p style={{ fontSize: 12, color: "var(--ink-l)", margin: "3px 0 0" }}>
               Retrieval answers, role-aware routing, and nearest-camp actions
@@ -172,10 +173,21 @@ function Chatbot() {
         </div>
 
         {/* Message area */}
-        <div style={{
-          height: 480, overflowY: "auto", background: "var(--canvas)",
-          padding: "24px", display: "flex", flexDirection: "column", gap: 16,
-        }}>
+        <div
+          style={{
+            height: "calc(75vh - 220px)", minHeight: 420, overflowY: "auto",
+            background: "var(--canvas)", position: "relative",
+            padding: "24px", display: "flex", flexDirection: "column", gap: 16,
+          }}
+        >
+          {/* Logo watermark */}
+          <img
+            src={redHopeLogo}
+            alt=""
+            aria-hidden="true"
+            style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "50%", maxWidth: 280, opacity: 0.06, pointerEvents: "none", userSelect: "none", zIndex: 0 }}
+          />
+
           {messages.length === 0 ? (
             <EmptyState onPickPrompt={setQuery} />
           ) : (

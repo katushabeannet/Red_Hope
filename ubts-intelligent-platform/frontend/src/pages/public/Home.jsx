@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import albertPhoto from "../../assets/team/Albert.jpeg";
+import annetPhoto  from "../../assets/team/Annet-cropped.jpeg";
+import yakubPhoto  from "../../assets/team/kubi.jpg";
+import wilfredPhoto from "../../assets/team/wilfred1.jpg";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
@@ -58,22 +62,20 @@ const HOW_STEPS = [
   { icon: RiHeartPulseLine,num: "04", title: "Donate & Track Impact",     desc: "Donate at the camp, earn badges, download your certificate, and see lives impacted." },
 ];
 
-const DONORS = [
-  { name: "Sarah Nakato",   group: "O+",  donations: 12, district: "Kampala", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&q=80" },
-  { name: "James Otim",     group: "A+",  donations: 8,  district: "Gulu",    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&q=80" },
-  { name: "Grace Akinyi",   group: "B+",  donations: 15, district: "Wakiso",  photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&h=200&fit=crop&q=80" },
-  { name: "Robert Ssempa",  group: "O-",  donations: 6,  district: "Jinja",   photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&q=80" },
-  { name: "Mary Namukasa",  group: "AB+", donations: 20, district: "Entebbe", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&q=80" },
-  { name: "David Okello",   group: "A-",  donations: 9,  district: "Mbale",   photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop&q=80" },
+const HEROES = [
+  { name: "Nuwarinda Albert",    role: "Developer",                  photo: albertPhoto,  badge: "Lead Developer",    color: "#C41E3A" },
+  { name: "Okwii Yakub",         role: "Developer",                  photo: yakubPhoto,   badge: "Backend Engineer",  color: "#8B1A1A" },
+  { name: "Katswamba Wilfred",   role: "Developer",                  photo: wilfredPhoto, badge: "Frontend Engineer", color: "#2c3e50" },
+  { name: "Katushabe Annet",     role: "Developer & System Analyst", photo: annetPhoto,   badge: "System Analyst",    color: "#D97706" },
 ];
 
 const FAQS = [
-  { q: "Who can donate blood?", a: "Anyone aged 17 years and above, weighing at least 50 kg, and in good health can donate blood. You must not have donated in the past 3 months." },
-  { q: "How often can I donate?", a: "You can donate whole blood every 3 months (approximately every 56 days). Regular donation is safe and highly encouraged." },
-  { q: "Is blood donation safe?", a: "Absolutely. Every donation uses sterile, single-use equipment. There is zero risk of contracting any disease from donating blood." },
-  { q: "How long does donation take?", a: "The entire process takes about 45–60 minutes, but the actual blood draw takes only 8–10 minutes. Screening and rest time make up the rest." },
-  { q: "What should I do before donating?", a: "Eat a light, iron-rich meal, drink 500 ml of water, and get a good night's sleep. Avoid fatty foods and alcohol 24 hours before donation." },
-  { q: "Does RedHope store my health data securely?", a: "Yes. All personal and health data is encrypted at rest and in transit. We comply with Uganda's data-protection guidelines and never share data without consent." },
+  { q: "Who can donate blood?" },
+  { q: "How often can I donate?" },
+  { q: "Is blood donation safe?" },
+  { q: "How long does donation take?" },
+  { q: "What should I do before donating?" },
+  { q: "Does RedHope store my health data securely?" },
 ];
 
 // ── Map ─────────────────────────────────────────────────────────────────────────
@@ -112,7 +114,6 @@ function Home() {
   const [stats, setStats]           = useState({});
   const [allCamps, setAllCamps]     = useState([]);
   const [heroIdx, setHeroIdx]       = useState(0);
-  const [donorIdx, setDonorIdx]     = useState(0);
   const [openFaq, setOpenFaq]       = useState(null);
   const [nearestCamp, setNearestCamp] = useState(null);
   const [campLoading, setCampLoading] = useState(false);
@@ -125,11 +126,6 @@ function Home() {
 
   useEffect(() => {
     const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_SLIDES.length), 5000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => setDonorIdx((i) => (i + 1) % DONORS.length), 3000);
     return () => clearInterval(t);
   }, []);
 
@@ -152,7 +148,6 @@ function Home() {
     );
   };
 
-  const visibleDonors = [0, 1, 2].map((offset) => DONORS[(donorIdx + offset) % DONORS.length]);
 
   return (
     <div style={{ fontFamily: "'Poppins', sans-serif", background: "#fff" }}>
@@ -423,57 +418,81 @@ function Home() {
         </div>
       </section>
 
-      {/* ── 6. DONOR RECOGNITION — KEPT AS-IS ───────────────────────────────── */}
-      <section className="relative">
-        {/* Image top */}
-        <div className="relative h-56 overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1920&q=80" alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-red-900/70" />
-          <div className="absolute inset-0 flex items-center justify-center text-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-red-300">Our Heroes</p>
-              <h2 className="mt-1 text-3xl font-extrabold text-white lg:text-4xl">Meet Our Lifesaving Heroes</h2>
-              <p className="mt-2 text-slate-200">Celebrating those who give the gift of life</p>
-            </div>
+      {/* ── 6. MEET OUR LIFESAVING HEROES ───────────────────────────────────── */}
+      <section className="rh-heroes-section" style={{ background: "linear-gradient(160deg, #1A1F2E 0%, #3A1018 60%, #5C1420 100%)", padding: "88px 0" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
+          {/* Section header */}
+          <div style={{ textAlign: "center", marginBottom: 60 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr-lt)", marginBottom: 10 }}>Our Heroes</p>
+            <h2 className="rh-display" style={{ fontSize: "clamp(26px,4vw,42px)", fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>
+              Meet Our Lifesaving{" "}
+              <span style={{ color: "#FFB3C1" }}>Heroes</span>
+            </h2>
+            <p style={{ marginTop: 18, fontSize: 15, color: "rgba(255,255,255,.65)", lineHeight: 1.75, maxWidth: 560, margin: "18px auto 0" }}>
+              Celebrating the dedicated team behind RedHope — building technology that gives the gift of life.
+            </p>
           </div>
-        </div>
 
-        {/* White bottom */}
-        <div className="bg-white pb-16 pt-32 dark:bg-slate-900" />
-
-        {/* Floating cards */}
-        <div className="absolute inset-x-0" style={{ top: "9rem" }}>
-          <div className="mx-auto max-w-6xl px-6 lg:px-12">
-            <div className="hidden gap-5 lg:grid lg:grid-cols-6">
-              {DONORS.map((d, i) => (
-                <motion.div
-                  key={d.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 }}
-                  className="rounded-2xl bg-white p-5 text-center shadow-xl dark:bg-slate-800"
-                >
-                  <img src={d.photo} alt={d.name} className="mx-auto h-16 w-16 rounded-full object-cover ring-4 ring-red-100" />
-                  <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{d.name}</p>
-                  <span className="mt-1 inline-block rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">{d.group}</span>
-                  <p className="mt-1 text-xs text-slate-500">{d.donations} donations</p>
-                  <p className="text-xs text-slate-400">{d.district}</p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Mobile: cycling 3 cards */}
-            <div className="flex justify-center gap-4 lg:hidden">
-              {visibleDonors.map((d) => (
-                <div key={d.name} className="rounded-2xl bg-white p-4 text-center shadow-xl dark:bg-slate-800" style={{ minWidth: 120 }}>
-                  <img src={d.photo} alt={d.name} className="mx-auto h-14 w-14 rounded-full object-cover ring-2 ring-red-100" />
-                  <p className="mt-2 text-xs font-bold text-slate-900 dark:text-white">{d.name}</p>
-                  <span className="mt-1 inline-block rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">{d.group}</span>
-                  <p className="text-xs text-slate-400">{d.donations} donations</p>
+          {/* Hero cards grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 28 }}>
+            {HEROES.map((hero, i) => (
+              <motion.div
+                key={hero.name}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                style={{
+                  borderRadius: 22,
+                  overflow: "hidden",
+                  background: "rgba(255,255,255,.06)",
+                  border: "1px solid rgba(255,255,255,.12)",
+                  backdropFilter: "blur(10px)",
+                  transition: "transform .3s, box-shadow .3s",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 20px 50px rgba(0,0,0,.35)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                {/* Photo */}
+                <div style={{ position: "relative", height: 200, overflow: "hidden" }}>
+                  <img
+                    src={hero.photo}
+                    alt={hero.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+                  />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(26,31,46,.9) 0%, transparent 60%)" }} />
+                  <span style={{
+                    position: "absolute", bottom: 12, left: 14,
+                    background: hero.color, color: "#fff",
+                    padding: "3px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  }}>
+                    {hero.badge}
+                  </span>
                 </div>
-              ))}
-            </div>
+
+                {/* Info */}
+                <div style={{ padding: "20px 22px 24px" }}>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, fontSize: 17, color: "#fff", marginBottom: 4 }}>
+                    {hero.name}
+                  </h3>
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,.55)", fontWeight: 500 }}>{hero.role}</p>
+
+                  {/* Decorative pulse dot */}
+                  <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--cr-lt)", display: "inline-block" }} className="animate-rh-pulse" />
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)", fontWeight: 500, letterSpacing: ".05em" }}>RedHope Team</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Bottom CTA */}
+          <div style={{ textAlign: "center", marginTop: 52 }}>
+            <Link to="/about" style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1.5px solid rgba(255,255,255,.3)", color: "rgba(255,255,255,.85)", padding: "12px 30px", fontSize: 14, fontWeight: 700, textDecoration: "none", backdropFilter: "blur(8px)", background: "rgba(255,255,255,.08)", transition: "all .2s" }}>
+              Learn More About Us <RiArrowRightLine size={16} />
+            </Link>
           </div>
         </div>
       </section>
@@ -486,34 +505,45 @@ function Home() {
             <h2 className="rh-display rh-underline" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 800, color: "var(--ink)" }}>
               Frequently Asked Questions
             </h2>
+            <p style={{ marginTop: 28, fontSize: 14.5, color: "var(--ink-s)", lineHeight: 1.75, maxWidth: 520, margin: "28px auto 0" }}>
+              Have a question? Our AI-powered chatbot has the best answers — instantly.
+            </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 14 }}>
             {FAQS.map((faq, i) => (
-              <div key={i} style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--rh-border)", overflow: "hidden" }}>
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}
-                >
-                  <span style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)", flex: 1, textAlign: "left", lineHeight: 1.4 }}>{faq.q}</span>
-                  <span style={{ fontSize: 22, color: openFaq === i ? "var(--cr)" : "var(--ink-l)", marginLeft: 14, flexShrink: 0, display: "inline-block", transition: "transform .3s", transform: openFaq === i ? "rotate(45deg)" : "none" }}>+</span>
-                </button>
-                <div
-                  style={{
-                    maxHeight: openFaq === i ? 200 : 0,
-                    overflow: "hidden",
-                    transition: "max-height .4s ease",
-                    padding: openFaq === i ? "0 24px 20px" : "0 24px",
-                    fontSize: 13.5,
-                    color: "var(--ink-s)",
-                    lineHeight: 1.75,
-                    fontFamily: "'Poppins',sans-serif",
-                  }}
-                >
-                  {faq.a}
+              <div key={i} className="rh-faq-card">
+                <div style={{ padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16 }}>
+                  {/* Number badge */}
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "var(--cr)" }}>{String(i + 1).padStart(2, "0")}</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)", lineHeight: 1.4, marginBottom: 12 }}>{faq.q}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "var(--cr-xl)", border: "1px solid #FFD0DA" }}>
+                      <RiBrainLine size={16} style={{ color: "var(--cr)", flexShrink: 0 }} />
+                      <p style={{ fontSize: 12.5, color: "var(--cr-dk)", lineHeight: 1.5, fontWeight: 500 }}>
+                        Ask the{" "}
+                        <Link to="/chatbot" style={{ fontWeight: 700, color: "var(--cr)", textDecoration: "underline" }}>
+                          RedHope AI Chatbot
+                        </Link>{" "}
+                        for the best answer!
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Chatbot CTA */}
+          <div style={{ textAlign: "center", marginTop: 44 }}>
+            <Link
+              to="/chatbot"
+              style={{ display: "inline-flex", alignItems: "center", gap: 10, borderRadius: 50, background: "linear-gradient(135deg,var(--cr),var(--cr-dk))", color: "#fff", padding: "14px 32px", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 20px rgba(196,30,58,.28)" }}
+            >
+              <RiBrainLine size={18} /> Ask RedHope AI Now
+            </Link>
           </div>
         </div>
       </section>

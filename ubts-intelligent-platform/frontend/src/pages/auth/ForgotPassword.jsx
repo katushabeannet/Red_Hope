@@ -4,6 +4,7 @@ import { RiSunLine, RiMoonLine, RiCheckLine } from "react-icons/ri";
 
 import { forgotPassword } from "../../services/authService";
 import { useTheme } from "../../context/ThemeContext";
+import redHopeLogo from "../../assets/logo/redhope.png";
 
 const FEATURES = [
   "Secure one-time password reset link",
@@ -113,11 +114,14 @@ function ForgotPassword() {
 
       {/* ── RIGHT PANEL ── */}
       <div className="auth-right">
-        <button onClick={toggle} style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)" }} aria-label="Toggle dark mode">
+        {/* Logo watermark */}
+        <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "55%", maxWidth: 320, opacity: 0.055, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
+
+        <button onClick={toggle} style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)", zIndex: 2 }} aria-label="Toggle dark mode">
           {dark ? <RiSunLine size={16} /> : <RiMoonLine size={16} />}
         </button>
 
-        <div className="auth-form-box">
+        <div className="auth-form-box" style={{ position: "relative", zIndex: 1 }}>
           {sent ? (
             /* ── SUCCESS STATE ── */
             <div style={{ textAlign: "center", padding: "20px 0", animation: "rh-fadeup .5s cubic-bezier(.16,1,.3,1) both" }}>
