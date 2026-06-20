@@ -16,8 +16,8 @@ import {
   getAdminLapsedDonors,
   recordDonation,
   saveAdminMedicalRecord,
-} from "../services/adminDonorService";
-import { blastCampaignNotification } from "../services/notificationService";
+} from "../../services/adminDonorService";
+import { blastCampaignNotification } from "../../services/notificationService";
 
 const initialMedicalForm = {
   donor_id: "",

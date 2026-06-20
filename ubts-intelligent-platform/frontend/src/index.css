@@ -663,9 +663,10 @@ table.data-table tbody tr:hover td { background: #FAFBFF; }
 .notif-meta  { font-size: 12px; color: var(--ink-l); margin-top: 3px; }
 
 /* ── empty state ── */
-.empty-state { text-align: center; padding: 48px 24px; color: var(--ink-l); }
+.empty-state { text-align: center; padding: 48px 24px; color: var(--ink-l); display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .empty-icon  { font-size: 36px; margin-bottom: 12px; opacity: .35; }
-.empty-state p { font-size: 14px; }
+.empty-state p    { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
+.empty-state span { font-size: 13px; color: var(--ink-s); max-width: 400px; line-height: 1.6; }
 
 /* ── alerts ── */
 .adm-alert { padding: 14px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 500; margin-bottom: 20px; }

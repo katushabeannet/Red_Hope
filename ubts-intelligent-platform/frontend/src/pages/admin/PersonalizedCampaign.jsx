@@ -13,10 +13,10 @@ import {
 import {
   getCampaignCamps,
   scanPersonalizedCampaignDonors,
-} from "../services/campaignService";
-import { blastCampaignNotification } from "../services/notificationService";
-import { useToast } from "../context/ToastContext";
-import AdminLoader from "../components/common/AdminLoader";
+} from "../../services/campaignService";
+import { blastCampaignNotification } from "../../services/notificationService";
+import { useToast } from "../../context/ToastContext";
+import AdminLoader from "../../components/common/AdminLoader";
 
 const initialFilters = {
   blood_group: "",

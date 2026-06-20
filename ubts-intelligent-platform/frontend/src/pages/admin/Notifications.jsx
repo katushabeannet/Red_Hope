@@ -6,9 +6,9 @@ import {
   RiRefreshLine,
 } from "react-icons/ri";
 
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import AdminLoader from "../components/common/AdminLoader";
+import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
+import AdminLoader from "../../components/common/AdminLoader";
 
 import {
   generateMyNotifications,
@@ -16,7 +16,7 @@ import {
   getMyNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
-} from "../services/notificationService";
+} from "../../services/notificationService";
 
 function Notifications() {
   const { showToast } = useToast();

@@ -10,7 +10,7 @@ import {
   RiPhoneLine,
 } from "react-icons/ri";
 
-import { getActiveCamps } from "../services/donorService";
+import { getActiveCamps } from "../../services/donorService";
 
 // ── Constants ───────────────────────────────────────────────────────────────────
 const CAMPAIGN_IMAGES = [
