@@ -20,26 +20,24 @@ import {
   exportCampaignResponsesCSV,
 } from "../services/campaignService";
 import { useToast } from "../context/ToastContext";
-
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
+import AdminLoader from "../components/common/AdminLoader";
 
 const BLOOD_GROUPS = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-const RESPONSE_STATUS_CONFIG = {
-  CONTACTED:     { cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",     dot: "bg-blue-500",     label: "Contacted" },
-  RESPONDED:     { cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", dot: "bg-amber-500",    label: "Responded" },
-  DONATED:       { cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", dot: "bg-emerald-500", label: "Donated" },
-  NOT_INTERESTED:{ cls: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400",    dot: "bg-slate-400",   label: "Not Interested" },
+const RESPONSE_BADGE = {
+  CONTACTED:      "badge-blue",
+  RESPONDED:      "badge-amber",
+  DONATED:        "badge-green",
+  NOT_INTERESTED: "badge-gray",
+};
+const RESPONSE_LABEL = {
+  CONTACTED: "Contacted", RESPONDED: "Responded", DONATED: "Donated", NOT_INTERESTED: "Not Interested",
 };
 
 function ResponseBadge({ status }) {
-  const cfg = RESPONSE_STATUS_CONFIG[status] ?? RESPONSE_STATUS_CONFIG.CONTACTED;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.cls}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
+    <span className={`badge ${RESPONSE_BADGE[status] ?? "badge-gray"}`}>
+      {RESPONSE_LABEL[status] ?? status}
     </span>
   );
 }
@@ -83,115 +81,117 @@ function AdminCampaignHistory() {
     r.contacted_donors ? `${Math.round((r.converted_donors / r.contacted_donors) * 100)}%` : "—";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <>
+      <div className="page-head-row">
         <div>
-          <p className="text-sm font-medium text-[var(--crimson)]">Campaign Analytics</p>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--text-primary)] md:text-3xl">Campaign Scan History</h1>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--text-secondary)]">
-            Full history of personalized donor campaign scans with contact, conversion, and response tracking.
-          </p>
+          <div className="page-eyebrow">Campaign Analytics</div>
+          <h1 className="page-title rh-display">Campaign Scan History</h1>
+          <p className="page-desc">Full history of personalized donor campaign scans with contact, conversion, and response tracking.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={loadHistory}><RiRefreshLine /> Refresh</Button>
-          <Button variant="secondary" onClick={handleExport}><RiDownloadLine /> Export CSV</Button>
+        <div className="page-actions">
+          <button className="btn btn-outline btn-sm" onClick={loadHistory}><RiRefreshLine /> Refresh</button>
+          <button className="btn btn-outline btn-sm" onClick={handleExport}><RiDownloadLine /> Export CSV</button>
         </div>
       </div>
 
-      <Card>
-        <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
-          <div className="flex-1" style={{ minWidth: 200 }}>
-            <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Search</label>
-            <div className="relative">
-              <RiSearchLine size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Campaign name, blood group, created by…"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[var(--crimson)]"
-              />
+      <div className="panel">
+        <div className="panel-body">
+          <form onSubmit={handleSearch} style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Search</label>
+              <div style={{ position: "relative" }}>
+                <RiSearchLine size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ink-l)" }} />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Campaign name, blood group, created by…"
+                  style={{ width: "100%", padding: "9px 12px 9px 32px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Blood Group</label>
-            <select
-              value={bloodGroup}
-              onChange={(e) => { setBloodGroup(e.target.value); setPage(1); }}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--crimson)]"
-            >
-              {BLOOD_GROUPS.map((bg) => (
-                <option key={bg} value={bg}>{bg || "All Blood Groups"}</option>
-              ))}
-            </select>
-          </div>
-          <Button type="submit"><RiSearchLine /> Search</Button>
-        </form>
-      </Card>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Blood Group</label>
+              <select
+                value={bloodGroup}
+                onChange={(e) => { setBloodGroup(e.target.value); setPage(1); }}
+                style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", fontSize: 13, outline: "none" }}
+              >
+                {BLOOD_GROUPS.map((bg) => (
+                  <option key={bg} value={bg}>{bg || "All Blood Groups"}</option>
+                ))}
+              </select>
+            </div>
+            <button className="btn btn-primary btn-sm" type="submit"><RiSearchLine /> Search</button>
+          </form>
+        </div>
+      </div>
 
-      <div className="flex items-center justify-between text-sm text-[var(--text-secondary)]">
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--ink-s)", margin: "4px 0" }}>
         <span>{total} scan{total !== 1 ? "s" : ""} recorded</span>
         <span>Page {page} of {totalPages}</span>
       </div>
 
-      <Card>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
-          </div>
-        ) : records.length === 0 ? (
-          <p className="py-12 text-center text-sm text-[var(--text-secondary)]">No campaign scan records found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
-                <tr>
-                  <th className="p-3 font-medium">Campaign</th>
-                  <th className="p-3 font-medium">Blood Group</th>
-                  <th className="p-3 font-medium">Matched</th>
-                  <th className="p-3 font-medium">Available</th>
-                  <th className="p-3 font-medium">Contacted</th>
-                  <th className="p-3 font-medium">Converted</th>
-                  <th className="p-3 font-medium">Conv. Rate</th>
-                  <th className="p-3 font-medium">Avg Avail.</th>
-                  <th className="p-3 font-medium">Date</th>
-                  <th className="p-3 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r) => (
-                  <tr key={r.id} className="border-t border-[var(--border)] hover:bg-[var(--surface-2)]">
-                    <td className="p-3">
-                      <p className="font-medium text-[var(--text-primary)]">{r.campaign_name || `Scan #${r.id}`}</p>
-                      <p className="text-xs text-[var(--text-muted)]">{r.radius_km} km radius</p>
-                    </td>
-                    <td className="p-3"><Badge label={r.blood_group || "All"} variant="donor" /></td>
-                    <td className="p-3 font-semibold text-[var(--text-primary)]">{r.total_matches}</td>
-                    <td className="p-3 text-emerald-600 dark:text-emerald-400">{r.available_donors}</td>
-                    <td className="p-3 text-blue-600 dark:text-blue-400">{r.contacted_donors}</td>
-                    <td className="p-3 text-purple-600 dark:text-purple-400">{r.converted_donors}</td>
-                    <td className="p-3 font-semibold text-[var(--text-primary)]">{conversionRate(r)}</td>
-                    <td className="p-3 text-[var(--text-secondary)]">{Math.round((r.average_availability_score || 0) * 100)}%</td>
-                    <td className="p-3 text-xs text-[var(--text-muted)]">
-                      {new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="p-3">
-                      <Button size="sm" variant="secondary" onClick={() => setSelectedRecord(r)}>Details</Button>
-                    </td>
+      <div className="panel">
+        <div className="panel-body">
+          {loading ? (
+            <AdminLoader text="Loading campaign history…" />
+          ) : records.length === 0 ? (
+            <div className="empty-state"><RiBarChart2Line size={32} /><p>No campaign scan records found.</p></div>
+          ) : (
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Campaign</th>
+                    <th>Blood Group</th>
+                    <th>Matched</th>
+                    <th>Available</th>
+                    <th>Contacted</th>
+                    <th>Converted</th>
+                    <th>Conv. Rate</th>
+                    <th>Avg Avail.</th>
+                    <th>Date</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {records.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{r.campaign_name || `Scan #${r.id}`}</p>
+                        <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{r.radius_km} km radius</p>
+                      </td>
+                      <td><span className="badge badge-red">{r.blood_group || "All"}</span></td>
+                      <td style={{ fontWeight: 600 }}>{r.total_matches}</td>
+                      <td style={{ color: "var(--green, #16a34a)" }}>{r.available_donors}</td>
+                      <td style={{ color: "var(--blue, #2563eb)" }}>{r.contacted_donors}</td>
+                      <td style={{ color: "var(--purple, #7c3aed)" }}>{r.converted_donors}</td>
+                      <td style={{ fontWeight: 600 }}>{conversionRate(r)}</td>
+                      <td style={{ color: "var(--ink-s)" }}>{Math.round((r.average_availability_score || 0) * 100)}%</td>
+                      <td style={{ fontSize: 12, color: "var(--ink-l)" }}>
+                        {new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      </td>
+                      <td>
+                        <button className="btn btn-outline btn-sm" onClick={() => setSelectedRecord(r)}>Details</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>← Prev</Button>
-            <span className="text-sm text-[var(--text-secondary)]">{page} / {totalPages}</span>
-            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</Button>
-          </div>
-        )}
-      </Card>
+          {totalPages > 1 && (
+            <div className="pagination-row">
+              <span className="page-info">{page} / {totalPages}</span>
+              <div className="page-btns">
+                <button className="page-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+                <button className="page-btn" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {selectedRecord && (
         <CampaignDetailModal
@@ -203,22 +203,18 @@ function AdminCampaignHistory() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
-
-// ── Detail Modal ──────────────────────────────────────────────────────────────
 
 function CampaignDetailModal({ record, onClose, onRecordUpdate }) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Overview – conversion edit
   const [editingConverted, setEditingConverted] = useState(false);
   const [convertedInput, setConvertedInput] = useState(record.converted_donors ?? 0);
   const [savingConverted, setSavingConverted] = useState(false);
 
-  // Responses tab
   const [responses, setResponses] = useState([]);
   const [responsesLoading, setResponsesLoading] = useState(false);
   const [responseFilter, setResponseFilter] = useState("");
@@ -292,131 +288,125 @@ function CampaignDetailModal({ record, onClose, onRecordUpdate }) {
 
   const overviewRows = [
     { label: "Total Matched", value: record.total_matches },
-    { label: "Available", value: record.available_donors, color: "text-emerald-600" },
-    { label: "Unavailable", value: record.unavailable_donors, color: "text-amber-600" },
-    { label: "High Priority", value: record.high_priority_donors, color: "text-red-600" },
-    { label: "Medium Priority", value: record.medium_priority_donors, color: "text-amber-600" },
-    { label: "Low Priority", value: record.low_priority_donors, color: "text-slate-500" },
-    { label: "Ineligible", value: record.ineligible_donors, color: "text-red-400" },
-    { label: "Outside Radius", value: record.outside_radius_donors, color: "text-slate-500" },
-    { label: "Skipped", value: record.skipped_donors, color: "text-slate-400" },
+    { label: "Available", value: record.available_donors, color: "#16a34a" },
+    { label: "Unavailable", value: record.unavailable_donors, color: "#d97706" },
+    { label: "High Priority", value: record.high_priority_donors, color: "var(--cr)" },
+    { label: "Medium Priority", value: record.medium_priority_donors, color: "#d97706" },
+    { label: "Low Priority", value: record.low_priority_donors, color: "var(--ink-l)" },
+    { label: "Ineligible", value: record.ineligible_donors, color: "var(--cr)" },
+    { label: "Outside Radius", value: record.outside_radius_donors, color: "var(--ink-l)" },
+    { label: "Skipped", value: record.skipped_donors, color: "var(--ink-l)" },
   ];
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--border)] p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--crimson-light)] text-[var(--crimson)]">
+    <div style={{ position: "fixed", inset: 0, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: "0 16px" }}>
+      <div style={{ maxHeight: "92vh", width: "100%", maxWidth: 720, overflowY: "auto", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface,#fff)", boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", padding: "20px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--cr-xl,#ffe4e8)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--cr)" }}>
               <RiBarChart2Line size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-[var(--text-primary)]">
+              <h3 style={{ fontWeight: 700, color: "var(--ink)", margin: 0 }}>
                 {record.campaign_name || `Campaign Scan #${record.id}`}
               </h3>
-              <p className="text-xs text-[var(--text-muted)]">
+              <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>
                 {new Date(record.created_at).toLocaleString("en-GB")} — by {record.created_by || "Admin"}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--surface-2)]">
+          <button onClick={onClose} style={{ borderRadius: 8, padding: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-l)" }}>
             <RiCloseLine size={22} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-[var(--border)] px-5 pt-3">
+        <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--border)", padding: "12px 24px 0" }}>
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`rounded-t-lg px-4 py-2 text-sm font-semibold transition ${
-                activeTab === t.key
-                  ? "border-b-2 border-[var(--crimson)] text-[var(--crimson)]"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
+              style={{
+                padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "none", background: "transparent", cursor: "pointer",
+                borderBottom: activeTab === t.key ? "2px solid var(--cr)" : "2px solid transparent",
+                color: activeTab === t.key ? "var(--cr)" : "var(--ink-s)", marginBottom: -1,
+              }}
             >
               {t.label}
             </button>
           ))}
         </div>
 
-        <div className="space-y-5 p-5">
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
           {activeTab === "overview" && (
             <>
-              {/* Meta pills */}
-              <div className="flex flex-wrap gap-2">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {[
                   { label: `Blood Group: ${record.blood_group || "All"}` },
                   { label: `Radius: ${record.radius_km} km` },
-                  { label: `Contacted: ${record.contacted_donors}`, cls: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
-                  { label: `Converted: ${record.converted_donors}`, cls: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
+                  { label: `Contacted: ${record.contacted_donors}`, bg: "#eff6ff", color: "#1d4ed8" },
+                  { label: `Converted: ${record.converted_donors}`, bg: "#f5f3ff", color: "#5b21b6" },
                 ].map((p) => (
-                  <span key={p.label} className={`rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold ${p.cls || ""}`}>
+                  <span key={p.label} style={{ borderRadius: 999, border: "1px solid var(--border)", padding: "4px 12px", fontSize: 12, fontWeight: 600, background: p.bg || "transparent", color: p.color || "var(--ink-s)" }}>
                     {p.label}
                   </span>
                 ))}
               </div>
 
-              {/* Score cards */}
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {[
                   { label: "Avg Availability Score", value: `${Math.round((record.average_availability_score || 0) * 100)}%` },
                   { label: "Avg Priority Score", value: `${Math.round((record.average_campaign_priority_score || 0) * 100)}%` },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-                    <p className="text-xs text-[var(--text-muted)]">{s.label}</p>
-                    <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">{s.value}</p>
+                  <div key={s.label} style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--canvas)", padding: 16 }}>
+                    <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{s.label}</p>
+                    <p style={{ marginTop: 4, fontSize: 24, fontWeight: 700, color: "var(--ink)", margin: "4px 0 0" }}>{s.value}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Breakdown */}
-              <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-                <table className="w-full border-collapse text-sm">
+              <div style={{ borderRadius: 12, border: "1px solid var(--border)", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                   <tbody>
                     {overviewRows.map(({ label, value, color }) => (
-                      <tr key={label} className="border-t border-[var(--border)] first:border-t-0">
-                        <td className="p-3 text-[var(--text-secondary)]">{label}</td>
-                        <td className={`p-3 text-right font-semibold ${color || "text-[var(--text-primary)]"}`}>{value}</td>
+                      <tr key={label} style={{ borderTop: "1px solid var(--border)" }}>
+                        <td style={{ padding: "10px 14px", color: "var(--ink-s)" }}>{label}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 600, color: color || "var(--ink)" }}>{value}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Conversion edit */}
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-                <div className="mb-3 flex items-center justify-between">
+              <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--canvas)", padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                   <div>
-                    <p className="font-semibold text-[var(--text-primary)]">Manual Conversion Override</p>
-                    <p className="text-xs text-[var(--text-muted)]">Override converted count if not using response tracking.</p>
+                    <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>Manual Conversion Override</p>
+                    <p style={{ fontSize: 12, color: "var(--ink-l)", margin: "2px 0 0" }}>Override converted count if not using response tracking.</p>
                   </div>
                   {!editingConverted && (
-                    <button onClick={() => setEditingConverted(true)} className="flex items-center gap-1 text-xs font-semibold text-[var(--crimson)] hover:underline">
+                    <button onClick={() => setEditingConverted(true)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--cr)", background: "none", border: "none", cursor: "pointer" }}>
                       <RiEdit2Line size={13} /> Edit
                     </button>
                   )}
                 </div>
                 {editingConverted ? (
-                  <div className="flex items-center gap-3">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <input
                       type="number" min={0} value={convertedInput}
                       onChange={(e) => setConvertedInput(e.target.value)}
-                      className="w-24 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--crimson)]"
+                      style={{ width: 80, borderRadius: 10, border: "1px solid var(--border)", padding: "8px 10px", fontSize: 14, outline: "none" }}
                     />
-                    <Button size="sm" onClick={handleSaveConverted} loading={savingConverted}>
-                      <RiCheckboxCircleLine /> Save
-                    </Button>
+                    <button className="btn btn-primary btn-sm" onClick={handleSaveConverted} disabled={savingConverted}>
+                      {savingConverted ? <span className="btn-spin" /> : <RiCheckboxCircleLine />} Save
+                    </button>
                     <button onClick={() => { setEditingConverted(false); setConvertedInput(record.converted_donors ?? 0); }}
-                      className="text-xs text-[var(--text-muted)] hover:underline">Cancel</button>
+                      style={{ fontSize: 12, color: "var(--ink-l)", background: "none", border: "none", cursor: "pointer" }}>Cancel</button>
                   </div>
                 ) : (
-                  <p className="text-2xl font-bold text-[var(--text-primary)]">
+                  <p style={{ fontSize: 24, fontWeight: 700, color: "var(--ink)", margin: 0 }}>
                     {record.converted_donors}
                     {record.contacted_donors > 0 && (
-                      <span className="ml-2 text-sm font-normal text-[var(--text-muted)]">
+                      <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 400, color: "var(--ink-l)" }}>
                         / {record.contacted_donors} contacted ({Math.round((record.converted_donors / record.contacted_donors) * 100)}%)
                       </span>
                     )}
@@ -428,18 +418,13 @@ function CampaignDetailModal({ record, onClose, onRecordUpdate }) {
 
           {activeTab === "responses" && (
             <>
-              {/* Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex gap-2">
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {["", "CONTACTED", "RESPONDED", "DONATED", "NOT_INTERESTED"].map((s) => (
                     <button
                       key={s}
                       onClick={() => { setResponseFilter(s); setSelected([]); }}
-                      className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-                        responseFilter === s
-                          ? "border-[var(--crimson)] bg-[var(--crimson)] text-white"
-                          : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--crimson)]"
-                      }`}
+                      className={responseFilter === s ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
                     >
                       {s || "All"}
                     </button>
@@ -447,20 +432,19 @@ function CampaignDetailModal({ record, onClose, onRecordUpdate }) {
                 </div>
                 <button
                   onClick={() => { exportCampaignResponsesCSV(record.id); showToast({ type: "info", title: "Exporting", message: "CSV started." }); }}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-[var(--crimson)] hover:underline"
+                  style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--cr)", background: "none", border: "none", cursor: "pointer" }}
                 >
                   <RiDownloadLine size={13} /> Export CSV
                 </button>
               </div>
 
-              {/* Bulk action bar */}
               {selected.length > 0 && (
-                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
-                  <span className="text-sm font-semibold text-[var(--text-primary)]">{selected.length} selected</span>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, borderRadius: 12, border: "1px solid var(--border)", background: "var(--canvas)", padding: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{selected.length} selected</span>
                   <select
                     value={bulkStatus}
                     onChange={(e) => setBulkStatus(e.target.value)}
-                    className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm outline-none focus:border-[var(--crimson)]"
+                    style={{ borderRadius: 10, border: "1px solid var(--border)", padding: "6px 10px", fontSize: 13, outline: "none" }}
                   >
                     <option value="">Set status…</option>
                     <option value="CONTACTED">Contacted</option>
@@ -468,44 +452,40 @@ function CampaignDetailModal({ record, onClose, onRecordUpdate }) {
                     <option value="DONATED">Donated</option>
                     <option value="NOT_INTERESTED">Not Interested</option>
                   </select>
-                  <Button size="sm" onClick={handleBulkUpdate} loading={bulkSaving} disabled={!bulkStatus}>
-                    Apply
-                  </Button>
-                  <button onClick={() => setSelected([])} className="text-xs text-[var(--text-muted)] hover:underline">Clear</button>
+                  <button className="btn btn-primary btn-sm" onClick={handleBulkUpdate} disabled={!bulkStatus || bulkSaving}>
+                    {bulkSaving ? <span className="btn-spin" /> : null} Apply
+                  </button>
+                  <button onClick={() => setSelected([])} style={{ fontSize: 12, color: "var(--ink-l)", background: "none", border: "none", cursor: "pointer" }}>Clear</button>
                 </div>
               )}
 
               {responsesLoading ? (
-                <div className="flex justify-center py-10">
-                  <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--crimson)] border-t-transparent" />
-                </div>
+                <AdminLoader text="Loading responses…" />
               ) : responses.length === 0 ? (
-                <div className="rounded-xl bg-[var(--surface-2)] p-6 text-center text-sm text-[var(--text-secondary)]">
-                  No response records yet. Send a campaign blast to seed them automatically.
-                </div>
+                <div className="empty-state"><RiUserLine size={28} /><p>No response records yet. Send a campaign blast to seed them automatically.</p></div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-sm">
-                    <thead className="bg-[var(--surface-2)] text-[var(--text-secondary)]">
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
                       <tr>
-                        <th className="p-3">
+                        <th>
                           <input
                             type="checkbox"
                             checked={selected.length === responses.length}
                             onChange={(e) => setSelected(e.target.checked ? responses.map((r) => r.id) : [])}
                           />
                         </th>
-                        <th className="p-3 font-medium">Donor</th>
-                        <th className="p-3 font-medium">Blood Group</th>
-                        <th className="p-3 font-medium">Status</th>
-                        <th className="p-3 font-medium">Response Date</th>
-                        <th className="p-3 font-medium">Update</th>
+                        <th>Donor</th>
+                        <th>Blood Group</th>
+                        <th>Status</th>
+                        <th>Response Date</th>
+                        <th>Update</th>
                       </tr>
                     </thead>
                     <tbody>
                       {responses.map((r) => (
-                        <tr key={r.id} className="border-t border-[var(--border)]">
-                          <td className="p-3">
+                        <tr key={r.id}>
+                          <td>
                             <input
                               type="checkbox"
                               checked={selected.includes(r.id)}
@@ -516,24 +496,20 @@ function CampaignDetailModal({ record, onClose, onRecordUpdate }) {
                               }
                             />
                           </td>
-                          <td className="p-3">
-                            <p className="font-medium text-[var(--text-primary)]">{r.donor_name}</p>
-                            <p className="text-xs text-[var(--text-muted)]">{r.donor_phone || r.donor_email}</p>
+                          <td>
+                            <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{r.donor_name}</p>
+                            <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{r.donor_phone || r.donor_email}</p>
                           </td>
-                          <td className="p-3">
-                            <Badge label={r.donor_blood_group || "—"} variant="donor" />
+                          <td><span className="badge badge-red">{r.donor_blood_group || "—"}</span></td>
+                          <td><ResponseBadge status={r.status} /></td>
+                          <td style={{ fontSize: 12, color: "var(--ink-l)" }}>
+                            {r.response_date ? new Date(r.response_date).toLocaleDateString("en-GB") : "—"}
                           </td>
-                          <td className="p-3"><ResponseBadge status={r.status} /></td>
-                          <td className="p-3 text-xs text-[var(--text-muted)]">
-                            {r.response_date
-                              ? new Date(r.response_date).toLocaleDateString("en-GB")
-                              : "—"}
-                          </td>
-                          <td className="p-3">
+                          <td>
                             <select
                               value={r.status}
                               onChange={(e) => handleStatusChange(r.id, e.target.value)}
-                              className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-xs outline-none focus:border-[var(--crimson)]"
+                              style={{ borderRadius: 8, border: "1px solid var(--border)", padding: "4px 8px", fontSize: 12, outline: "none" }}
                             >
                               <option value="CONTACTED">Contacted</option>
                               <option value="RESPONDED">Responded</option>
