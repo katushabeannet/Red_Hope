@@ -9,12 +9,12 @@ import {
 import {
   askChatbot,
   findNearestCampFromChatbot,
-} from "../services/chatbotService";
+} from "../../services/chatbotService";
 
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
-import NearestCampMap from "../components/NearestCampMap";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Badge from "../../components/common/Badge";
+import NearestCampMap from "../../components/NearestCampMap";
 
 const STORAGE_KEY = "ubts_chat_history";
 const MAX_HISTORY_TURNS = 5;

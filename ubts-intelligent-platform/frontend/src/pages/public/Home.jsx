@@ -19,8 +19,8 @@ import {
   RiUserAddLine,
 } from "react-icons/ri";
 
-import { getPublicStats, getPublicCamps } from "../services/adminService";
-import { findNearestCampFromChatbot } from "../services/chatbotService";
+import { getPublicStats, getPublicCamps } from "../../services/adminService";
+import { findNearestCampFromChatbot } from "../../services/chatbotService";
 
 // Fix Leaflet default marker icons
 delete L.Icon.Default.prototype._getIconUrl;

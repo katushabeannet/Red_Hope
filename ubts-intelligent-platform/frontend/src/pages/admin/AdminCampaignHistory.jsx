@@ -18,9 +18,9 @@ import {
   updateCampaignResponse,
   bulkUpdateCampaignResponses,
   exportCampaignResponsesCSV,
-} from "../services/campaignService";
-import { useToast } from "../context/ToastContext";
-import AdminLoader from "../components/common/AdminLoader";
+} from "../../services/campaignService";
+import { useToast } from "../../context/ToastContext";
+import AdminLoader from "../../components/common/AdminLoader";
 
 const BLOOD_GROUPS = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 

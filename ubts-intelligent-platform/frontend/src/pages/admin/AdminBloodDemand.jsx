@@ -17,10 +17,10 @@ import {
   deleteBloodDemandAlert,
   resolveBloodDemandAlert,
   reNotifyBloodDemandAlert,
-} from "../services/notificationService";
-import { useToast } from "../context/ToastContext";
-import AdminLoader from "../components/common/AdminLoader";
-import DeleteBtn from "../components/common/DeleteBtn";
+} from "../../services/notificationService";
+import { useToast } from "../../context/ToastContext";
+import AdminLoader from "../../components/common/AdminLoader";
+import DeleteBtn from "../../components/common/DeleteBtn";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 

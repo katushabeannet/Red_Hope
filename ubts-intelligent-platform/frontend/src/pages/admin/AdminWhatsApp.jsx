@@ -15,9 +15,9 @@ import {
   sendAdminWhatsAppTest,
   getAdminWhatsAppLogs,
   sendBulkWhatsApp,
-} from "../services/notificationService";
-import { useToast } from "../context/ToastContext";
-import AdminLoader from "../components/common/AdminLoader";
+} from "../../services/notificationService";
+import { useToast } from "../../context/ToastContext";
+import AdminLoader from "../../components/common/AdminLoader";
 
 const STATUS_BADGE = {
   SENT:    "badge-green",

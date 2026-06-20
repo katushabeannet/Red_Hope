@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { RiSunLine, RiMoonLine } from "react-icons/ri";
 
-import { registerUser } from "../services/authService";
-import { createDonorProfile } from "../services/donorService";
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
-import { useTheme } from "../context/ThemeContext";
+import { registerUser } from "../../services/authService";
+import { createDonorProfile } from "../../services/donorService";
+import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 
 const BLOOD_TYPES = ["O-", "AB-", "O+", "A+", "B+", "A-", "B-", "AB+"];
 const HIGHLIGHT = ["O-", "AB-"];

@@ -30,9 +30,9 @@ import {
   getCampaignReadyDonors,
   getAdminAnalytics,
   getBloodDemandForecast,
-} from "../services/adminService";
-import { getCampaignPerformanceAnalytics } from "../services/campaignService";
-import AdminLoader from "../components/common/AdminLoader";
+} from "../../services/adminService";
+import { getCampaignPerformanceAnalytics } from "../../services/campaignService";
+import AdminLoader from "../../components/common/AdminLoader";
 
 const PIE_COLORS = ["#b91c1c","#ef4444","#fca5a5","#fecaca","#fee2e2","#dc2626","#991b1b","#7f1d1d"];
 

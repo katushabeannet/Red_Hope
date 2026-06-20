@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { RiSunLine, RiMoonLine } from "react-icons/ri";
 
-import { loginUser } from "../services/authService";
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
-import { useTheme } from "../context/ThemeContext";
+import { loginUser } from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 
 const FEATURES = [
   "AI-powered eligibility check in seconds",

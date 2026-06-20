@@ -7,12 +7,12 @@ import {
   RiMapPinLine,
 } from "react-icons/ri";
 
-import { useAuth } from "../context/AuthContext";
-import { campCheckin } from "../services/donorService";
-import { getCampDetail } from "../services/campService";
-import Card from "../components/common/Card";
-import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
+import { useAuth } from "../../context/AuthContext";
+import { campCheckin } from "../../services/donorService";
+import { getCampDetail } from "../../services/campService";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Badge from "../../components/common/Badge";
 
 function CampCheckin() {
   const { campId } = useParams();

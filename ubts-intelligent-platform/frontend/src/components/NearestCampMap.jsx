@@ -3,83 +3,100 @@ import L from "leaflet";
 import { RiMapPinLine } from "react-icons/ri";
 
 delete L.Icon.Default.prototype._getIconUrl;
-
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl:       "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 function NearestCampMap({ camp }) {
   if (!camp) return null;
 
-  const latitude = Number(camp.latitude);
-  const longitude = Number(camp.longitude);
+  const lat = Number(camp.latitude);
+  const lng = Number(camp.longitude);
 
-  if (!latitude || !longitude) {
+  if (!lat || !lng) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+      <div style={{
+        borderRadius: 14, border: "1.5px solid #FCD34D",
+        background: "#FFFBEB", padding: "16px 18px",
+        fontSize: 13, color: "#92400E", lineHeight: 1.6,
+      }}>
         Camp coordinates are not available.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--crimson-light)] text-[var(--crimson)]">
-            <RiMapPinLine size={20} />
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-[var(--text-primary)]">
-              Camp Location Map
-            </h4>
-            <p className="text-xs text-[var(--text-muted)]">
-              OpenStreetMap nearest camp visualization
-            </p>
-          </div>
+    <div style={{
+      borderRadius: 16,
+      border: "1.5px solid var(--border)",
+      background: "#fff",
+      overflow: "hidden",
+      boxShadow: "0 2px 10px rgba(0,0,0,.05)",
+    }}>
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "16px 20px",
+        borderBottom: "1px solid var(--border)",
+        background: "#fff",
+      }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+          background: "#FDEEF1", color: "var(--cr)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <RiMapPinLine size={20} />
+        </div>
+        <div>
+          <h4 style={{ fontWeight: 700, color: "var(--ink)", fontSize: 14, margin: 0 }}>
+            Camp Location Map
+          </h4>
+          <p style={{ fontSize: 11, color: "var(--ink-l)", margin: "3px 0 0" }}>
+            OpenStreetMap nearest camp visualization
+          </p>
         </div>
       </div>
 
+      {/* Map */}
       <MapContainer
-        center={[latitude, longitude]}
+        center={[lat, lng]}
         zoom={14}
         scrollWheelZoom={false}
-        className="h-[380px] w-full"
+        style={{ height: 380, width: "100%" }}
       >
         <TileLayer
           attribution="© OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-
-        <Marker position={[latitude, longitude]}>
+        <Marker position={[lat, lng]}>
           <Popup>
-            <strong>{camp.name}</strong>
-            <br />
-            {camp.venue}
-            <br />
+            <strong>{camp.name}</strong><br />
+            {camp.venue}<br />
             {camp.district}
           </Popup>
         </Marker>
       </MapContainer>
 
-      <div className="grid gap-3 border-t border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm md:grid-cols-3">
-        <MapInfo label="Latitude" value={latitude} />
-        <MapInfo label="Longitude" value={longitude} />
-        <MapInfo label="Venue" value={camp.venue || "Not available"} />
+      {/* Info footer */}
+      <div style={{
+        display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
+        gap: 12, padding: "14px 20px",
+        borderTop: "1px solid var(--border)",
+        background: "var(--canvas)",
+      }}>
+        {[
+          { label: "Latitude",  value: lat },
+          { label: "Longitude", value: lng },
+          { label: "Venue",     value: camp.venue || "Not available" },
+        ].map(({ label, value }) => (
+          <div key={label}>
+            <p style={{ fontSize: 11, color: "var(--ink-l)", margin: "0 0 3px" }}>{label}</p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", margin: 0 }}>{value}</p>
+          </div>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function MapInfo({ label, value }) {
-  return (
-    <div>
-      <p className="text-xs text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 font-medium text-[var(--text-primary)]">{value}</p>
     </div>
   );
 }

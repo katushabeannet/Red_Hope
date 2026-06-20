@@ -23,10 +23,10 @@ import {
   deleteCamp,
   rescheduleCamp,
   getCampQR,
-} from "../services/campService";
+} from "../../services/campService";
 
-import AdminLoader from "../components/common/AdminLoader";
-import DeleteBtn from "../components/common/DeleteBtn";
+import AdminLoader from "../../components/common/AdminLoader";
+import DeleteBtn from "../../components/common/DeleteBtn";
 
 const calLocalizer = dateFnsLocalizer({
   format,
