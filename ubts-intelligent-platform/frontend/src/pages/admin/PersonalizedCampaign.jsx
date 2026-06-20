@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiCheckboxCircleLine,
   RiCloseCircleLine,
@@ -369,6 +370,7 @@ function PersonalizedCampaign() {
 }
 
 function DonorDetailsModal({ donor, onClose }) {
+  const { dark } = useTheme();
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: "0 16px" }}>
       <div style={{ maxHeight: "90vh", width: "100%", maxWidth: 720, overflowY: "auto", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface,#fff)", boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}>
@@ -413,7 +415,7 @@ function DonorDetailsModal({ donor, onClose }) {
           )}
 
           {donor.reason && (
-            <div style={{ borderRadius: 12, border: "1px solid #fde68a", background: "#fffbeb", padding: 16, color: "#92400e" }}>
+            <div style={{ borderRadius: 12, border: dark ? "1px solid rgba(217,119,6,.3)" : "1px solid #fde68a", background: dark ? "rgba(217,119,6,.1)" : "#fffbeb", padding: 16, color: dark ? "#FCD34D" : "#92400e" }}>
               <p style={{ fontWeight: 600, margin: "0 0 8px" }}>Skipped Reason</p>
               <p style={{ fontSize: 13, margin: 0 }}>{donor.reason}</p>
             </div>

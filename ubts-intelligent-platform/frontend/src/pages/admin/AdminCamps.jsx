@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   RiAddLine,
   RiCalendarLine,
+  RiCheckboxCircleLine,
   RiCloseLine,
   RiEditLine,
   RiListCheck,
@@ -9,6 +10,7 @@ import {
   RiQrCodeLine,
   RiRefreshLine,
 } from "react-icons/ri";
+import { useTheme } from "../../context/ThemeContext";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
@@ -56,9 +58,11 @@ const initialForm = {
 const STATUS_BADGE = { ACTIVE: "badge-green", INACTIVE: "badge-amber", COMPLETED: "badge-blue" };
 
 function AdminCamps() {
+  const { dark } = useTheme();
   const [camps, setCamps] = useState([]);
   const [formData, setFormData] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(true);
   const [error, setError] = useState("");
@@ -91,6 +95,7 @@ function AdminCamps() {
   const resetForm = () => {
     setFormData(initialForm);
     setEditingId(null);
+    setShowForm(false);
   };
 
   const handleEdit = (camp) => {
@@ -108,7 +113,13 @@ function AdminCamps() {
       contact_phone: camp.contact_phone || "",
       status: camp.status || "ACTIVE",
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setShowForm(true);
+  };
+
+  const openAddForm = () => {
+    setFormData(initialForm);
+    setEditingId(null);
+    setShowForm(true);
   };
 
   const handleSubmit = async (e) => {
@@ -197,6 +208,9 @@ function AdminCamps() {
           <p className="page-desc">Create, update, activate, deactivate, and remove blood donation camp locations used by the nearest-camp recommendation engine.</p>
         </div>
         <div className="page-actions">
+          <button className="btn btn-primary btn-sm" onClick={openAddForm}>
+            <RiAddLine /> Add Camp
+          </button>
           <button className={`btn btn-sm ${viewMode === "table" ? "btn-primary" : "btn-outline"}`} onClick={() => setViewMode("table")}>
             <RiListCheck /> Table
           </button>
@@ -211,74 +225,80 @@ function AdminCamps() {
 
       {error && <div className="adm-alert adm-alert-error">{error}</div>}
 
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <SummaryCard label="Active Camps" value={activeCount} tone="cr" />
-        <SummaryCard label="Inactive Camps" value={inactiveCount} tone="am" />
-        <SummaryCard label="Completed Camps" value={completedCount} tone="bl" />
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 28 }}>
+        <CampTierCard icon={RiMapPinLine}          label="Active Camps"    value={activeCount}    tone="green" tier="sub"    dark={dark} />
+        <CampTierCard icon={RiCalendarLine}        label="Inactive Camps"  value={inactiveCount}  tone="amber" tier="normal" dark={dark} />
+        <CampTierCard icon={RiCheckboxCircleLine}  label="Completed Camps" value={completedCount} tone="blue"  tier="normal" dark={dark} />
       </div>
 
-      <div className="panel">
-        <div className="panel-head">
-          <div className="panel-title-row">
-            <div className="panel-icon cr"><RiAddLine size={16} /></div>
-            <div>
-              <div className="panel-title">{editingId ? "Edit Donation Camp" : "Add New Donation Camp"}</div>
-              <div className="panel-sub">Provide camp details and exact coordinates for map-based recommendations.</div>
+      {/* Camp form modal */}
+      {showForm && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}
+          onClick={resetForm}
+        >
+          <div
+            style={{ position: "relative", width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", borderRadius: 20, background: dark ? "#1E293B" : "#fff", padding: 32, boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={resetForm}
+              style={{ position: "absolute", right: 20, top: 20, borderRadius: 999, padding: 6, border: "none", background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", cursor: "pointer", color: "var(--ink-l)", display: "flex" }}
+            >
+              <RiCloseLine size={20} />
+            </button>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>{editingId ? "Edit Donation Camp" : "Add New Donation Camp"}</div>
+              <div style={{ fontSize: 13, color: "var(--ink-s)", marginTop: 4 }}>Provide camp details and exact coordinates for map-based recommendations.</div>
             </div>
+            <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <Field label="Camp Name" name="name" value={formData.name} onChange={handleChange} placeholder="Kampala Central Blood Drive" required />
+              <Field label="Region" name="region" value={formData.region} onChange={handleChange} placeholder="Central" />
+              <Field label="District" name="district" value={formData.district} onChange={handleChange} placeholder="Kampala" />
+              <Field label="Venue" name="venue" value={formData.venue} onChange={handleChange} placeholder="City Square" required />
+              <Field label="Latitude" name="latitude" value={formData.latitude} onChange={handleChange} placeholder="0.3136" type="number" step="any" required />
+              <Field label="Longitude" name="longitude" value={formData.longitude} onChange={handleChange} placeholder="32.5811" type="number" step="any" required />
+              <Field label="Start Date" name="start_date" value={formData.start_date} onChange={handleChange} type="date" required />
+              <Field label="End Date" name="end_date" value={formData.end_date} onChange={handleChange} type="date" required />
+              <Field label="Contact Phone" name="contact_phone" value={formData.contact_phone} onChange={handleChange} placeholder="0800123456" />
+
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Status</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none" }}
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Brief description of the donation camp"
+                  rows="3"
+                  style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", resize: "vertical", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? <span className="btn-spin" /> : editingId ? <RiEditLine /> : <RiAddLine />}
+                  {editingId ? "Update Camp" : "Create Camp"}
+                </button>
+                <button type="button" className="btn btn-outline" onClick={resetForm}>Cancel</button>
+              </div>
+            </form>
           </div>
-          {editingId && <span className="badge badge-amber">Editing</span>}
         </div>
-
-        <div className="panel-body">
-          <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="Camp Name" name="name" value={formData.name} onChange={handleChange} placeholder="Kampala Central Blood Drive" required />
-            <Field label="Region" name="region" value={formData.region} onChange={handleChange} placeholder="Central" />
-            <Field label="District" name="district" value={formData.district} onChange={handleChange} placeholder="Kampala" />
-            <Field label="Venue" name="venue" value={formData.venue} onChange={handleChange} placeholder="City Square" required />
-            <Field label="Latitude" name="latitude" value={formData.latitude} onChange={handleChange} placeholder="0.3136" type="number" step="any" required />
-            <Field label="Longitude" name="longitude" value={formData.longitude} onChange={handleChange} placeholder="32.5811" type="number" step="any" required />
-            <Field label="Start Date" name="start_date" value={formData.start_date} onChange={handleChange} type="date" required />
-            <Field label="End Date" name="end_date" value={formData.end_date} onChange={handleChange} type="date" required />
-            <Field label="Contact Phone" name="contact_phone" value={formData.contact_phone} onChange={handleChange} placeholder="0800123456" />
-
-            <div>
-              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Status</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none" }}
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-                <option value="COMPLETED">COMPLETED</option>
-              </select>
-            </div>
-
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Brief description of the donation camp"
-                rows="3"
-                style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", resize: "vertical", boxSizing: "border-box" }}
-              />
-            </div>
-
-            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? <span className="btn-spin" /> : editingId ? <RiEditLine /> : <RiAddLine />}
-                {editingId ? "Update Camp" : "Create Camp"}
-              </button>
-              {editingId && (
-                <button type="button" className="btn btn-outline" onClick={resetForm}>Cancel Edit</button>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
+      )}
 
       {viewMode === "calendar" && (
         <div className="panel">
@@ -471,14 +491,32 @@ function Field({ label, name, value, onChange, placeholder, type = "text", requi
   );
 }
 
-function SummaryCard({ label, value, tone }) {
-  return (
-    <div className="stat-card">
-      <div className={`stat-icon ${tone}`}><RiMapPinLine size={18} /></div>
-      <div className="stat-body">
-        <div className="stat-val">{value}</div>
-        <div className="stat-label">{label}</div>
+const _CAMP_SPARK = [40, 60, 35, 75, 50, 85, 60];
+
+function CampTierCard({ icon: Icon, label, value, tone = "green", tier = "sub", dark }) {
+  const accentMap  = { green: "var(--green)", blue: "var(--blue)", amber: "var(--amber)", red: "var(--cr)" };
+  const accentXlLt = { green: "#F0FDF4", blue: "#EFF6FF", amber: "#FFFBEB", red: "#FDEEF1" };
+  const accentXlDk = { green: "rgba(22,163,74,.18)", blue: "rgba(37,99,235,.18)", amber: "rgba(217,119,6,.18)", red: "rgba(196,30,58,.18)" };
+  const accent   = accentMap[tone]  || "var(--green)";
+  const accentXl = (dark ? accentXlDk : accentXlLt)[tone] || (dark ? "rgba(22,163,74,.18)" : "#F0FDF4");
+
+  if (tier === "sub") {
+    return (
+      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+        <div className="card-sub-icon"><Icon size={20} /></div>
+        <div className="card-sub-val">{value ?? "—"}</div>
+        <div className="card-sub-label">{label}</div>
+        <div className="card-sub-sparkline">
+          {_CAMP_SPARK.map((h, i) => <div key={i} className="card-sub-bar" style={{ height: `${h}%` }} />)}
+        </div>
       </div>
+    );
+  }
+  return (
+    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+      <div className="card-norm-icon"><Icon size={18} /></div>
+      <div className="card-norm-val">{value ?? "—"}</div>
+      <div className="card-norm-label">{label}</div>
     </div>
   );
 }

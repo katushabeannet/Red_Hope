@@ -41,6 +41,11 @@ export const getAdminLapsedDonors = async ({ page = 1, page_size = 20, search = 
   return response.data;
 };
 
+export const registerWalkInDonor = async (payload) => {
+  const response = await api.post("/donors/admin/walkin-register/", payload);
+  return response.data;
+};
+
 export const saveDonorMedicalRecord = async (formData) => {
   const payload = {
     donor_id: Number(formData.donor_id),

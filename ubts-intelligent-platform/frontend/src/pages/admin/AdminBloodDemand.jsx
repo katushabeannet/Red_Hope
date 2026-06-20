@@ -19,6 +19,7 @@ import {
   reNotifyBloodDemandAlert,
 } from "../../services/notificationService";
 import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 import AdminLoader from "../../components/common/AdminLoader";
 import DeleteBtn from "../../components/common/DeleteBtn";
 
@@ -57,8 +58,39 @@ const EMPTY_FORM = {
   hospital_name: "",
 };
 
+const _BD_SPARK = [35, 60, 45, 80, 55, 70, 65];
+
+function BdTierCard({ icon: Icon, label, value, tone = "red", tier = "sub", dark }) {
+  const accentMap  = { red: "var(--cr)", green: "var(--green)", blue: "var(--blue)", amber: "var(--amber)" };
+  const accentXlLt = { red: "#FDEEF1", green: "#F0FDF4", blue: "#EFF6FF", amber: "#FFFBEB" };
+  const accentXlDk = { red: "rgba(196,30,58,.18)", green: "rgba(22,163,74,.18)", blue: "rgba(37,99,235,.18)", amber: "rgba(217,119,6,.18)" };
+  const accent   = accentMap[tone]  || "var(--cr)";
+  const accentXl = (dark ? accentXlDk : accentXlLt)[tone] || (dark ? "rgba(196,30,58,.18)" : "#FDEEF1");
+
+  if (tier === "sub") {
+    return (
+      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+        <div className="card-sub-icon"><Icon size={20} /></div>
+        <div className="card-sub-val">{value ?? "—"}</div>
+        <div className="card-sub-label">{label}</div>
+        <div className="card-sub-sparkline">
+          {_BD_SPARK.map((h, i) => <div key={i} className="card-sub-bar" style={{ height: `${h}%` }} />)}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+      <div className="card-norm-icon"><Icon size={18} /></div>
+      <div className="card-norm-val">{value ?? "—"}</div>
+      <div className="card-norm-label">{label}</div>
+    </div>
+  );
+}
+
 function AdminBloodDemand() {
   const { showToast } = useToast();
+  const { dark } = useTheme();
 
   const [alerts, setAlerts] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, total_pages: 1, active_count: 0, resolved_count: 0 });
@@ -206,28 +238,10 @@ function AdminBloodDemand() {
         </div>
       </div>
 
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <div className="stat-card">
-          <div className="stat-icon cr"><RiAlertLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{meta.total}</div>
-            <div className="stat-label">Total Alerts</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon gr"><RiCheckboxCircleLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{meta.active_count}</div>
-            <div className="stat-label">Active</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon bl"><RiCheckboxCircleLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{meta.resolved_count}</div>
-            <div className="stat-label">Resolved</div>
-          </div>
-        </div>
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 28 }}>
+        <BdTierCard icon={RiAlertLine}          label="Total Alerts" value={meta.total}          tone="red"   tier="sub"    dark={dark} />
+        <BdTierCard icon={RiCheckboxCircleLine} label="Active"       value={meta.active_count}   tone="green" tier="sub"    dark={dark} />
+        <BdTierCard icon={RiNotification3Line}  label="Resolved"     value={meta.resolved_count} tone="blue"  tier="normal" dark={dark} />
       </div>
 
       <div className="panel">

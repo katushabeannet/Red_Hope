@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiAlarmWarningLine,
   RiArrowLeftLine,
@@ -34,6 +35,7 @@ const initialMedicalForm = {
 const initialDonationForm = { donor_id: "", donation_date: "", camp_name: "", notes: "" };
 
 function AdminDonors() {
+  const { dark } = useTheme();
   const [donors, setDonors]         = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, total_pages: 1 });
   const [page, setPage]             = useState(1);
@@ -214,10 +216,10 @@ function AdminDonors() {
       {success && <div className="adm-alert adm-alert-success">{success}</div>}
 
       {/* Summary stat cards */}
-      <div className="stat-grid">
-        <SummaryCard label="Total Donors"            value={pagination.total} />
-        <SummaryCard label="Medical Records Added"   value={donorsWithMedical} />
-        <SummaryCard label="Pending Medical Records" value={donorsPendingMedical} />
+      <div className="stat-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 28 }}>
+        <TierCard icon={RiUserHeartLine}   label="Total Donors"            value={pagination.total}       tone="red"   tier="sub" />
+        <TierCard icon={RiHeartPulseLine}  label="Medical Records Added"   value={donorsWithMedical}      tone="green" tier="sub" />
+        <TierCard icon={RiAlarmWarningLine} label="Pending Medical Records" value={donorsPendingMedical}  tone="amber" tier="normal" />
       </div>
 
       {/* Record donation form */}
@@ -310,7 +312,7 @@ function AdminDonors() {
             <button className="btn btn-outline btn-sm" onClick={() => setShowDonationForm((v) => !v)}>
               <RiHeartPulseLine size={14} /> Record Donation
             </button>
-            <div style={{ display: "flex", alignItems: "center", border: "1.5px solid var(--border)", borderRadius: 10, padding: "7px 12px", background: "#fff", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", border: "1.5px solid var(--border)", borderRadius: 10, padding: "7px 12px", background: dark ? "#1E293B" : "#fff", gap: 8 }}>
               <RiSearchLine size={15} style={{ color: "var(--ink-l)", flexShrink: 0 }} />
               <input
                 value={searchInput}
@@ -404,8 +406,8 @@ function AdminDonors() {
           </div>
 
           {lapsedTotal > 0 && (
-            <div style={{ margin: "0 24px 16px", borderRadius: 12, border: "1.5px solid #FDE68A", background: "#FFFBEB", padding: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#92400E", marginBottom: 12 }}>
+            <div style={{ margin: "0 24px 16px", borderRadius: 12, border: dark ? "1.5px solid rgba(217,119,6,.3)" : "1.5px solid #FDE68A", background: dark ? "rgba(217,119,6,.1)" : "#FFFBEB", padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: dark ? "#FCD34D" : "#92400E", marginBottom: 12 }}>
                 Blast Notification to All {lapsedTotal} Lapsed Donors
               </p>
               <form onSubmit={handleBlastLapsed}>
@@ -470,13 +472,33 @@ function AdminDonors() {
   );
 }
 
-function SummaryCard({ label, value }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-body">
-        <div className="stat-label">{label}</div>
-        <div className="stat-val" style={{ marginTop: 8 }}>{value}</div>
+const _SPARK = [30, 50, 40, 70, 55, 80, 65];
+
+function TierCard({ icon: Icon, label, value, tone = "red", tier = "sub" }) {
+  const { dark } = useTheme();
+  const accentMap  = { red: "var(--cr)", green: "var(--green)", blue: "var(--blue)", amber: "var(--amber)" };
+  const accentXlLt = { red: "#FDEEF1", green: "#F0FDF4", blue: "#EFF6FF", amber: "#FFFBEB" };
+  const accentXlDk = { red: "rgba(196,30,58,.18)", green: "rgba(22,163,74,.18)", blue: "rgba(37,99,235,.18)", amber: "rgba(217,119,6,.18)" };
+  const accent   = accentMap[tone] || "var(--cr)";
+  const accentXl = (dark ? accentXlDk : accentXlLt)[tone] || (dark ? "rgba(196,30,58,.18)" : "#FDEEF1");
+
+  if (tier === "sub") {
+    return (
+      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+        <div className="card-sub-icon"><Icon size={20} /></div>
+        <div className="card-sub-val">{value ?? "—"}</div>
+        <div className="card-sub-label">{label}</div>
+        <div className="card-sub-sparkline">
+          {_SPARK.map((h, i) => <div key={i} className="card-sub-bar" style={{ height: `${h}%` }} />)}
+        </div>
       </div>
+    );
+  }
+  return (
+    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+      <div className="card-norm-icon"><Icon size={18} /></div>
+      <div className="card-norm-val">{value ?? "—"}</div>
+      <div className="card-norm-label">{label}</div>
     </div>
   );
 }

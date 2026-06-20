@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiBarChartBoxLine,
   RiFlagLine,
@@ -22,6 +23,7 @@ const LEVEL_COLOR = {
 };
 
 function DonorLevelCard({ totalDonations = 0, donorLevel = "Bronze" }) {
+  const { dark } = useTheme();
   const [showInfo, setShowInfo] = useState(false);
   const current   = LEVELS[donorLevel] || LEVELS.Bronze;
   const accent    = LEVEL_COLOR[donorLevel] || LEVEL_COLOR.Bronze;
@@ -37,7 +39,7 @@ function DonorLevelCard({ totalDonations = 0, donorLevel = "Bronze" }) {
     >
       {/* Main card */}
       <div style={{
-        borderRadius: 16, border: "1.5px solid var(--border)", background: "#fff",
+        borderRadius: 16, border: "1.5px solid var(--border)", background: dark ? "#1E293B" : "#fff",
         padding: "22px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.04)",
         transition: "transform .2s, box-shadow .2s",
       }}
@@ -54,7 +56,7 @@ function DonorLevelCard({ totalDonations = 0, donorLevel = "Bronze" }) {
         </h3>
 
         {/* Progress bar */}
-        <div style={{ height: 8, borderRadius: 999, background: "#e2e8f0", overflow: "hidden", marginBottom: 10 }}>
+        <div style={{ height: 8, borderRadius: 999, background: dark ? "#334155" : "#e2e8f0", overflow: "hidden", marginBottom: 10 }}>
           <div style={{
             height: "100%", borderRadius: 999,
             background: `linear-gradient(90deg, ${accent}, ${accent}cc)`,

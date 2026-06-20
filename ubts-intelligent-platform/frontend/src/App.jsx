@@ -32,8 +32,9 @@ import AdminSMS             from "./pages/admin/AdminSMS";
 import AdminWhatsApp        from "./pages/admin/AdminWhatsApp";
 import AdminCampaignHistory from "./pages/admin/AdminCampaignHistory";
 import PersonalizedCampaign from "./pages/admin/PersonalizedCampaign";
-import CampCheckin          from "./pages/admin/CampCheckin";
-import Notifications        from "./pages/admin/Notifications";
+import CampCheckin                from "./pages/admin/CampCheckin";
+import WalkInDonorRegistration   from "./pages/admin/WalkInDonorRegistration";
+import Notifications             from "./pages/admin/Notifications";
 
 /* ── Donor pages ── */
 import DonorDashboard    from "./pages/donor/DonorDashboard";
@@ -107,6 +108,9 @@ function App() {
         } />
         <Route path="/camp-checkin/:campId" element={
           <ProtectedRoute allowedRoles={["ADMIN"]}><CampCheckin /></ProtectedRoute>
+        } />
+        <Route path="/walkin-donor" element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}><WalkInDonorRegistration /></ProtectedRoute>
         } />
 
       </Route>

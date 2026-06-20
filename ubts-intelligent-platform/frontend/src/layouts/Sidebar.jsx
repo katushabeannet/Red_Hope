@@ -11,8 +11,9 @@ import {
   RiMessage2Line,
   RiWhatsappLine,
   RiAlertLine,
-  RiDropLine,
+  RiAddCircleLine,
 } from "react-icons/ri";
+import redhopeLogo from "../assets/logo/redhope.png";
 import { useAuth } from "../context/AuthContext";
 
 function Sidebar({ sidebarOpen, setSidebarOpen }) {
@@ -31,6 +32,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
       ? [
           { to: "/admin-dashboard",     label: "Dashboard",         icon: RiDashboardLine },
           { to: "/admin-donors",         label: "Donor Management",  icon: RiGroupLine },
+          { to: "/walkin-donor",         label: "Register Walk-In",  icon: RiAddCircleLine },
           { to: "/personalized-campaign",label: "Campaign Targeting",icon: RiMegaphoneLine },
           { to: "/admin-camps",          label: "Manage Camps",      icon: RiMapPinLine },
           { to: "/campaign-history",     label: "Campaign History",  icon: RiBarChart2Line },
@@ -49,9 +51,11 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   return (
     <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
       <a href="/" className="side-brand">
-        <div className="side-brand-icon">
-          <RiDropLine size={22} color="#fff" />
-        </div>
+        <img
+          src={redhopeLogo}
+          alt="RedHope"
+          style={{ width: 40, height: 40, borderRadius: 10, objectFit: "contain", flexShrink: 0 }}
+        />
         <div>
           <div className="side-brand-name">RedHope</div>
           <div className="side-brand-sub">UBTS Intelligent Platform</div>

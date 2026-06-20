@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiBarChartLine,
   RiCalendarCheckLine,
@@ -118,14 +119,18 @@ function AdminDashboard() {
 
       {/* Summary stat cards */}
       {summary && (
-        <div className="stat-grid">
-          <MetricCard icon={RiGroupLine}         label="Total Donors"            value={summary.total_donors}           tone="red" />
-          <MetricCard icon={RiHeartPulseLine}    label="Medical Records"         value={summary.total_medical_records}  tone="emerald" />
-          <MetricCard icon={RiMapPinLine}        label="Active Camps"            value={summary.active_camps}           tone="blue" />
-          <MetricCard icon={RiCalendarCheckLine} label="Total Camps"             value={summary.total_camps}            tone="amber" />
-          <MetricCard icon={RiShieldCheckLine}   label="Eligible Assessments"    value={summary.eligible_assessments}   tone="emerald" />
-          <MetricCard icon={RiDashboardLine}     label="Available Assessments"   value={summary.available_assessments}  tone="blue" />
-        </div>
+        <>
+          <div className="stat-grid" style={{ gridTemplateColumns: "2fr 1fr 1fr" }}>
+            <MetricCard icon={RiGroupLine}      label="Total Donors"          value={summary.total_donors}          tone="red"     tier="main" />
+            <MetricCard icon={RiHeartPulseLine} label="Medical Records"       value={summary.total_medical_records} tone="emerald" tier="sub" />
+            <MetricCard icon={RiMapPinLine}     label="Active Camps"          value={summary.active_camps}          tone="blue"    tier="sub" />
+          </div>
+          <div className="stat-grid">
+            <MetricCard icon={RiShieldCheckLine}   label="Eligible Assessments"  value={summary.eligible_assessments}  tone="emerald" tier="sub" />
+            <MetricCard icon={RiCalendarCheckLine} label="Total Camps"           value={summary.total_camps}           tone="amber"   tier="normal" />
+            <MetricCard icon={RiDashboardLine}     label="Available Assessments" value={summary.available_assessments} tone="blue"    tier="normal" />
+          </div>
+        </>
       )}
 
       {/* Analytics charts */}
@@ -147,10 +152,10 @@ function AdminDashboard() {
           </div>
           <div className="panel-body">
             <div className="stat-grid" style={{ marginBottom: 20 }}>
-              <MetricCard icon={RiDashboardLine}  label="Campaign Scans"    value={campaignAnalytics.total_campaign_scans}      tone="red" />
-              <MetricCard icon={RiGroupLine}       label="Targeted Donors"  value={campaignAnalytics.total_targeted_donors}     tone="blue" />
-              <MetricCard icon={RiHeartPulseLine} label="Available Donors"  value={campaignAnalytics.total_available_donors}    tone="emerald" />
-              <MetricCard icon={RiShieldCheckLine} label="High Priority"    value={campaignAnalytics.total_high_priority_donors} tone="amber" />
+              <MetricCard icon={RiDashboardLine}   label="Campaign Scans"   value={campaignAnalytics.total_campaign_scans}       tone="red"     tier="sub" />
+              <MetricCard icon={RiGroupLine}        label="Targeted Donors"  value={campaignAnalytics.total_targeted_donors}      tone="blue"    tier="sub" />
+              <MetricCard icon={RiHeartPulseLine}   label="Available Donors" value={campaignAnalytics.total_available_donors}     tone="emerald" tier="normal" />
+              <MetricCard icon={RiShieldCheckLine}  label="High Priority"    value={campaignAnalytics.total_high_priority_donors} tone="amber"   tier="normal" />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
@@ -297,16 +302,50 @@ function AdminDashboard() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value, tone }) {
-  const iconMap = { red: "cr", emerald: "gr", blue: "bl", amber: "am" };
-  const iconCls = iconMap[tone] || "cr";
-  return (
-    <div className="stat-card">
-      <div className={`stat-icon ${iconCls}`}><Icon size={22} /></div>
-      <div className="stat-body">
-        <div className="stat-val">{value ?? "—"}</div>
-        <div className="stat-label">{label}</div>
+const SPARKLINE = [30, 50, 40, 70, 55, 80, 65];
+
+function MetricCard({ icon: Icon, label, value, tone, tier = "normal" }) {
+  const { dark } = useTheme();
+
+  const accentMap   = { red: "var(--cr)", emerald: "var(--green)", blue: "var(--blue)", amber: "var(--amber)" };
+  const accentXlLt  = { red: "#FDEEF1",              emerald: "#F0FDF4",              blue: "#EFF6FF",              amber: "#FFFBEB" };
+  const accentXlDk  = { red: "rgba(196,30,58,.18)",  emerald: "rgba(22,163,74,.18)",  blue: "rgba(37,99,235,.18)",  amber: "rgba(217,119,6,.18)" };
+
+  const accent   = accentMap[tone]  || "var(--cr)";
+  const accentXl = (dark ? accentXlDk : accentXlLt)[tone] || (dark ? "rgba(196,30,58,.18)" : "#FDEEF1");
+
+  if (tier === "main") {
+    return (
+      <div className="card-main">
+        <div className="card-shimmer" />
+        <div className="card-main-icon"><Icon size={26} /></div>
+        <div className="card-main-val">{value ?? "—"}</div>
+        <div className="card-main-label">{label}</div>
+        <div className="card-trend" />
       </div>
+    );
+  }
+
+  if (tier === "sub") {
+    return (
+      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+        <div className="card-sub-icon"><Icon size={20} /></div>
+        <div className="card-sub-val">{value ?? "—"}</div>
+        <div className="card-sub-label">{label}</div>
+        <div className="card-sub-sparkline">
+          {SPARKLINE.map((h, i) => (
+            <div key={i} className={`card-sub-bar${i === 5 ? " peak" : ""}`} style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+      <div className="card-norm-icon"><Icon size={18} /></div>
+      <div className="card-norm-val">{value ?? "—"}</div>
+      <div className="card-norm-label">{label}</div>
     </div>
   );
 }
@@ -365,6 +404,9 @@ function AssessmentList({ title, items, type }) {
 }
 
 function AnalyticsCharts({ analytics }) {
+  const { dark } = useTheme();
+  const tooltipStyle = { background: dark ? "#0F172A" : "#fff", border: `1px solid ${dark ? "#334155" : "var(--border)"}`, borderRadius: 12, fontSize: 12 };
+  const emptyBg = dark ? "#0F172A" : "#FAFAFA";
   return (
     <div className="panel">
       <div className="panel-head">
@@ -386,12 +428,12 @@ function AnalyticsCharts({ analytics }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--ink-l)" }} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--ink-l)" }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} labelStyle={{ fontWeight: 600 }} />
+                  <Tooltip contentStyle={tooltipStyle} labelStyle={{ fontWeight: 600 }} />
                   <Bar dataKey="donations" fill="#b91c1c" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donation records yet</div>
+              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: emptyBg, borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donation records yet</div>
             )}
           </div>
 
@@ -405,12 +447,12 @@ function AnalyticsCharts({ analytics }) {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value, name) => [value, name]} contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} />
+                  <Tooltip formatter={(value, name) => [value, name]} contentStyle={tooltipStyle} />
                   <Legend formatter={(value) => <span style={{ fontSize: 11 }}>{value}</span>} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donors with blood group data</div>
+              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: emptyBg, borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donors with blood group data</div>
             )}
           </div>
 
@@ -422,7 +464,7 @@ function AnalyticsCharts({ analytics }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--ink-l)" }} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--ink-l)" }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     <Cell fill="#16a34a" />
                     <Cell fill="#dc2626" />
@@ -430,7 +472,7 @@ function AnalyticsCharts({ analytics }) {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No eligibility assessments yet</div>
+              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: emptyBg, borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No eligibility assessments yet</div>
             )}
           </div>
 
@@ -442,12 +484,12 @@ function AnalyticsCharts({ analytics }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11, fill: "var(--ink-l)" }} allowDecimals={false} />
                   <YAxis dataKey="camp" type="category" tick={{ fontSize: 10, fill: "var(--ink-l)" }} width={110} />
-                  <Tooltip contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="donations" fill="#b91c1c" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donation camp records yet</div>
+              <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: emptyBg, borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donation camp records yet</div>
             )}
           </div>
         </div>

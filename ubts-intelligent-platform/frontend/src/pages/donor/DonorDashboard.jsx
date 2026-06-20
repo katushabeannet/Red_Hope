@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   RiArrowLeftLine,
   RiArrowRightLine,
@@ -50,6 +51,7 @@ const calLocalizer = dateFnsLocalizer({
 });
 
 function DonorDashboard() {
+  const { dark } = useTheme();
   const [profile, setProfile] = useState(null);
   const [medicalRecord, setMedicalRecord] = useState(null);
   const [impact, setImpact] = useState(null);
@@ -178,14 +180,14 @@ function DonorDashboard() {
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="panel" style={{ background: "#FFF5F5", borderLeft: "4px solid var(--cr)", padding: "14px 20px" }}>
+        <div className="panel" style={{ background: dark ? "rgba(220,38,38,.1)" : "#FFF5F5", borderLeft: "4px solid var(--cr)", padding: "14px 20px" }}>
           <p style={{ fontSize: 13, color: "var(--cr)", margin: 0 }}>{error}</p>
         </div>
       )}
 
       {/* ── Medical record warning ── */}
       {!medicalRecord && (
-        <div className="panel" style={{ background: "#FFFBEB", borderLeft: "4px solid var(--amber)" }}>
+        <div className="panel" style={{ background: dark ? "rgba(217,119,6,.1)" : "#FFFBEB", borderLeft: "4px solid var(--amber)" }}>
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
             <RiInformationLine size={20} style={{ color: "var(--amber)", flexShrink: 0, marginTop: 2 }} />
             <div>
@@ -211,58 +213,46 @@ function DonorDashboard() {
       )}
 
       {/* ── Impact stat cards ── */}
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-icon cr"><RiUserHeartLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{impact?.total_donations ?? 0}</div>
-            <div className="stat-label">Total Donations</div>
-          </div>
+      <div className="stat-grid" style={{ gridTemplateColumns: "2fr 1fr 1fr" }}>
+        <div className="card-main">
+          <div className="card-shimmer" />
+          <div className="card-main-icon"><RiUserHeartLine size={26} /></div>
+          <div className="card-main-val">{impact?.total_donations ?? 0}</div>
+          <div className="card-main-label">Total Donations</div>
+          <div className="card-trend" />
         </div>
-        <div className="stat-card">
-          <div className="stat-icon am"><RiHeartPulseLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val">{impact?.estimated_lives_saved ?? 0}</div>
-            <div className="stat-label">Lives Saved</div>
+        <div className="card-submain" style={{ "--accent": "var(--amber)", "--accent-xl": dark ? "rgba(217,119,6,.18)" : "#FFFBEB" }}>
+          <div className="card-sub-icon"><RiHeartPulseLine size={20} /></div>
+          <div className="card-sub-val">{impact?.estimated_lives_saved ?? 0}</div>
+          <div className="card-sub-label">Lives Saved</div>
+          <div className="card-sub-sparkline">
+            {[30,50,40,70,55,80,65].map((h, i) => (
+              <div key={i} className={`card-sub-bar${i === 5 ? " peak" : ""}`} style={{ height: `${h}%` }} />
+            ))}
           </div>
         </div>
         <DonorLevelCard
           donorLevel={impact?.donor_level || "Bronze"}
           totalDonations={impact?.total_donations || 0}
         />
+      </div>
+      <div className="stat-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
         <NextMilestoneCard
           totalDonations={impact?.total_donations || 0}
           nextMilestone={impact?.next_milestone}
           nextBadge={impact?.next_badge}
         />
-      </div>
-
-      {/* ── Status summary row ── */}
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <div className="stat-card">
-          <div className="stat-icon cr"><RiUserHeartLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val" style={{ fontSize: 15, fontWeight: 700 }}>
-              {medicalRecord ? "Profile Ready" : "Awaiting"}
-            </div>
-            <div className="stat-label">Donor Status</div>
-          </div>
+        <div className="card-submain" style={{ "--accent": "var(--cr)", "--accent-xl": dark ? "rgba(196,30,58,.18)" : "#FDEEF1" }}>
+          <div className="card-sub-icon"><RiUserHeartLine size={20} /></div>
+          <div className="card-sub-val" style={{ fontSize: 18 }}>{medicalRecord ? "Ready" : "Awaiting"}</div>
+          <div className="card-sub-label">Donor Status</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon gr"><RiHeartPulseLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val" style={{ fontSize: 15, fontWeight: 700 }}>
-              {medicalRecord?.hemoglobin_level ? `${medicalRecord.hemoglobin_level} g/dL` : "—"}
-            </div>
-            <div className="stat-label">Hemoglobin</div>
+        <div className="card-normal" style={{ "--accent": "var(--green)", "--accent-xl": dark ? "rgba(22,163,74,.18)" : "#F0FDF4" }}>
+          <div className="card-norm-icon"><RiHeartPulseLine size={18} /></div>
+          <div className="card-norm-val" style={{ fontSize: 20 }}>
+            {medicalRecord?.hemoglobin_level ? `${medicalRecord.hemoglobin_level}` : "—"}
           </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon bl"><RiMapPinLine size={18} /></div>
-          <div className="stat-body">
-            <div className="stat-val" style={{ fontSize: 15, fontWeight: 700 }}>Available</div>
-            <div className="stat-label">Camp Finder</div>
-          </div>
+          <div className="card-norm-label">Hemoglobin (g/dL)</div>
         </div>
       </div>
 
@@ -280,8 +270,8 @@ function DonorDashboard() {
           </div>
           <div className="panel-body" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14 }}>
             {impact.badges.map((badge, i) => (
-              <div key={i} style={{ borderRadius: 14, border: "1px solid var(--border)", padding: "16px", background: "#FFFBEB", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "#FEF3C7", color: "var(--amber)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div key={i} style={{ borderRadius: 14, border: "1px solid var(--border)", padding: "16px", background: dark ? "#1E293B" : "#FFFBEB", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? "rgba(217,119,6,.18)" : "#FEF3C7", color: "var(--amber)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <RiAwardLine size={20} />
                 </div>
                 <div>
@@ -427,7 +417,7 @@ function DonorDashboard() {
                   {history.eligibility_history?.length > 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {history.eligibility_history.map((item) => (
-                        <div key={item.id} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px", background: "#fff" }}>
+                        <div key={item.id} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px", background: dark ? "#0F172A" : "#fff" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                             <span style={{ fontSize: 11, color: "var(--ink-l)" }}>
                               {new Date(item.assessed_at).toLocaleDateString()}
@@ -453,7 +443,7 @@ function DonorDashboard() {
                   {history.availability_history?.length > 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {history.availability_history.map((item) => (
-                        <div key={item.id} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px", background: "#fff" }}>
+                        <div key={item.id} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px", background: dark ? "#0F172A" : "#fff" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                             <span style={{ fontSize: 11, color: "var(--ink-l)" }}>
                               {new Date(item.assessed_at).toLocaleDateString()}
@@ -636,7 +626,7 @@ function DonorDashboard() {
                 { label: "Region", value: camp?.region },
                 { label: "Contact", value: camp?.contact_phone || "Not provided" },
               ].map(({ label, value }) => (
-                <div key={label} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px", background: "#fff" }}>
+                <div key={label} style={{ borderRadius: 12, border: "1px solid var(--border)", padding: "12px 14px", background: dark ? "#0F172A" : "#fff" }}>
                   <div style={{ fontSize: 11, color: "var(--ink-l)", marginBottom: 4 }}>{label}</div>
                   <div style={{ fontWeight: 600, color: "var(--ink)", fontSize: 14 }}>{value || "N/A"}</div>
                 </div>
@@ -652,6 +642,7 @@ function DonorDashboard() {
 
 /* ── Retention / Next Donation Reminder card ── */
 function RetentionBanner({ retention, onFindCamp, locationLoading }) {
+  const { dark } = useTheme();
   const type = retention.reminder_type;
 
   /* ── not_yet_due: rich countdown card ── */
@@ -676,10 +667,10 @@ function RetentionBanner({ retention, onFindCamp, locationLoading }) {
         {/* Card header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "16px 24px", borderBottom: "1px solid var(--border)", background: "#F8FAFF",
+          padding: "16px 24px", borderBottom: "1px solid var(--border)", background: dark ? "#152030" : "#F8FAFF",
         }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: "#EFF6FF", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: dark ? "rgba(37,99,235,.18)" : "#EFF6FF", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <RiCalendarLine size={19} />
             </div>
             <div>
@@ -699,7 +690,7 @@ function RetentionBanner({ retention, onFindCamp, locationLoading }) {
           {/* Circular countdown */}
           <div style={{
             width: 148, height: 148, borderRadius: "50%", flexShrink: 0,
-            background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+            background: dark ? "linear-gradient(135deg,rgba(37,99,235,.15) 0%,rgba(37,99,235,.22) 100%)" : "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
             border: "4px solid var(--blue)",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 20px rgba(37,99,235,.12)",
@@ -752,11 +743,11 @@ function RetentionBanner({ retention, onFindCamp, locationLoading }) {
       ? Math.round(retention.availability_result.availability_probability * 100)
       : null;
     return (
-      <div className="panel" style={{ background: "#F0FDF4", borderLeft: "4px solid var(--green)", padding: 0, overflow: "hidden" }}>
+      <div className="panel" style={{ background: dark ? "rgba(22,163,74,.08)" : "#F0FDF4", borderLeft: "4px solid var(--green)", padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "22px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flex: 1 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: "#DCFCE7", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: dark ? "rgba(22,163,74,.18)" : "#DCFCE7", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <RiCheckboxCircleLine size={28} />
               </div>
               <div>
@@ -795,9 +786,9 @@ function RetentionBanner({ retention, onFindCamp, locationLoading }) {
   /* ── first_recorded_donation: blue info card ── */
   if (type === "first_recorded_donation") {
     return (
-      <div className="panel" style={{ background: "#EFF6FF", borderLeft: "4px solid var(--blue)" }}>
+      <div className="panel" style={{ background: dark ? "rgba(37,99,235,.08)" : "#EFF6FF", borderLeft: "4px solid var(--blue)" }}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#DBEAFE", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: dark ? "rgba(37,99,235,.18)" : "#DBEAFE", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <RiNotification3Line size={22} />
           </div>
           <div>
@@ -822,10 +813,11 @@ function RetentionBanner({ retention, onFindCamp, locationLoading }) {
 
 /* ── Info chip used inside countdown card ── */
 function InfoChip({ icon: Icon, label, value, accent = "var(--ink)" }) {
+  const { dark } = useTheme();
   return (
     <div style={{
       borderRadius: 12, border: "1.5px solid var(--border)",
-      background: "#fff", padding: "12px 14px",
+      background: dark ? "#0F172A" : "#fff", padding: "12px 14px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
         <Icon size={13} style={{ color: "var(--ink-l)", flexShrink: 0 }} />
