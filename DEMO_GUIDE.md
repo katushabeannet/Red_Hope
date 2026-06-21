@@ -48,7 +48,7 @@ The recommended presentation order tells a story:
 6. Donation History + Badges (gamification and recognition)
 7. Blood Demand Alerts — Donor View (urgency awareness)
 8. Notifications Inbox (personalised communication)
-9. Reddy Chatbot (AI assistant)
+9. RedHope AI Chatbot (AI assistant)
 10. Admin Login + Dashboard (management view)
 11. Donor Management Page (full donor overview)
 12. Walk-In Donor Registration (camp-day feature)
@@ -104,20 +104,20 @@ The recommended presentation order tells a story:
 
 ---
 
-### 1.4 Reddy Chatbot — http://localhost:5173/chatbot
+### 1.4 RedHope AI Chatbot — http://localhost:5173/chatbot
 
 **What to do:**
 - Click "Chatbot" or navigate to `/chatbot`
 - Type a question such as: **"Can I donate if I have malaria?"**
 - Wait for the response and show the AI answer
 - Try another: **"What blood type is most needed in Uganda?"**
-- Show the Reddy branding and watermark
+- Show the RedHope AI branding and watermark
 
 **What to say:**
-> "Meet Reddy — our AI-powered donor assistant. Reddy is available 24/7 to answer any blood donation question. This matters because donor questions typically come at night or on weekends when UBTS offices are closed. With Reddy, no question goes unanswered and no prospective donor is turned away due to lack of information."
+> "Meet RedHope AI — our AI-powered donor assistant. RedHope AI is available 24/7 to answer any blood donation question. This matters because donor questions typically come at night or on weekends when UBTS offices are closed. With RedHope AI, no question goes unanswered and no prospective donor is turned away due to lack of information."
 
 **Why it matters for retention:**
-> Donors who feel informed and supported are significantly more likely to follow through with donation and return for repeat donations. Reddy is always available — no staff required.
+> Donors who feel informed and supported are significantly more likely to follow through with donation and return for repeat donations. RedHope AI is always available — no staff required.
 
 ---
 
@@ -595,7 +595,7 @@ Tell this story during your demo using real accounts:
 | Time | Section | Key Point |
 |------|---------|-----------|
 | 0:00–3:00 | Public website (Home + Process) | First impressions, donor onboarding |
-| 3:00–5:00 | Reddy Chatbot | AI assistant, 24/7 availability |
+| 3:00–5:00 | RedHope AI Chatbot | AI assistant, 24/7 availability |
 | 5:00–7:00 | Donor Registration + Login | Low-friction acquisition |
 | 7:00–10:00 | Donor Dashboard + Eligibility AI | AI Feature 1 — medical intelligence |
 | 10:00–13:00 | Availability AI (David vs Emmanuel) | AI Feature 2 — outreach intelligence |
