@@ -1,3 +1,5 @@
+from datetime import date as _date
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
@@ -10,10 +12,46 @@ from ai_modules.gpt_response_generator import format_verified_response
 from neo4j_service.neo4j_client import Neo4jClient
 
 
+def _auto_status(camp, today=None):
+    today = today or _date.today()
+    if camp.start_date and camp.end_date:
+        if today < camp.start_date:
+            return DonationCamp.CampStatus.UPCOMING
+        if today > camp.end_date:
+            return DonationCamp.CampStatus.INACTIVE
+    return DonationCamp.CampStatus.ACTIVE
+
+
+def _sync_camp_statuses(qs):
+    today = _date.today()
+    to_update = []
+    for camp in qs:
+        new_status = _auto_status(camp, today)
+        if camp.status != new_status:
+            camp.status = new_status
+            to_update.append(camp)
+    if to_update:
+        DonationCamp.objects.bulk_update(to_update, ["status"])
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def active_camps_view(request):
-    camps = DonationCamp.objects.filter(status=DonationCamp.CampStatus.ACTIVE)
+    _sync_camp_statuses(DonationCamp.objects.all())
+    from django.db.models import Case, When, IntegerField, Value
+    camps = (
+        DonationCamp.objects
+        .filter(status__in=[DonationCamp.CampStatus.ACTIVE, DonationCamp.CampStatus.UPCOMING])
+        .annotate(
+            sort_order=Case(
+                When(status=DonationCamp.CampStatus.ACTIVE, then=Value(0)),
+                When(status=DonationCamp.CampStatus.UPCOMING, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("sort_order", "start_date")
+    )
     serializer = DonationCampSerializer(camps, many=True)
     return Response(serializer.data)
 
@@ -95,7 +133,18 @@ def nearest_camp_view(request):
 @permission_classes([IsAdminUser])
 def admin_camps_view(request):
     if request.method == "GET":
-        camps = DonationCamp.objects.all()
+        _sync_camp_statuses(DonationCamp.objects.all())
+        from django.db.models import Case, When, IntegerField, Value
+        camps = DonationCamp.objects.annotate(
+            sort_order=Case(
+                When(status=DonationCamp.CampStatus.ACTIVE, then=Value(0)),
+                When(status=DonationCamp.CampStatus.UPCOMING, then=Value(1)),
+                When(status=DonationCamp.CampStatus.INACTIVE, then=Value(2)),
+                When(status=DonationCamp.CampStatus.COMPLETED, then=Value(3)),
+                default=Value(4),
+                output_field=IntegerField(),
+            )
+        ).order_by("sort_order", "start_date")
         serializer = DonationCampSerializer(camps, many=True)
         return Response(serializer.data)
 

@@ -110,3 +110,8 @@ export const updateWhatsAppConsent = async ({ whatsapp_consent, whatsapp_number 
   });
   return response.data;
 };
+
+export const getPlatinumDonors = async () => {
+  const response = await api.get("/donors/platinum-donors/");
+  return response.data;
+};

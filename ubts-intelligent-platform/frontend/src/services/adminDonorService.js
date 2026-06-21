@@ -1,8 +1,11 @@
 import api from "../api/axios";
 
-export const getAdminDonors = async ({ page = 1, page_size = 20, search = "" } = {}) => {
+export const getAdminDonors = async ({ page = 1, page_size = 5, search = "", has_medical = "", blood_group = "", location = "" } = {}) => {
   const params = new URLSearchParams({ page, page_size });
   if (search) params.append("search", search);
+  if (has_medical !== "") params.append("has_medical", has_medical);
+  if (blood_group) params.append("blood_group", blood_group);
+  if (location) params.append("location", location);
   const response = await api.get(`/donors/admin/donors/?${params.toString()}`);
   return response.data;
 };
