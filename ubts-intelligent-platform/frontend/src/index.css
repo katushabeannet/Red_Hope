@@ -624,7 +624,7 @@ body {
 .auth-deco-drop.d1 { top: -60px; right: -40px; width: 320px; }
 .auth-deco-drop.d2 { bottom: -80px; left: -60px; width: 260px; transform: rotate(30deg); }
 .auth-float-stat { position: absolute; background: rgba(255,255,255,.1); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: 14px 20px; color: #fff; animation: rh-float 4s ease-in-out infinite; }
-.auth-float-stat.s1 { top: 578px; right: 36px; }
+.auth-float-stat.s1 { top: 78px; right: 36px; }
 .auth-float-stat.s2 { top: 175px; right: 36px; animation-delay: 1.5s; }
 .auth-field { margin-bottom: 18px; position: relative; }
 .auth-field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-s); margin-bottom: 7px; }
