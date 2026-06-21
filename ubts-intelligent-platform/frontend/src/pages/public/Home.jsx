@@ -514,7 +514,12 @@ function Home() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 14 }}>
             {FAQS.map((faq, i) => (
-              <div key={i} className="rh-faq-card">
+              <div
+                key={i}
+                className="rh-faq-card"
+                style={{ cursor: "pointer" }}
+                onClick={() => window.dispatchEvent(new CustomEvent("open-chatbot"))}
+              >
                 <div style={{ padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16 }}>
                   {/* Number badge */}
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -525,11 +530,7 @@ function Home() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "var(--cr-xl)", border: "1px solid #FFD0DA" }}>
                       <RiBrainLine size={16} style={{ color: "var(--cr)", flexShrink: 0 }} />
                       <p style={{ fontSize: 12.5, color: "var(--cr-dk)", lineHeight: 1.5, fontWeight: 500 }}>
-                        Ask the{" "}
-                        <Link to="/chatbot" style={{ fontWeight: 700, color: "var(--cr)", textDecoration: "underline" }}>
-                          RedHope AI Chatbot
-                        </Link>{" "}
-                        for the best answer!
+                        Click to ask the <strong style={{ color: "var(--cr)" }}>RedHope AI Chatbot</strong> for the best answer!
                       </p>
                     </div>
                   </div>
@@ -540,12 +541,12 @@ function Home() {
 
           {/* Chatbot CTA */}
           <div style={{ textAlign: "center", marginTop: 44 }}>
-            <Link
-              to="/chatbot"
-              style={{ display: "inline-flex", alignItems: "center", gap: 10, borderRadius: 50, background: "linear-gradient(135deg,var(--cr),var(--cr-dk))", color: "#fff", padding: "14px 32px", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 20px rgba(196,30,58,.28)" }}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-chatbot"))}
+              style={{ display: "inline-flex", alignItems: "center", gap: 10, borderRadius: 50, background: "linear-gradient(135deg,var(--cr),var(--cr-dk))", color: "#fff", padding: "14px 32px", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 6px 20px rgba(196,30,58,.28)" }}
             >
               <RiBrainLine size={18} /> Ask RedHope AI Now
-            </Link>
+            </button>
           </div>
         </div>
       </section>

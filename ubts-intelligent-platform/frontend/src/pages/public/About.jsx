@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import reddyHero    from "../../assets/wallpapers/reddy.jpeg";
 import { useTheme } from "../../context/ThemeContext";
@@ -14,6 +15,7 @@ import {
   RiUserSmileLine,
   RiAwardLine,
 } from "react-icons/ri";
+import { getPlatinumDonors } from "../../services/donorService";
 
 // ── Data ────────────────────────────────────────────────────────────────────────
 const TEAM = [
@@ -40,9 +42,22 @@ const ACHIEVEMENTS = [
   { icon: RiHeartPulseLine, value: "15,000+", label: "Happy Recipients"  },
 ];
 
+const BADGE_COLORS = ["#C41E3A", "#8B1A1A", "#2c3e50", "#D97706", "#1d4ed8", "#065f46"];
+
 // ── Component ───────────────────────────────────────────────────────────────────
 function About() {
   const { dark } = useTheme();
+  const [platinumDonors, setPlatinumDonors] = useState(null);
+
+  useEffect(() => {
+    getPlatinumDonors()
+      .then((data) => { if (data.donors?.length > 0) setPlatinumDonors(data.donors); })
+      .catch(() => {});
+  }, []);
+
+  const displayDonors = platinumDonors ?? RECOG_DONORS;
+  const displayDonors2 = [...displayDonors, ...displayDonors];
+
   return (
     <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
@@ -117,10 +132,10 @@ function About() {
           {/* Marquee */}
           <div style={{ overflow: "hidden", padding: "8px 0" }}>
             <div className="animate-rh-marquee" style={{ display: "flex", gap: 20, width: "max-content" }}>
-              {RECOG_LOOP.map((donor, i) => (
+              {displayDonors2.map((donor, i) => (
                 <div key={i} className="rh-recog-card">
                   {/* Photo top (colored initials) */}
-                  <div style={{ height: 170, background: donor.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ height: 170, background: donor.color || BADGE_COLORS[i % BADGE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span className="rh-display" style={{ fontSize: 52, fontWeight: 800, color: "#fff", opacity: 0.9 }}>{donor.initials}</span>
                   </div>
                   {/* Info bottom */}

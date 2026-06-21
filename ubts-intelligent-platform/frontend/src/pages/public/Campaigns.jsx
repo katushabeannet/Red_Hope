@@ -53,6 +53,10 @@ function CampItem({ camp, index }) {
 
   const isActive = camp.status === "ACTIVE";
 
+  const statusStyle = isActive
+    ? { bg: dark ? "rgba(16,185,129,.18)" : "#D1FAE5", text: dark ? "#6EE7B7" : "#065F46", dot: "#10B981", label: "Active Now" }
+    : { bg: dark ? "rgba(59,130,246,.18)" : "#DBEAFE", text: dark ? "#93C5FD" : "#1D4ED8", dot: "#3B82F6", label: "Upcoming" };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
@@ -75,9 +79,9 @@ function CampItem({ camp, index }) {
       {/* Text (right) */}
       <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
         {/* Status badge */}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, width: "fit-content", background: dark ? (isActive ? "rgba(16,185,129,.18)" : "rgba(217,119,6,.18)") : (isActive ? "#D1FAE5" : "#FEF3C7"), color: dark ? (isActive ? "#6EE7B7" : "#FCD34D") : (isActive ? "#065F46" : "#92400E"), borderRadius: 4, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "#10B981" : "#D97706" }} />
-          {isActive ? "Active Now" : "Upcoming"}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, width: "fit-content", background: statusStyle.bg, color: statusStyle.text, borderRadius: 4, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: statusStyle.dot }} />
+          {statusStyle.label}
         </span>
 
         {/* Name */}
@@ -132,7 +136,7 @@ function Campaigns() {
   const filtered = camps.filter((c) => {
     if (activeFilter === "All") return true;
     if (activeFilter === "Active Now") return c.status === "ACTIVE";
-    if (activeFilter === "Upcoming") return c.status !== "ACTIVE";
+    if (activeFilter === "Upcoming") return c.status === "UPCOMING";
     return true;
   });
 

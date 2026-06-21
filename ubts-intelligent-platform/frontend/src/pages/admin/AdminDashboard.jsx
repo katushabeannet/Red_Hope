@@ -54,6 +54,7 @@ function AdminDashboard() {
   const [campaignAnalytics, setCampaignAnalytics] = useState(null);
   const [loading, setLoading]                   = useState(true);
   const [scanLoading, setScanLoading]           = useState(false);
+  const [scanPage, setScanPage]                 = useState(1);
   const [error, setError]                       = useState("");
 
   useEffect(() => { loadAdminData(); }, []);
@@ -90,12 +91,18 @@ function AdminDashboard() {
       setScanLoading(true);
       const data = await getCampaignReadyDonors();
       setReadyDonors(data);
+      setScanPage(1);
     } catch {
       setError("Failed to scan campaign-ready donors.");
     } finally {
       setScanLoading(false);
     }
   };
+
+  const SCAN_PAGE_SIZE = 5;
+  const scanDonors = readyDonors?.ready_donors || [];
+  const scanTotalPages = Math.ceil(scanDonors.length / SCAN_PAGE_SIZE) || 1;
+  const scanPageDonors = scanDonors.slice((scanPage - 1) * SCAN_PAGE_SIZE, scanPage * SCAN_PAGE_SIZE);
 
   if (loading) return <AdminLoader text="Loading admin intelligence dashboard..." />;
 
@@ -259,31 +266,48 @@ function AdminDashboard() {
               <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Total Ready Donors: {readyDonors.total_ready_donors}</p>
               <span className="badge badge-green">Verified scan</span>
             </div>
-            {readyDonors.ready_donors.length > 0 ? (
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th>Blood Group</th>
-                      <th>Availability</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {readyDonors.ready_donors.map((donor) => (
-                      <tr key={donor.donor_id}>
-                        <td style={{ fontWeight: 600, color: "var(--ink)" }}>{donor.full_name}</td>
-                        <td>{donor.email}</td>
-                        <td>{donor.phone_number}</td>
-                        <td><span className="badge badge-red">{donor.blood_group}</span></td>
-                        <td>{donor.availability_probability}</td>
+            {scanDonors.length > 0 ? (
+              <>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Blood Group</th>
+                        <th>Availability</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {scanPageDonors.map((donor) => (
+                        <tr key={donor.donor_id}>
+                          <td style={{ fontWeight: 600, color: "var(--ink)" }}>{donor.full_name}</td>
+                          <td>{donor.email}</td>
+                          <td>{donor.phone_number}</td>
+                          <td><span className="badge badge-red">{donor.blood_group}</span></td>
+                          <td>{Math.round((donor.availability_probability || 0) * 100)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {scanTotalPages > 1 && (
+                  <div className="pagination-row">
+                    <span className="page-info">
+                      Showing {(scanPage - 1) * SCAN_PAGE_SIZE + 1}–{Math.min(scanPage * SCAN_PAGE_SIZE, scanDonors.length)} of {scanDonors.length}
+                    </span>
+                    <div className="page-btns">
+                      <button className="page-btn" disabled={scanPage <= 1} onClick={() => setScanPage((p) => p - 1)}>
+                        <RiHeartPulseLine size={12} /> Prev
+                      </button>
+                      <button className="page-btn" disabled={scanPage >= scanTotalPages} onClick={() => setScanPage((p) => p + 1)}>
+                        Next <RiHeartPulseLine size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="empty-state"><p>No campaign-ready donors found yet.</p></div>
             )}
@@ -441,15 +465,17 @@ function AnalyticsCharts({ analytics }) {
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Blood Group Distribution</p>
             {analytics.blood_group_distribution?.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={analytics.blood_group_distribution} dataKey="count" nameKey="blood_group" cx="50%" cy="50%" outerRadius={80} label={({ blood_group, percent }) => `${blood_group} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                <BarChart data={analytics.blood_group_distribution} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "var(--ink-l)" }} allowDecimals={false} />
+                  <YAxis dataKey="blood_group" type="category" tick={{ fontSize: 11, fill: "var(--ink-l)" }} width={40} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => [v, "Donors"]} />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                     {analytics.blood_group_distribution.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
-                  </Pie>
-                  <Tooltip formatter={(value, name) => [value, name]} contentStyle={tooltipStyle} />
-                  <Legend formatter={(value) => <span style={{ fontSize: 11 }}>{value}</span>} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", background: emptyBg, borderRadius: 12, color: "var(--ink-l)", fontSize: 13 }}>No donors with blood group data</div>

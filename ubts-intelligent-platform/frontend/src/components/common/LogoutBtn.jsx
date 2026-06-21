@@ -10,7 +10,7 @@ function LogoutBtn() {
   const handleLogout = async () => {
     await logout();
     showToast({ type: "info", title: "Logged Out", message: "You have successfully signed out." });
-    navigate("/login");
+    navigate("/");
   };
 
   return (

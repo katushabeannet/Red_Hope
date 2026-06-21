@@ -3,7 +3,7 @@ import math
 from django.db.models import OuterRef, Q, Subquery
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 
 from .models import (
@@ -168,7 +168,8 @@ def eligibility_check_view(request):
     except Exception as e:
         print("Neo4j eligibility trace failed:", e)
 
-    assistant_response = format_verified_response("eligibility", result)
+    donor_first_name = request.user.full_name.split()[0] if request.user.full_name else None
+    assistant_response = format_verified_response("eligibility", result, donor_name=donor_first_name)
 
     return Response(
         {
@@ -338,9 +339,17 @@ def admin_donors_list_view(request):
 
     search = request.query_params.get("search", "").strip()
     page = max(1, int(request.query_params.get("page", 1)))
-    page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
+    page_size = min(100, max(1, int(request.query_params.get("page_size", 5))))
+    has_medical_param = request.query_params.get("has_medical", "").strip()
+    blood_group_param = request.query_params.get("blood_group", "").strip()
+    location_param = request.query_params.get("location", "").strip()
 
     donors_qs = DonorProfile.objects.select_related("user", "medical_record").all()
+
+    # Global counts (before filters) for stat cards
+    total_all = DonorProfile.objects.count()
+    total_with_medical = DonorProfile.objects.filter(medical_record__isnull=False).count()
+    total_without_medical = total_all - total_with_medical
 
     if search:
         donors_qs = donors_qs.filter(
@@ -349,6 +358,17 @@ def admin_donors_list_view(request):
             | Q(phone_number__icontains=search)
             | Q(address__icontains=search)
         )
+
+    if has_medical_param == "true":
+        donors_qs = donors_qs.filter(medical_record__isnull=False)
+    elif has_medical_param == "false":
+        donors_qs = donors_qs.filter(medical_record__isnull=True)
+
+    if blood_group_param:
+        donors_qs = donors_qs.filter(blood_group=blood_group_param)
+
+    if location_param:
+        donors_qs = donors_qs.filter(address__icontains=location_param)
 
     total_count = donors_qs.count()
     start = (page - 1) * page_size
@@ -383,6 +403,11 @@ def admin_donors_list_view(request):
             "page_size": page_size,
             "total_pages": math.ceil(total_count / page_size) if total_count else 1,
             "results": results,
+            "counts": {
+                "total": total_all,
+                "with_medical": total_with_medical,
+                "without_medical": total_without_medical,
+            },
         }
     )
 
@@ -806,6 +831,27 @@ def admin_lapsed_donors_view(request):
         "total_pages": math.ceil(total / page_size) if total else 1,
         "results": results,
     })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def platinum_donors_view(request):
+    """Return donors with 20+ donations (Platinum level) for public About page."""
+    donors = DonorProfile.objects.select_related("user").filter(total_donations__gte=20).order_by("-total_donations")[:20]
+    results = []
+    for d in donors:
+        name = d.user.full_name or "Anonymous"
+        parts = name.split()
+        initials = (parts[0][0] + parts[-1][0]).upper() if len(parts) >= 2 else name[:2].upper()
+        results.append({
+            "name": name,
+            "initials": initials,
+            "group": d.blood_group or "—",
+            "donations": d.total_donations,
+            "district": d.address or "Uganda",
+            "role": "Platinum Donor",
+        })
+    return Response({"donors": results})
 
 
 @api_view(["POST"])
