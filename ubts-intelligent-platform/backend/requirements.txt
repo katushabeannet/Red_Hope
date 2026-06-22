@@ -29,3 +29,4 @@ tokenizers==0.19.1
 huggingface-hub==0.23.5
 safetensors==0.4.5
 torch==2.2.2
+neo4j==5.25.0
