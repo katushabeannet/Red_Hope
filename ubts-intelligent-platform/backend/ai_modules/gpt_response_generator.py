@@ -145,22 +145,24 @@ Write a natural response explaining whether the donor appears ready to donate.
 
     return generate_gpt_response(system_instruction, user_content)
 
-def format_verified_response(response_type, result):
+def format_verified_response(response_type, result, donor_name=None):
     """
     Backward compatibility wrapper.
     Existing donor APIs still call this function.
     """
 
     try:
+        name_prefix = f"The donor's name is {donor_name}. Please address them by their first name in the response. " if donor_name else ""
+
         if response_type == "eligibility":
             return format_eligibility_response(
-                "Check my eligibility",
+                f"{name_prefix}Check my eligibility",
                 result,
             )
 
         if response_type == "availability":
             return format_availability_response(
-                "Check my availability",
+                f"{name_prefix}Check my availability",
                 result,
             )
 

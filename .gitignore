@@ -22,3 +22,7 @@ ubts-intelligent-platform/backend/.env
 
 __pycache__/
 *.pyc
+ubts-intelligent-platform/backend/staticfiles/
+*.zip
+*.pkl
+*.safetensors

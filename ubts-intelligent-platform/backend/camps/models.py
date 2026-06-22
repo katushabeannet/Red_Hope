@@ -5,6 +5,7 @@ class DonationCamp(models.Model):
     class CampStatus(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"
         INACTIVE = "INACTIVE", "Inactive"
+        UPCOMING = "UPCOMING", "Upcoming"
         COMPLETED = "COMPLETED", "Completed"
 
     name = models.CharField(max_length=150)

@@ -36,6 +36,7 @@ function FloatingChatbot() {
   const [input, setInput]             = useState("");
   const [isTyping, setIsTyping]       = useState(false);
   const [locationLoading, setLocLoad] = useState(false);
+  const [pendingEligibilityQuery, setPendingEligibilityQuery] = useState(null);
 
   const endRef = useRef(null);
 
@@ -44,6 +45,12 @@ function FloatingChatbot() {
       endRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, open, isTyping, locationLoading]);
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("open-chatbot", handler);
+    return () => window.removeEventListener("open-chatbot", handler);
+  }, []);
 
   const addBotMessage  = (text, meta = null) =>
     setMessages((prev) => [...prev, { from: "bot", text, meta }]);
@@ -147,21 +154,53 @@ function FloatingChatbot() {
     );
   };
 
+  const buildHistory = (currentMessages) =>
+    currentMessages
+      .filter((m) => m.from === "bot" || m.from === "user")
+      .map((m) => ({ role: m.from === "bot" ? "assistant" : "user", content: m.text }));
+
   const send = async (text = null) => {
     const messageText = (text || input).trim();
     if (!messageText || isTyping) return;
+
+    // Check if responding to an illness check question
+    const lastBotMsg = [...messages].reverse().find((m) => m.from === "bot");
+    const isIllnessReply = lastBotMsg?.meta?.type === "illness_check";
 
     addUserMessage(messageText);
     setInput("");
     setIsTyping(true);
 
     try {
-      const data = await askChatbot(messageText);
+      let history, queryToSend;
+
+      if (isIllnessReply && pendingEligibilityQuery) {
+        // Include illness answer in history, then re-send the original eligibility query
+        history = [...buildHistory(messages), { role: "user", content: messageText }];
+        queryToSend = pendingEligibilityQuery;
+        setPendingEligibilityQuery(null);
+      } else {
+        history = buildHistory(messages);
+        queryToSend = messageText;
+      }
+
+      const data = await askChatbot(queryToSend, history);
+
       if (data.action_type === "REQUEST_LOCATION" || data.mode === "GEOSPATIAL") {
         addBotMessage(data.assistant_response);
         requestLocation();
         return;
       }
+
+      if (data.mode === "ILLNESS_CHECK") {
+        setPendingEligibilityQuery(messageText);
+        addBotMessage(data.assistant_response, {
+          type: "illness_check",
+          quickReplies: ["Yes, I have", "No, I haven't"],
+        });
+        return;
+      }
+
       const formatted = formatBackendResponse(data);
       addBotMessage(formatted.text, formatted.meta);
     } catch (err) {
@@ -259,7 +298,7 @@ function FloatingChatbot() {
               {/* Logo watermark */}
               <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "60%", maxWidth: 180, opacity: 0.06, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
               {messages.map((msg, i) => (
-                <ChatBubble key={i} msg={msg} />
+                <ChatBubble key={i} msg={msg} onQuickReply={i === messages.length - 1 ? send : null} />
               ))}
 
               {(isTyping || locationLoading) && (
@@ -358,10 +397,21 @@ function FloatingChatbot() {
   );
 }
 
+function renderBoldText(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) =>
+    part.startsWith("**") && part.endsWith("**")
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : part
+  );
+}
+
 /* ── Individual chat bubble with optional meta card ── */
-function ChatBubble({ msg }) {
+function ChatBubble({ msg, onQuickReply }) {
   const { dark } = useTheme();
   const isUser = msg.from === "user";
+  const isIllnessCheck = !isUser && msg.meta?.type === "illness_check";
+
   return (
     <div style={{ display: "flex", gap: 8, justifyContent: isUser ? "flex-end" : "flex-start", alignItems: "flex-end" }}>
       {!isUser && (
@@ -385,10 +435,29 @@ function ChatBubble({ msg }) {
           border: isUser ? "none" : (dark ? "1.5px solid #334155" : "1.5px solid #E8EAF0"),
           boxShadow: "0 1px 4px rgba(0,0,0,.06)",
         }}>
-          {msg.text}
+          {renderBoldText(msg.text)}
         </div>
 
-        {msg.meta && <MetaCard meta={msg.meta} />}
+        {isIllnessCheck && onQuickReply && (
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {msg.meta.quickReplies.map((reply) => (
+              <button
+                key={reply}
+                onClick={() => onQuickReply(reply)}
+                style={{
+                  padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  background: reply.startsWith("Yes") ? "var(--cr)" : (dark ? "#1E293B" : "#fff"),
+                  color: reply.startsWith("Yes") ? "#fff" : "var(--ink-s)",
+                  border: reply.startsWith("Yes") ? "none" : (dark ? "1.5px solid #334155" : "1.5px solid #CBD5E1"),
+                }}
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {msg.meta && msg.meta.type !== "illness_check" && <MetaCard meta={msg.meta} />}
       </div>
 
       {isUser && (

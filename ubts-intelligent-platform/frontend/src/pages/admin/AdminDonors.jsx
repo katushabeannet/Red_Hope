@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import {
   RiAlarmWarningLine,
   RiArrowLeftLine,
   RiArrowRightLine,
+  RiCloseLine,
   RiDownloadLine,
+  RiFilterLine,
   RiHeartPulseLine,
+  RiMapPinLine,
   RiRefreshLine,
   RiSearchLine,
   RiUserHeartLine,
@@ -19,6 +22,7 @@ import {
   saveAdminMedicalRecord,
 } from "../../services/adminDonorService";
 import { blastCampaignNotification } from "../../services/notificationService";
+import { getAdminCamps } from "../../services/campService";
 
 const initialMedicalForm = {
   donor_id: "",
@@ -34,17 +38,28 @@ const initialMedicalForm = {
 
 const initialDonationForm = { donor_id: "", donation_date: "", camp_name: "", notes: "" };
 
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
 function AdminDonors() {
   const { dark } = useTheme();
-  const [donors, setDonors]         = useState([]);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, total_pages: 1 });
-  const [page, setPage]             = useState(1);
-  const [search, setSearch]         = useState("");
+  const [donors, setDonors]           = useState([]);
+  const [pagination, setPagination]   = useState({ total: 0, page: 1, total_pages: 1 });
+  const [globalCounts, setGlobalCounts] = useState({ total: 0, with_medical: 0, without_medical: 0 });
+  const [page, setPage]               = useState(1);
+  const [search, setSearch]           = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [medFilter, setMedFilter]     = useState(""); // "" | "true" | "false"
+  const [bloodFilter, setBloodFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [camps, setCamps]             = useState([]);
+  const [donorSearch, setDonorSearch] = useState(""); // For searchable donor dropdown in Record Donation
+  const [modalDonors, setModalDonors] = useState([]); // All donors for the Record Donation dropdown
+  const [modalDonorsLoading, setModalDonorsLoading] = useState(false);
 
-  const [selectedDonor, setSelectedDonor]     = useState(null);
-  const [formData, setFormData]               = useState(initialMedicalForm);
-  const [donationForm, setDonationForm]       = useState(initialDonationForm);
+  const [selectedDonor, setSelectedDonor]       = useState(null);
+  const [formData, setFormData]                 = useState(initialMedicalForm);
+  const [donationForm, setDonationForm]         = useState(initialDonationForm);
   const [showDonationForm, setShowDonationForm] = useState(false);
 
   const [loading, setLoading]                     = useState(true);
@@ -67,15 +82,16 @@ function AdminDonors() {
     try {
       setError("");
       setLoading(true);
-      const data = await getAdminDonors({ page, search, page_size: 20 });
+      const data = await getAdminDonors({ page, search, page_size: 5, has_medical: medFilter, blood_group: bloodFilter, location: locationFilter });
       setDonors(data.results);
       setPagination({ total: data.total, page: data.page, total_pages: data.total_pages });
+      if (data.counts) setGlobalCounts(data.counts);
     } catch {
       setError("Failed to load donors.");
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, medFilter, bloodFilter, locationFilter]);
 
   useEffect(() => { loadDonors(); }, [loadDonors]);
 
@@ -83,6 +99,25 @@ function AdminDonors() {
     const timer = setTimeout(() => { setPage(1); setSearch(searchInput); }, 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setPage(1); setLocationFilter(locationInput); }, 500);
+    return () => clearTimeout(timer);
+  }, [locationInput]);
+
+  useEffect(() => {
+    getAdminCamps().then(setCamps).catch(() => {});
+  }, []);
+
+  // Load all donors for the modal dropdown (large page, server-side search)
+  useEffect(() => {
+    if (!showDonationForm) return;
+    setModalDonorsLoading(true);
+    getAdminDonors({ page: 1, page_size: 200, search: donorSearch })
+      .then((data) => setModalDonors(data.results || []))
+      .catch(() => {})
+      .finally(() => setModalDonorsLoading(false));
+  }, [showDonationForm, donorSearch]);
 
   const handleSelectDonor = (donor) => {
     setSelectedDonor(donor);
@@ -99,7 +134,6 @@ function AdminDonors() {
       is_pregnant: donor.medical_record?.is_pregnant || false,
       is_on_medication: donor.medical_record?.is_on_medication || false,
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleChange = (e) => {
@@ -143,6 +177,8 @@ function AdminDonors() {
       setSuccess(`Donation recorded. ${result.donor_name} now has ${result.total_donations} donation(s).`);
       setShowDonationForm(false);
       setDonationForm(initialDonationForm);
+      setDonorSearch("");
+      setModalDonors([]);
       await loadDonors();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to record donation.");
@@ -187,8 +223,8 @@ function AdminDonors() {
     }
   };
 
-  const donorsWithMedical   = donors.filter((d) => d.medical_record).length;
-  const donorsPendingMedical = pagination.total - donorsWithMedical;
+  // modalDonors is fetched server-side with donorSearch already applied
+  const filteredDonorsForDropdown = modalDonors;
 
   return (
     <>
@@ -217,64 +253,151 @@ function AdminDonors() {
 
       {/* Summary stat cards */}
       <div className="stat-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 28 }}>
-        <TierCard icon={RiUserHeartLine}   label="Total Donors"            value={pagination.total}       tone="red"   tier="sub" />
-        <TierCard icon={RiHeartPulseLine}  label="Medical Records Added"   value={donorsWithMedical}      tone="green" tier="sub" />
-        <TierCard icon={RiAlarmWarningLine} label="Pending Medical Records" value={donorsPendingMedical}  tone="amber" tier="normal" />
+        <div style={{ cursor: "pointer" }} onClick={() => { setMedFilter(""); setPage(1); }}>
+          <TierCard icon={RiUserHeartLine}   label="Total Donors"            value={globalCounts.total}            tone={medFilter === "" ? "red" : "red"}   tier="sub" active={medFilter === ""} />
+        </div>
+        <div style={{ cursor: "pointer" }} onClick={() => { setMedFilter("true"); setPage(1); }}>
+          <TierCard icon={RiHeartPulseLine}  label="Donors With Medical"     value={globalCounts.with_medical}     tone="green" tier="sub" active={medFilter === "true"} />
+        </div>
+        <div style={{ cursor: "pointer" }} onClick={() => { setMedFilter("false"); setPage(1); }}>
+          <TierCard icon={RiAlarmWarningLine} label="Pending Medical Records" value={globalCounts.without_medical} tone="amber" tier="normal" active={medFilter === "false"} />
+        </div>
       </div>
 
-      {/* Record donation form */}
+      {/* Filters row */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 20, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-s)", fontWeight: 600 }}>
+          <RiFilterLine size={16} /> Filters:
+        </div>
+        <select
+          value={bloodFilter}
+          onChange={(e) => { setBloodFilter(e.target.value); setPage(1); }}
+          style={{ padding: "7px 12px", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13, color: "var(--ink)", background: dark ? "#1E293B" : "#fff", outline: "none" }}
+        >
+          <option value="">All Blood Groups</option>
+          {BLOOD_GROUPS.map((bg) => <option key={bg} value={bg}>{bg}</option>)}
+        </select>
+        <div style={{ display: "flex", alignItems: "center", border: "1.5px solid var(--border)", borderRadius: 10, padding: "7px 12px", background: dark ? "#1E293B" : "#fff", gap: 8 }}>
+          <RiMapPinLine size={14} style={{ color: "var(--ink-l)" }} />
+          <input
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            placeholder="Filter by location..."
+            style={{ border: "none", outline: "none", fontSize: 13, color: "var(--ink)", background: "transparent", width: 150 }}
+          />
+        </div>
+        {(medFilter || bloodFilter || locationFilter) && (
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => { setMedFilter(""); setBloodFilter(""); setLocationFilter(""); setLocationInput(""); setPage(1); }}
+          >
+            <RiCloseLine size={14} /> Clear Filters
+          </button>
+        )}
+      </div>
+
+      {/* Record donation modal */}
       {showDonationForm && (
-        <div className="panel">
-          <div className="panel-head">
-            <div className="panel-title-row">
-              <div className="panel-title">Record a Donation</div>
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.55)", padding: 16 }}
+          onClick={() => { setShowDonationForm(false); setDonorSearch(""); setModalDonors([]); }}
+        >
+          <div
+            style={{ position: "relative", width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", borderRadius: 20, background: dark ? "#1E293B" : "#fff", padding: 32, boxShadow: "0 24px 64px rgba(0,0,0,.3)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={() => { setShowDonationForm(false); setDonorSearch(""); setModalDonors([]); }} style={{ position: "absolute", right: 20, top: 20, borderRadius: 999, padding: 6, border: "none", background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", cursor: "pointer", color: "var(--ink-l)", display: "flex" }}>
+              <RiCloseLine size={20} />
+            </button>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>Record a Donation</div>
+              <div style={{ fontSize: 13, color: "var(--ink-s)", marginTop: 4 }}>Select the donor, date, and optional camp details.</div>
             </div>
-            <button className="btn btn-outline btn-sm" onClick={() => setShowDonationForm(false)}>Cancel</button>
-          </div>
-          <div className="panel-body">
             <form onSubmit={handleRecordDonation}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                {/* Searchable donor dropdown */}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink-s)", marginBottom: 7 }}>Search Donor</label>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ display: "flex", alignItems: "center", border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 14px", background: dark ? "#0F172A" : "#F8FAFF", gap: 8, marginBottom: 6 }}>
+                      <RiSearchLine size={15} style={{ color: "var(--ink-l)" }} />
+                      <input
+                        value={donorSearch}
+                        onChange={(e) => setDonorSearch(e.target.value)}
+                        placeholder="Search by name or blood group…"
+                        style={{ border: "none", outline: "none", fontSize: 13, color: "var(--ink)", background: "transparent", flex: 1 }}
+                      />
+                      {modalDonorsLoading && <span className="btn-spin" style={{ width: 14, height: 14, flexShrink: 0 }} />}
+                    </div>
+                    <select
+                      name="donor_id"
+                      value={donationForm.donor_id}
+                      onChange={(e) => setDonationForm({ ...donationForm, donor_id: e.target.value })}
+                      required
+                      size={Math.min(Math.max(filteredDonorsForDropdown.length, 1) + 1, 6)}
+                      style={{ width: "100%", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13, color: "var(--ink)", outline: "none", background: dark ? "#0F172A" : "#fff" }}
+                    >
+                      <option value="">{modalDonorsLoading ? "Loading donors…" : `— Select a donor (${filteredDonorsForDropdown.length} found) —`}</option>
+                      {filteredDonorsForDropdown.map((d) => (
+                        <option key={d.id} value={d.id}>{d.full_name} ({d.blood_group || "N/A"})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <Field label="Donation Date" type="date" name="donation_date" value={donationForm.donation_date} onChange={(e) => setDonationForm({ ...donationForm, donation_date: e.target.value })} required />
+                {/* Camp dropdown */}
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink-s)", marginBottom: 7 }}>Donor</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink-s)", marginBottom: 7 }}>Donation Camp (optional)</label>
                   <select
-                    name="donor_id"
-                    value={donationForm.donor_id}
-                    onChange={(e) => setDonationForm({ ...donationForm, donor_id: e.target.value })}
-                    required
-                    style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13.5, color: "var(--ink)", outline: "none" }}
+                    name="camp_name"
+                    value={donationForm.camp_name}
+                    onChange={(e) => setDonationForm({ ...donationForm, camp_name: e.target.value })}
+                    style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid var(--border)", fontSize: 13.5, color: "var(--ink)", outline: "none", background: dark ? "#0F172A" : "#fff" }}
                   >
-                    <option value="">Select donor</option>
-                    {donors.map((d) => (
-                      <option key={d.id} value={d.id}>{d.full_name} ({d.blood_group})</option>
+                    <option value="">— No camp / Walk-in —</option>
+                    {camps.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name} ({c.district})</option>
                     ))}
                   </select>
                 </div>
-                <Field label="Donation Date" type="date" name="donation_date" value={donationForm.donation_date} onChange={(e) => setDonationForm({ ...donationForm, donation_date: e.target.value })} required />
-                <Field label="Camp Name (optional)" name="camp_name" value={donationForm.camp_name} onChange={(e) => setDonationForm({ ...donationForm, camp_name: e.target.value })} />
-                <Field label="Notes (optional)" name="notes" value={donationForm.notes} onChange={(e) => setDonationForm({ ...donationForm, notes: e.target.value })} />
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="Notes (optional)" name="notes" value={donationForm.notes} onChange={(e) => setDonationForm({ ...donationForm, notes: e.target.value })} />
+                </div>
               </div>
-              <button type="submit" className="btn btn-primary" disabled={recordingDonation}>
-                {recordingDonation && <span className="btn-spin" />}
-                <RiHeartPulseLine size={16} /> Record Donation
-              </button>
+              <div style={{ display: "flex", gap: 12 }}>
+                <button type="submit" className="btn btn-primary" disabled={recordingDonation}>
+                  {recordingDonation && <span className="btn-spin" />}
+                  <RiHeartPulseLine size={16} /> Record Donation
+                </button>
+                <button type="button" className="btn btn-outline" onClick={() => { setShowDonationForm(false); setDonorSearch(""); setModalDonors([]); }}>Cancel</button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Medical record form */}
+      {/* Medical record modal */}
       {selectedDonor && (
-        <div className="panel">
-          <div className="panel-head">
-            <div>
-              <div className="panel-title">Add / Update Medical Information</div>
-              <div className="panel-sub">Selected donor: <strong>{selectedDonor.full_name}</strong></div>
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.55)", padding: 16 }}
+          onClick={() => setSelectedDonor(null)}
+        >
+          <div
+            style={{ position: "relative", width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", borderRadius: 20, background: dark ? "#1E293B" : "#fff", padding: 32, boxShadow: "0 24px 64px rgba(0,0,0,.3)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={() => setSelectedDonor(null)} style={{ position: "absolute", right: 20, top: 20, borderRadius: 999, padding: 6, border: "none", background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", cursor: "pointer", color: "var(--ink-l)", display: "flex" }}>
+              <RiCloseLine size={20} />
+            </button>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>Add / Update Medical Information</div>
+                <span className={`badge ${selectedDonor.medical_record ? "badge-blue" : "badge-green"}`}>
+                  {selectedDonor.medical_record ? "Updating" : "New Record"}
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ink-s)", marginTop: 4 }}>Donor: <strong>{selectedDonor.full_name}</strong></div>
             </div>
-            <span className={`badge ${selectedDonor.medical_record ? "badge-blue" : "badge-green"}`}>
-              {selectedDonor.medical_record ? "Updating" : "New Record"}
-            </span>
-          </div>
-          <div className="panel-body">
             <form onSubmit={handleSaveMedicalRecord}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                 <Select label="Blood Group" name="blood_group" value={formData.blood_group} onChange={handleChange} options={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
@@ -309,7 +432,7 @@ function AdminDonors() {
             <button className="btn btn-outline btn-sm" onClick={async () => { try { await exportDonorsCSV(search); } catch { setError("Export failed."); } }}>
               <RiDownloadLine size={14} /> Export CSV
             </button>
-            <button className="btn btn-outline btn-sm" onClick={() => setShowDonationForm((v) => !v)}>
+            <button className="btn btn-outline btn-sm" onClick={() => { setShowDonationForm((v) => { if (!v) { setDonorSearch(""); setDonationForm(initialDonationForm); } return !v; }); }}>
               <RiHeartPulseLine size={14} /> Record Donation
             </button>
             <div style={{ display: "flex", alignItems: "center", border: "1.5px solid var(--border)", borderRadius: 10, padding: "7px 12px", background: dark ? "#1E293B" : "#fff", gap: 8 }}>
@@ -374,7 +497,7 @@ function AdminDonors() {
             {pagination.total_pages > 1 && (
               <div className="pagination-row">
                 <span className="page-info">
-                  Showing {((pagination.page - 1) * 20) + 1}–{Math.min(pagination.page * 20, pagination.total)} of {pagination.total}
+                  Showing {((pagination.page - 1) * 5) + 1}–{Math.min(pagination.page * 5, pagination.total)} of {pagination.total}
                 </span>
                 <div className="page-btns">
                   <button className="page-btn" disabled={pagination.page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
@@ -474,17 +597,18 @@ function AdminDonors() {
 
 const _SPARK = [30, 50, 40, 70, 55, 80, 65];
 
-function TierCard({ icon: Icon, label, value, tone = "red", tier = "sub" }) {
+function TierCard({ icon: Icon, label, value, tone = "red", tier = "sub", active = false }) {
   const { dark } = useTheme();
   const accentMap  = { red: "var(--cr)", green: "var(--green)", blue: "var(--blue)", amber: "var(--amber)" };
   const accentXlLt = { red: "#FDEEF1", green: "#F0FDF4", blue: "#EFF6FF", amber: "#FFFBEB" };
   const accentXlDk = { red: "rgba(196,30,58,.18)", green: "rgba(22,163,74,.18)", blue: "rgba(37,99,235,.18)", amber: "rgba(217,119,6,.18)" };
   const accent   = accentMap[tone] || "var(--cr)";
   const accentXl = (dark ? accentXlDk : accentXlLt)[tone] || (dark ? "rgba(196,30,58,.18)" : "#FDEEF1");
+  const activeStyle = active ? { outline: `2.5px solid ${accent}`, outlineOffset: 2 } : {};
 
   if (tier === "sub") {
     return (
-      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+      <div className="card-submain" style={{ "--accent": accent, "--accent-xl": accentXl, ...activeStyle }}>
         <div className="card-sub-icon"><Icon size={20} /></div>
         <div className="card-sub-val">{value ?? "—"}</div>
         <div className="card-sub-label">{label}</div>
@@ -495,7 +619,7 @@ function TierCard({ icon: Icon, label, value, tone = "red", tier = "sub" }) {
     );
   }
   return (
-    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl }}>
+    <div className="card-normal" style={{ "--accent": accent, "--accent-xl": accentXl, ...activeStyle }}>
       <div className="card-norm-icon"><Icon size={18} /></div>
       <div className="card-norm-val">{value ?? "—"}</div>
       <div className="card-norm-label">{label}</div>

@@ -57,8 +57,9 @@ function DonorDashboard() {
   const [impact, setImpact] = useState(null);
   const [retention, setRetention] = useState(null);
   const [eligibilityResult, setEligibilityResult] = useState(null);
-  const [availabilityResult, setAvailabilityResult] = useState(null);
   const [nearestCamp, setNearestCamp] = useState(null);
+  const [activeTool, setActiveTool] = useState(null); // "eligibility" | "history" | "donations" | "calendar" | "nearestCamp"
+  const [certModal, setCertModal] = useState(null); // { donation, totalDonations }
 
   const [history, setHistory] = useState(null);
   const [historyPage, setHistoryPage] = useState(1);
@@ -93,25 +94,19 @@ function DonorDashboard() {
   };
 
   const handleEligibilityCheck = async () => {
-    try { setLoading(true); setError(""); setEligibilityResult(await checkEligibility()); }
+    try { setLoading(true); setError(""); const r = await checkEligibility(); setEligibilityResult(r); setActiveTool("eligibility"); }
     catch { setError("Eligibility check failed. UBTS may need to add your medical record first."); }
     finally { setLoading(false); }
   };
 
-  const handleAvailabilityCheck = async () => {
-    try { setLoading(true); setError(""); setAvailabilityResult(await checkAvailability()); }
-    catch { setError("Availability check failed. UBTS may need to add your medical record first."); }
-    finally { setLoading(false); }
-  };
-
   const handleLoadHistory = async (page = 1) => {
-    try { setHistoryLoading(true); const data = await getDonorAssessmentHistory({ page, page_size: 5 }); setHistory(data); setHistoryPage(page); setHistoryVisible(true); }
+    try { setHistoryLoading(true); const data = await getDonorAssessmentHistory({ page, page_size: 5 }); setHistory(data); setHistoryPage(page); setHistoryVisible(true); setActiveTool("history"); }
     catch { setError("Failed to load assessment history."); }
     finally { setHistoryLoading(false); }
   };
 
   const handleLoadDonations = async (page = 1) => {
-    try { setDonationsLoading(true); const data = await getDonationHistory({ page, page_size: 5 }); setDonations(data); setDonationPage(page); setDonationsVisible(true); }
+    try { setDonationsLoading(true); const data = await getDonationHistory({ page, page_size: 5 }); setDonations(data); setDonationPage(page); setDonationsVisible(true); setActiveTool("donations"); }
     catch { setError("Failed to load donation history."); }
     finally { setDonationsLoading(false); }
   };
@@ -123,7 +118,7 @@ function DonorDashboard() {
   };
 
   const handleLoadCampCalendar = async () => {
-    if (campCalendarVisible) { setCampCalendarVisible(false); return; }
+    if (campCalendarVisible) { setCampCalendarVisible(false); setActiveTool(null); return; }
     try {
       setCampsLoading(true);
       const camps = await getActiveCamps();
@@ -132,6 +127,7 @@ function DonorDashboard() {
         start: new Date(c.start_date), end: new Date(c.end_date), resource: c,
       })));
       setCampCalendarVisible(true);
+      setActiveTool("calendar");
     } catch { setError("Failed to load camp calendar."); }
     finally { setCampsLoading(false); }
   };
@@ -141,7 +137,7 @@ function DonorDashboard() {
     setLocationLoading(true); setError("");
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        try { setNearestCamp(await findNearestCamp({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })); }
+        try { setNearestCamp(await findNearestCamp({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })); setActiveTool("nearestCamp"); }
         catch { setError("Failed to find nearest donation camp."); }
         finally { setLocationLoading(false); }
       },
@@ -150,7 +146,6 @@ function DonorDashboard() {
   };
 
   const eligibilityAssessment = eligibilityResult?.assessment;
-  const availabilityAssessment = availabilityResult?.assessment;
   const camp = nearestCamp?.nearest_camp;
 
   return (
@@ -187,16 +182,22 @@ function DonorDashboard() {
 
       {/* ── Medical record warning ── */}
       {!medicalRecord && (
-        <div className="panel" style={{ background: dark ? "rgba(217,119,6,.1)" : "#FFFBEB", borderLeft: "4px solid var(--amber)" }}>
-          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-            <RiInformationLine size={20} style={{ color: "var(--amber)", flexShrink: 0, marginTop: 2 }} />
+        <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ background: "linear-gradient(135deg, var(--amber) 0%, #f59e0b 100%)", padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <RiInformationLine size={24} style={{ color: "#fff" }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.8)", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 3 }}>Action Required</div>
+              <h4 style={{ fontWeight: 800, color: "#fff", margin: 0, fontSize: 15 }}>Medical information not yet available</h4>
+            </div>
+            <span style={{ background: "rgba(255,255,255,.2)", borderRadius: 999, padding: "4px 14px", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>Pending</span>
+          </div>
+          <div style={{ padding: "16px 24px", background: dark ? "rgba(217,119,6,.08)" : "#FFFBEB", display: "flex", gap: 14, alignItems: "flex-start" }}>
             <div>
-              <h4 style={{ fontWeight: 700, color: "var(--ink)", margin: "0 0 6px", fontSize: 14 }}>
-                Medical information not yet available
-              </h4>
-              <p style={{ fontSize: 13, color: "var(--ink-s)", lineHeight: 1.6, margin: 0 }}>
-                Your medical information will be filled by UBTS staff after your donation or medical screening.
-                Eligibility, availability, and donation reminders will become active once this is recorded.
+              <p style={{ fontSize: 13, color: "var(--ink-s)", lineHeight: 1.7, margin: 0 }}>
+                Your medical information will be recorded by UBTS staff after your first donation or medical screening.
+                Eligibility checks and donation reminders will become active once this is on file.
               </p>
             </div>
           </div>
@@ -299,52 +300,45 @@ function DonorDashboard() {
         </div>
         <div className="panel-body" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           <button
-            className="btn btn-primary btn-sm"
+            className={`btn btn-sm ${activeTool === "eligibility" ? "btn-primary" : "btn-outline"}`}
             onClick={handleEligibilityCheck}
             disabled={!medicalRecord || loading}
           >
-            <RiShieldCheckLine /> Check Eligibility
+            {loading && activeTool === "eligibility" ? <span className="btn-spin" /> : <RiShieldCheckLine />} Check Eligibility
           </button>
           <button
-            className="btn btn-outline btn-sm"
-            onClick={handleAvailabilityCheck}
-            disabled={!medicalRecord || loading}
-          >
-            <RiHeartPulseLine /> Check Availability
-          </button>
-          <button
-            className="btn btn-outline btn-sm"
+            className={`btn btn-sm ${activeTool === "nearestCamp" ? "btn-primary" : "btn-outline"}`}
             onClick={handleNearestCamp}
             disabled={locationLoading}
           >
             <RiMapPinLine /> {locationLoading ? "Locating…" : "Find Nearest Camp"}
           </button>
           <button
-            className="btn btn-outline btn-sm"
-            onClick={() => historyVisible ? setHistoryVisible(false) : handleLoadHistory(1)}
+            className={`btn btn-sm ${activeTool === "history" ? "btn-primary" : "btn-outline"}`}
+            onClick={() => { if (activeTool === "history") { setActiveTool(null); setHistoryVisible(false); } else { handleLoadHistory(1); } }}
             disabled={historyLoading}
           >
-            <RiHistoryLine /> {historyVisible ? "Hide History" : "Assessment History"}
+            <RiHistoryLine /> Assessment History
           </button>
           <button
-            className="btn btn-outline btn-sm"
-            onClick={() => donationsVisible ? setDonationsVisible(false) : handleLoadDonations(1)}
+            className={`btn btn-sm ${activeTool === "donations" ? "btn-primary" : "btn-outline"}`}
+            onClick={() => { if (activeTool === "donations") { setActiveTool(null); setDonationsVisible(false); } else { handleLoadDonations(1); } }}
             disabled={donationsLoading}
           >
-            <RiDropLine /> {donationsVisible ? "Hide Donations" : "My Donations"}
+            <RiDropLine /> My Donations
           </button>
           <button
-            className="btn btn-outline btn-sm"
+            className={`btn btn-sm ${activeTool === "calendar" ? "btn-primary" : "btn-outline"}`}
             onClick={handleLoadCampCalendar}
             disabled={campsLoading}
           >
-            <RiCalendarLine /> {campCalendarVisible ? "Hide Calendar" : "Camp Calendar"}
+            <RiCalendarLine /> Camp Calendar
           </button>
         </div>
       </div>
 
       {/* ── Eligibility result ── */}
-      {eligibilityResult && (
+      {eligibilityResult && activeTool === "eligibility" && (
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title-row">
@@ -368,33 +362,8 @@ function DonorDashboard() {
         </div>
       )}
 
-      {/* ── Availability result ── */}
-      {availabilityResult && (
-        <div className="panel">
-          <div className="panel-head">
-            <div className="panel-title-row">
-              <div className={`panel-icon ${availabilityAssessment?.is_available ? "gr" : "am"}`}>
-                <RiHeartPulseLine size={16} />
-              </div>
-              <div>
-                <div className="panel-title">Availability Result</div>
-                <div className="panel-sub">Probability-based availability assessment for the next donation window.</div>
-              </div>
-            </div>
-            <span className={`badge ${availabilityAssessment?.is_available ? "badge-green" : "badge-amber"}`}>
-              {availabilityAssessment?.is_available ? "Likely Available" : "Not Available"}
-            </span>
-          </div>
-          <div className="panel-body">
-            <p style={{ fontSize: 13, color: "var(--ink-s)", lineHeight: 1.7, margin: 0 }}>
-              {availabilityResult.assistant_response}
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* ── Assessment history ── */}
-      {historyVisible && history && (
+      {historyVisible && history && activeTool === "history" && (
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title-row">
@@ -486,7 +455,7 @@ function DonorDashboard() {
       )}
 
       {/* ── My donations ── */}
-      {donationsVisible && (
+      {donationsVisible && activeTool === "donations" && (
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title-row">
@@ -521,13 +490,16 @@ function DonorDashboard() {
                           </td>
                           <td style={{ color: "var(--ink-s)" }}>{d.camp_name || "Camp not specified"}</td>
                           <td>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              disabled={downloadingId === d.id}
-                              onClick={() => handleDownloadCertificate(d.id)}
-                            >
-                              <RiDownloadLine /> {downloadingId === d.id ? "Generating…" : "Certificate"}
-                            </button>
+                            {(impact?.total_donations || 0) >= 3 ? (
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => setCertModal({ donation: d, totalDonations: impact?.total_donations || 0 })}
+                              >
+                                <RiAwardLine /> View Certificate
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: 11, color: "var(--ink-l)" }}>Need 3+ donations</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -562,7 +534,7 @@ function DonorDashboard() {
       )}
 
       {/* ── Camp calendar ── */}
-      {campCalendarVisible && (
+      {campCalendarVisible && activeTool === "calendar" && (
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title-row">
@@ -584,6 +556,7 @@ function DonorDashboard() {
                   views={["month", "agenda"]}
                   defaultView="month"
                   style={{ height: "100%" }}
+                  components={{ toolbar: CalendarToolbar }}
                   onSelectEvent={(event) => {
                     const c = event.resource;
                     alert(`${c.name}\n${c.venue}, ${c.district}, ${c.region}\n${c.start_date} → ${c.end_date}\nContact: ${c.contact_phone || "N/A"}`);
@@ -604,14 +577,13 @@ function DonorDashboard() {
       )}
 
       {/* ── Nearest camp ── */}
-      {nearestCamp && (
+      {nearestCamp && activeTool === "nearestCamp" && (
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title-row">
               <div className="panel-icon cr"><RiMapPinLine size={16} /></div>
               <div>
                 <div className="panel-title">Nearest Donation Camp</div>
-                <div className="panel-sub">{nearestCamp.assistant_response}</div>
               </div>
             </div>
             <span className="badge badge-green">{nearestCamp.distance_km} km away</span>
@@ -636,7 +608,154 @@ function DonorDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── Certificate modal ── */}
+      {certModal && (
+        <CertificateModal
+          donation={certModal.donation}
+          totalDonations={certModal.totalDonations}
+          donorName={profile?.full_name || "Donor"}
+          bloodGroup={profile?.blood_group || "N/A"}
+          onClose={() => setCertModal(null)}
+          onDownload={() => handleDownloadCertificate(certModal.donation.id)}
+          downloadingId={downloadingId}
+        />
+      )}
     </>
+  );
+}
+
+/* ── Calendar custom toolbar (fixes Back/Next buttons) ── */
+function CalendarToolbar({ label, onNavigate, onView, view, views }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 4px 12px", flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          onClick={() => onNavigate("PREV")}
+          style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid var(--border)", background: "var(--canvas)", color: "var(--ink)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+        >
+          ← Back
+        </button>
+        <button
+          onClick={() => onNavigate("TODAY")}
+          style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid var(--border)", background: "var(--canvas)", color: "var(--ink)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+        >
+          Today
+        </button>
+        <button
+          onClick={() => onNavigate("NEXT")}
+          style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid var(--border)", background: "var(--canvas)", color: "var(--ink)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+        >
+          Next →
+        </button>
+      </div>
+      <span style={{ fontWeight: 700, color: "var(--ink)", fontSize: 15 }}>{label}</span>
+      <div style={{ display: "flex", gap: 6 }}>
+        {views.map((v) => (
+          <button
+            key={v}
+            onClick={() => onView(v)}
+            style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid var(--border)", background: view === v ? "var(--cr)" : "var(--canvas)", color: view === v ? "#fff" : "var(--ink)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            {v.charAt(0).toUpperCase() + v.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Certificate tier helper ── */
+function getCertTier(totalDonations) {
+  if (totalDonations >= 20) return { tier: "Gold", color: "#D97706", bg: "linear-gradient(135deg,#92400e,#D97706,#FCD34D)", border: "#D97706", label: "Gold Certificate", badge: "GOLD" };
+  if (totalDonations >= 10) return { tier: "Silver", color: "#6B7280", bg: "linear-gradient(135deg,#374151,#6B7280,#D1D5DB)", border: "#9CA3AF", label: "Silver Certificate", badge: "SILVER" };
+  if (totalDonations >= 5)  return { tier: "Bronze", color: "#92400E", bg: "linear-gradient(135deg,#78350F,#B45309,#FDE68A)", border: "#B45309", label: "Bronze Certificate", badge: "BRONZE" };
+  return { tier: "Regular", color: "#C41E3A", bg: "linear-gradient(135deg,#C41E3A,#991B1B)", border: "#C41E3A", label: "Certificate of Donation", badge: "REGULAR" };
+}
+
+/* ── Certificate modal ── */
+function CertificateModal({ donation, totalDonations, donorName, bloodGroup, onClose, onDownload, downloadingId }) {
+  const cert = getCertTier(totalDonations);
+  const donationDate = new Date(donation.donation_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.65)", padding: 20 }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 620, maxHeight: "92vh", overflowY: "auto", borderRadius: 20, background: "#fff", boxShadow: "0 32px 80px rgba(0,0,0,.35)" }}
+      >
+        {/* Certificate design */}
+        <div style={{ background: cert.bg, padding: "36px 40px 28px", textAlign: "center", position: "relative" }}>
+          {/* Decorative corners */}
+          <div style={{ position: "absolute", top: 12, left: 12, width: 40, height: 40, borderTop: `3px solid rgba(255,255,255,.5)`, borderLeft: `3px solid rgba(255,255,255,.5)`, borderRadius: "4px 0 0 0" }} />
+          <div style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, borderTop: `3px solid rgba(255,255,255,.5)`, borderRight: `3px solid rgba(255,255,255,.5)`, borderRadius: "0 4px 0 0" }} />
+          <div style={{ position: "absolute", bottom: 12, left: 12, width: 40, height: 40, borderBottom: `3px solid rgba(255,255,255,.5)`, borderLeft: `3px solid rgba(255,255,255,.5)`, borderRadius: "0 0 0 4px" }} />
+          <div style={{ position: "absolute", bottom: 12, right: 12, width: 40, height: 40, borderBottom: `3px solid rgba(255,255,255,.5)`, borderRight: `3px solid rgba(255,255,255,.5)`, borderRadius: "0 0 4px 0" }} />
+
+          <div style={{ display: "inline-block", background: "rgba(255,255,255,.15)", borderRadius: 999, border: "1px solid rgba(255,255,255,.4)", padding: "4px 16px", fontSize: 11, fontWeight: 800, letterSpacing: ".12em", color: "#fff", marginBottom: 16, textTransform: "uppercase" }}>
+            {cert.badge} — Uganda Blood Transfusion Service
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.75)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>
+            {cert.label}
+          </div>
+          <h2 style={{ fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 0 6px", lineHeight: 1.1 }}>
+            Blood Donation Certificate
+          </h2>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,.75)", margin: 0 }}>
+            Uganda Blood Transfusion Service — Intelligent Platform
+          </p>
+        </div>
+
+        <div style={{ padding: "28px 40px", background: "#fff", textAlign: "center" }}>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>This is to certify that</p>
+          <h3 style={{ fontSize: 26, fontWeight: 900, color: cert.color, margin: "0 0 4px" }}>{donorName}</h3>
+          <div style={{ height: 2, background: cert.color, width: 200, margin: "6px auto 18px", opacity: 0.6, borderRadius: 2 }} />
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>has successfully donated blood on</p>
+          <p style={{ fontSize: 18, fontWeight: 800, color: cert.color, marginBottom: donation.camp_name ? 8 : 20 }}>{donationDate}</p>
+          {donation.camp_name && (
+            <>
+              <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>at</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", marginBottom: 20 }}>{donation.camp_name}</p>
+            </>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 24 }}>
+            <div style={{ textAlign: "center", background: "#F8FAFF", borderRadius: 12, padding: "12px 20px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: cert.color }}>{totalDonations}</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Total Donations</div>
+            </div>
+            <div style={{ textAlign: "center", background: "#F8FAFF", borderRadius: 12, padding: "12px 20px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: cert.color }}>{bloodGroup}</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Blood Group</div>
+            </div>
+            <div style={{ textAlign: "center", background: "#F8FAFF", borderRadius: 12, padding: "12px 20px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: 15, fontWeight: 900, color: cert.color }}>{cert.tier}</div>
+              <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Tier</div>
+            </div>
+          </div>
+
+          <p style={{ fontSize: 11, color: "#94A3B8", fontStyle: "italic", marginBottom: 24 }}>
+            "Every drop counts. Your gift is someone's second chance at life."
+          </p>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <button
+              className="btn btn-primary"
+              disabled={downloadingId === donation.id}
+              onClick={onDownload}
+            >
+              <RiDownloadLine /> {downloadingId === donation.id ? "Generating PDF…" : "Download PDF"}
+            </button>
+            <button className="btn btn-outline" onClick={onClose}>Close</button>
+          </div>
+          <p style={{ fontSize: 10, color: "#CBD5E1", marginTop: 16 }}>Ref: UBTS-CERT-{String(donation.id).padStart(6, "0")}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -13,6 +13,33 @@ from ai_modules.gpt_response_generator import (
 
 LOW_CONFIDENCE_VALUES = ["Low"]
 
+ILLNESS_CHECK_RESPONSE = (
+    "Before I check your eligibility, I need to ask one quick question: "
+    "Have you experienced any illness, fever, cold, or infection in the **past 2 weeks**? "
+    "Please reply **Yes** or **No**."
+)
+_ILLNESS_MARKER = "past 2 weeks"
+
+
+def _extract_illness_from_history(conversation_history):
+    """
+    Returns True (had illness), False (no illness), or None (not yet asked/answered).
+    """
+    if not conversation_history:
+        return None
+    for i, msg in enumerate(conversation_history):
+        if msg.get("role") == "assistant" and _ILLNESS_MARKER in msg.get("content", ""):
+            for j in range(i + 1, len(conversation_history)):
+                if conversation_history[j].get("role") == "user":
+                    reply = conversation_history[j].get("content", "").lower().strip()
+                    positive = any(w in reply for w in [
+                        "yes", "yeah", "yep", "yah", "i have", "i had",
+                        "been sick", "sick", "ill", "fever", "cold", "infection", "flu"
+                    ])
+                    return positive
+            return None  # asked but not yet answered
+    return None  # never asked
+
 
 def get_donor_profile_and_medical_record(user):
     profile = getattr(user, "donor_profile", None)
@@ -91,6 +118,22 @@ def route_chatbot_query(query, user=None, conversation_history=None):
             }
 
         profile, medical_record = get_donor_profile_and_medical_record(user)
+
+        illness_status = _extract_illness_from_history(conversation_history)
+
+        if illness_status is None:
+            return {
+                "intent": "illness_check",
+                "mode": "ILLNESS_CHECK",
+                "role": role,
+                "action_required": True,
+                "action_type": "REQUEST_ILLNESS_STATUS",
+                "assistant_response": ILLNESS_CHECK_RESPONSE,
+            }
+
+        if medical_record:
+            medical_record.has_recent_illness = bool(illness_status)
+
         result = run_eligibility_rules(profile, medical_record)
 
         fallback = result["summary"]
@@ -158,6 +201,21 @@ def route_chatbot_query(query, user=None, conversation_history=None):
             }
 
         profile, medical_record = get_donor_profile_and_medical_record(user)
+
+        illness_status = _extract_illness_from_history(conversation_history)
+
+        if illness_status is None:
+            return {
+                "intent": "illness_check",
+                "mode": "ILLNESS_CHECK",
+                "role": role,
+                "action_required": True,
+                "action_type": "REQUEST_ILLNESS_STATUS",
+                "assistant_response": ILLNESS_CHECK_RESPONSE,
+            }
+
+        if medical_record:
+            medical_record.has_recent_illness = bool(illness_status)
 
         eligibility = run_eligibility_rules(profile, medical_record)
         availability = predict_availability(profile, medical_record)
