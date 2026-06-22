@@ -5,7 +5,6 @@ import re
 import numpy as np
 import pandas as pd
 from django.conf import settings
-from sentence_transformers import SentenceTransformer
 
 
 MODEL_PATH = os.path.join(
@@ -87,6 +86,8 @@ def load_model():
     global _model
 
     if _model is None:
+        from sentence_transformers import SentenceTransformer
+
         _model = SentenceTransformer(MODEL_PATH)
 
     return _model
@@ -123,18 +124,19 @@ def load_embeddings():
     if _embeddings is not None:
         return _embeddings
 
-    model = load_model()
     questions, _ = load_dataset()
 
     if os.path.exists(CACHE_PATH):
         with open(CACHE_PATH, "rb") as file:
             _embeddings = pickle.load(file)
     else:
+        model = load_model()
+
         _embeddings = model.encode(
             questions,
             convert_to_numpy=True,
             normalize_embeddings=True,
-            show_progress_bar=True,
+            show_progress_bar=False,
         )
 
         with open(CACHE_PATH, "wb") as file:
@@ -173,10 +175,10 @@ def retrieve_top_k(query, k=3):
     )
 
     scores = np.dot(embeddings, query_embedding)
-
     top_indices = np.argsort(scores)[::-1][:k]
 
     matches = []
+
     for index in top_indices:
         score = float(scores[index])
 
