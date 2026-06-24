@@ -34,6 +34,7 @@ import {
 
 import AdminLoader from "../../components/common/AdminLoader";
 import DeleteBtn from "../../components/common/DeleteBtn";
+import { v } from "../../utils/validators";
 
 const calLocalizer = dateFnsLocalizer({
   format,
@@ -71,6 +72,7 @@ function AdminCamps() {
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [viewMode, setViewMode] = useState("table");
 
   useEffect(() => {
@@ -91,10 +93,9 @@ function AdminCamps() {
   };
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors((p) => ({ ...p, [name]: null }));
   };
 
   const resetForm = () => {
@@ -127,8 +128,26 @@ function AdminCamps() {
     setShowForm(true);
   };
 
+  const validateCampForm = () => {
+    const errs = {
+      name:          v.minLen(formData.name, 3, "Camp name") || v.maxLen(formData.name, 100, "Camp name"),
+      venue:         v.minLen(formData.venue, 3, "Venue") || v.maxLen(formData.venue, 200, "Venue"),
+      region:        formData.region ? v.maxLen(formData.region, 100, "Region") : null,
+      district:      formData.district ? v.maxLen(formData.district, 100, "District") : null,
+      latitude:      v.required(formData.latitude, "Latitude") || v.latitude(formData.latitude),
+      longitude:     v.required(formData.longitude, "Longitude") || v.longitude(formData.longitude),
+      start_date:    v.required(formData.start_date, "Start date"),
+      end_date:      v.required(formData.end_date, "End date") || v.endAfterStart(formData.start_date, formData.end_date),
+      contact_phone: formData.contact_phone ? v.phone(formData.contact_phone) : null,
+      description:   formData.description ? v.maxLen(formData.description, 1000, "Description") : null,
+    };
+    setFieldErrors(errs);
+    return !Object.values(errs).some(Boolean);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateCampForm()) { setError("Please fix the errors below before saving."); return; }
     try {
       setLoading(true);
       setError("");
@@ -281,15 +300,15 @@ function AdminCamps() {
               <div style={{ fontSize: 13, color: "var(--ink-s)", marginTop: 4 }}>Provide camp details and exact coordinates for map-based recommendations.</div>
             </div>
             <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Field label="Camp Name" name="name" value={formData.name} onChange={handleChange} placeholder="Kampala Central Blood Drive" required />
-              <Field label="Region" name="region" value={formData.region} onChange={handleChange} placeholder="Central" />
-              <Field label="District" name="district" value={formData.district} onChange={handleChange} placeholder="Kampala" />
-              <Field label="Venue" name="venue" value={formData.venue} onChange={handleChange} placeholder="City Square" required />
-              <Field label="Latitude" name="latitude" value={formData.latitude} onChange={handleChange} placeholder="0.3136" type="number" step="any" required />
-              <Field label="Longitude" name="longitude" value={formData.longitude} onChange={handleChange} placeholder="32.5811" type="number" step="any" required />
-              <Field label="Start Date" name="start_date" value={formData.start_date} onChange={handleChange} type="date" required />
-              <Field label="End Date" name="end_date" value={formData.end_date} onChange={handleChange} type="date" required />
-              <Field label="Contact Phone" name="contact_phone" value={formData.contact_phone} onChange={handleChange} placeholder="0800123456" />
+              <Field label="Camp Name *" name="name" value={formData.name} onChange={handleChange} placeholder="Kampala Central Blood Drive" error={fieldErrors.name} />
+              <Field label="Region" name="region" value={formData.region} onChange={handleChange} placeholder="Central" error={fieldErrors.region} />
+              <Field label="District" name="district" value={formData.district} onChange={handleChange} placeholder="Kampala" error={fieldErrors.district} />
+              <Field label="Venue *" name="venue" value={formData.venue} onChange={handleChange} placeholder="City Square" error={fieldErrors.venue} />
+              <Field label="Latitude * (−90 to 90)" name="latitude" value={formData.latitude} onChange={handleChange} placeholder="0.3136" type="number" step="any" error={fieldErrors.latitude} />
+              <Field label="Longitude * (−180 to 180)" name="longitude" value={formData.longitude} onChange={handleChange} placeholder="32.5811" type="number" step="any" error={fieldErrors.longitude} />
+              <Field label="Start Date *" name="start_date" value={formData.start_date} onChange={handleChange} type="date" error={fieldErrors.start_date} />
+              <Field label="End Date *" name="end_date" value={formData.end_date} onChange={handleChange} type="date" error={fieldErrors.end_date} />
+              <Field label="Contact Phone (optional)" name="contact_phone" value={formData.contact_phone} onChange={handleChange} placeholder="+256700000000 or 0700000000" error={fieldErrors.contact_phone} />
 
               <div>
                 <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Status</label>
@@ -542,7 +561,7 @@ function AdminCamps() {
   );
 }
 
-function Field({ label, name, value, onChange, placeholder, type = "text", required = false, step }) {
+function Field({ label, name, value, onChange, placeholder, type = "text", required = false, step, error }) {
   return (
     <div>
       <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{label}</label>
@@ -554,8 +573,9 @@ function Field({ label, name, value, onChange, placeholder, type = "text", requi
         type={type}
         step={step}
         required={required}
-        style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
+        style={{ width: "100%", borderRadius: 10, border: `1px solid ${error ? "#DC2626" : "var(--border)"}`, background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", boxSizing: "border-box" }}
       />
+      {error && <span style={{ fontSize: 11, color: "#DC2626", marginTop: 3, display: "block" }}>{error}</span>}
     </div>
   );
 }

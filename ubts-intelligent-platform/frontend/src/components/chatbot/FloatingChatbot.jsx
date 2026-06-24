@@ -38,7 +38,8 @@ function FloatingChatbot() {
   const [locationLoading, setLocLoad] = useState(false);
   const [pendingEligibilityQuery, setPendingEligibilityQuery] = useState(null);
 
-  const endRef = useRef(null);
+  const endRef  = useRef(null);
+  const sendRef = useRef(null); // always points to the latest send fn
 
   useEffect(() => {
     if (open && endRef.current) {
@@ -47,7 +48,14 @@ function FloatingChatbot() {
   }, [messages, open, isTyping, locationLoading]);
 
   useEffect(() => {
-    const handler = () => setOpen(true);
+    const handler = (e) => {
+      setOpen(true);
+      if (e.detail?.question) {
+        const q = e.detail.question;
+        // Delay lets the chat window mount/animate before the question is sent
+        setTimeout(() => sendRef.current?.(q), 420);
+      }
+    };
     window.addEventListener("open-chatbot", handler);
     return () => window.removeEventListener("open-chatbot", handler);
   }, []);
@@ -212,6 +220,7 @@ function FloatingChatbot() {
       });
     } finally { setIsTyping(false); }
   };
+  sendRef.current = send; // keep ref in sync with latest closure on every render
 
   return (
     <>

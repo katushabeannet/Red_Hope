@@ -25,15 +25,26 @@ const TEAM = [
   { name: "Katushabe Annet",    photo: annetPhoto,   role: "Developer & System Analyst", dept: "Systems Analysis",             color: "#D97706" },
 ];
 
+const TIERS = {
+  Platinum: { label: "Platinum", min: 20, bg: "linear-gradient(135deg,#5B21B6,#7C3AED)", accent: "#7C3AED" },
+  Gold:     { label: "Gold",     min: 10, bg: "linear-gradient(135deg,#B45309,#D97706)", accent: "#D97706" },
+  Silver:   { label: "Silver",   min: 5,  bg: "linear-gradient(135deg,#475569,#94A3B8)", accent: "#94A3B8" },
+};
+
+function getDonorTier(donations) {
+  if (donations >= 20) return TIERS.Platinum;
+  if (donations >= 10) return TIERS.Gold;
+  return TIERS.Silver;
+}
+
 const RECOG_DONORS = [
-  { name: "Sarah Nakato",  initials: "SN", group: "O+",  donations: 24, district: "Kampala", color: "#C41E3A", role: "Champion Donor" },
-  { name: "James Otim",    initials: "JO", group: "A+",  donations: 18, district: "Gulu",    color: "#8B1A1A", role: "Regular Donor"  },
-  { name: "Grace Akinyi",  initials: "GA", group: "B+",  donations: 20, district: "Wakiso",  color: "#2c3e50", role: "Loyal Donor"    },
-  { name: "Robert Ssempa", initials: "RS", group: "O-",  donations: 15, district: "Jinja",   color: "#D97706", role: "Regular Donor"  },
-  { name: "Mary Namukasa", initials: "MN", group: "AB+", donations: 28, district: "Entebbe", color: "#C41E3A", role: "Hall of Fame"   },
-  { name: "David Okello",  initials: "DO", group: "A-",  donations: 12, district: "Mbale",   color: "#8B1A1A", role: "Regular Donor"  },
+  { name: "Sarah Nakato",  initials: "SN", group: "O+",  donations: 24, district: "Kampala" },
+  { name: "James Otim",    initials: "JO", group: "A+",  donations: 18, district: "Gulu"    },
+  { name: "Grace Akinyi",  initials: "GA", group: "B+",  donations: 20, district: "Wakiso"  },
+  { name: "Robert Ssempa", initials: "RS", group: "O-",  donations: 12, district: "Jinja"   },
+  { name: "Mary Namukasa", initials: "MN", group: "AB+", donations: 28, district: "Entebbe" },
+  { name: "David Okello",  initials: "DO", group: "A-",  donations:  7, district: "Mbale"   },
 ];
-const RECOG_LOOP = [...RECOG_DONORS, ...RECOG_DONORS];
 
 const ACHIEVEMENTS = [
   { icon: RiUserSmileLine,  value: "12,000+", label: "Success Smiles"    },
@@ -42,7 +53,6 @@ const ACHIEVEMENTS = [
   { icon: RiHeartPulseLine, value: "15,000+", label: "Happy Recipients"  },
 ];
 
-const BADGE_COLORS = ["#C41E3A", "#8B1A1A", "#2c3e50", "#D97706", "#1d4ed8", "#065f46"];
 
 // ── Component ───────────────────────────────────────────────────────────────────
 function About() {
@@ -62,8 +72,9 @@ function About() {
     <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section style={{ position: "relative", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      <section style={{ position: "relative", height: "100vh", minHeight: 620, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${reddyHero})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="rh-hero-overlay" />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 780, padding: "96px 28px", textAlign: "center" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#fff", backdropFilter: "blur(8px)", marginBottom: 22 }}>
@@ -83,7 +94,7 @@ function About() {
       {/* ── WHO WE ARE ──────────────────────────────────────────────────────── */}
       <section style={{ background: dark ? "#0F172A" : "#fff", padding: "88px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+          <div className="rh-two-col" style={{ gap: 60, alignItems: "center" }}>
             {/* Text card */}
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <div style={{ background: dark ? "#1E293B" : "#fff", borderRadius: 20, padding: "44px", boxShadow: "0 8px 40px rgba(0,0,0,.08)", border: "1px solid var(--rh-border)" }}>
@@ -123,38 +134,53 @@ function About() {
         <div style={{ position: "absolute", inset: 0, background: "rgba(139,26,26,.88)" }} />
 
         <div style={{ position: "relative", zIndex: 1, padding: "80px 0 72px" }}>
-          <div style={{ textAlign: "center", marginBottom: 52 }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,179,193,.8)", marginBottom: 10 }}>Our Heroes</p>
             <h2 className="rh-display" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 800, color: "#fff" }}>Recognized Donors</h2>
-            <p style={{ fontSize: 14.5, color: "rgba(255,255,255,.75)", marginTop: 10 }}>Celebrating those who give the gift of life</p>
+            <p style={{ fontSize: 14.5, color: "rgba(255,255,255,.75)", marginTop: 10, marginBottom: 28 }}>
+              Celebrating those who give the gift of life
+            </p>
+            {/* Tier legend */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap" }}>
+              {Object.values(TIERS).map((t) => (
+                <div key={t.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 14, height: 14, borderRadius: "50%", background: t.bg, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>
+                    {t.label} <span style={{ fontWeight: 400, color: "rgba(255,255,255,.55)" }}>{t.min}+ donations</span>
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Marquee */}
           <div style={{ overflow: "hidden", padding: "8px 0" }}>
             <div className="animate-rh-marquee" style={{ display: "flex", gap: 20, width: "max-content" }}>
-              {displayDonors2.map((donor, i) => (
-                <div key={i} className="rh-recog-card">
-                  {/* Photo top (colored initials) */}
-                  <div style={{ height: 170, background: donor.color || BADGE_COLORS[i % BADGE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span className="rh-display" style={{ fontSize: 52, fontWeight: 800, color: "#fff", opacity: 0.9 }}>{donor.initials}</span>
-                  </div>
-                  {/* Info bottom */}
-                  <div style={{ padding: "14px 18px 18px", textAlign: "center" }}>
-                    <p style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink)" }}>{donor.name}</p>
-                    <div style={{ width: 32, height: 2, background: "var(--cr)", margin: "10px auto 8px", borderRadius: 2 }} />
-                    <p style={{ fontSize: 10.5, color: "var(--ink-l)", textTransform: "uppercase", letterSpacing: ".04em" }}>{donor.role}</p>
-                    <p style={{ fontSize: 10.5, color: "var(--ink-l)", marginTop: 2 }}>{donor.district}</p>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--cr-xl)", color: "var(--cr)", borderRadius: 50, padding: "3px 10px", fontSize: 11, fontWeight: 700, marginTop: 10 }}>
-                      ❤ {donor.donations} Donations
-                    </span>
-                    <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
-                      <span style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--cr-xl)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <RiDropLine size={12} style={{ color: "var(--cr)" }} />
+              {displayDonors2.map((donor, i) => {
+                const tier = getDonorTier(donor.donations);
+                return (
+                  <div key={i} className="rh-recog-card">
+                    {/* Initials panel — tier gradient */}
+                    <div style={{ height: 170, background: tier.bg, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                      <span className="rh-display" style={{ fontSize: 52, fontWeight: 800, color: "#fff", opacity: 0.9 }}>{donor.initials}</span>
+                      {/* Tier badge */}
+                      <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.35)", backdropFilter: "blur(4px)", color: "#fff", borderRadius: 50, padding: "3px 10px", fontSize: 9.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>
+                        {tier.label}
+                      </span>
+                    </div>
+                    {/* Info */}
+                    <div style={{ padding: "14px 18px 18px", textAlign: "center" }}>
+                      <p style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink)" }}>{donor.name}</p>
+                      <div style={{ width: 32, height: 2, background: tier.accent, margin: "10px auto 8px", borderRadius: 2 }} />
+                      <p style={{ fontSize: 10.5, color: "var(--ink-l)", textTransform: "uppercase", letterSpacing: ".04em" }}>{tier.label} Donor</p>
+                      <p style={{ fontSize: 10.5, color: "var(--ink-l)", marginTop: 2 }}>{donor.district}</p>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--cr-xl)", color: "var(--cr)", borderRadius: 50, padding: "3px 10px", fontSize: 11, fontWeight: 700, marginTop: 10 }}>
+                        ❤ {donor.donations} Donations
                       </span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -227,7 +253,7 @@ function About() {
 
       {/* ── JOIN US SPLIT ────────────────────────────────────────────────────── */}
       <section>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+        <div className="rh-two-col">
           {/* Image left */}
           <div style={{ position: "relative", minHeight: 380, overflow: "hidden" }}>
             <img src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=900&q=80" alt=""
@@ -236,7 +262,7 @@ function About() {
           </div>
 
           {/* Text right */}
-          <div style={{ background: dark ? "#0A0F1E" : "#F7F8FC", display: "flex", alignItems: "center", padding: "60px 50px" }}>
+          <div className="rh-join-panel" style={{ background: dark ? "#0A0F1E" : "#F7F8FC", display: "flex", alignItems: "center", padding: "60px 50px" }}>
             <div style={{ maxWidth: 420 }}>
               <div style={{ background: dark ? "#1E293B" : "#fff", borderRadius: 20, padding: "40px", boxShadow: "0 8px 32px rgba(0,0,0,.07)", border: "1px solid var(--rh-border)" }}>
                 <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--cr)", marginBottom: 10 }}>Get Started</p>

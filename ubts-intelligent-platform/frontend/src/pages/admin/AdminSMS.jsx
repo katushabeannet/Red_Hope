@@ -21,6 +21,7 @@ import {
 import { useToast } from "../../context/ToastContext";
 import { useTheme } from "../../context/ThemeContext";
 import AdminLoader from "../../components/common/AdminLoader";
+import { v } from "../../utils/validators";
 
 const STATUS_BADGE = {
   SENT:    "badge-green",
@@ -147,10 +148,10 @@ function AdminSMS() {
 
   const handleTestSMS = async (e) => {
     e.preventDefault();
-    if (!testPhone.trim()) {
-      showToast({ type: "error", title: "Missing", message: "Phone number is required." });
-      return;
-    }
+    const phoneErr = v.phone(testPhone);
+    if (phoneErr) { showToast({ type: "error", title: "Invalid Phone", message: phoneErr }); return; }
+    const msgErr = testMessage ? v.smsLen(testMessage) : null;
+    if (msgErr) { showToast({ type: "error", title: "Message Too Long", message: msgErr }); return; }
     try {
       setTestLoading(true);
       const data = await sendAdminSMSTest({ phone_number: testPhone, message: testMessage || undefined });
@@ -171,10 +172,8 @@ function AdminSMS() {
 
   const handleBulkSMS = async (e) => {
     e.preventDefault();
-    if (!bulkMessage.trim()) {
-      showToast({ type: "error", title: "Missing", message: "Message is required." });
-      return;
-    }
+    const msgErr = v.smsLen(bulkMessage) || (!bulkMessage.trim() ? "Message is required." : null);
+    if (msgErr) { showToast({ type: "error", title: "Message Error", message: msgErr }); return; }
     const donor_ids = bulkIds
       .split(/[\n,]+/)
       .map((s) => s.trim())
@@ -251,14 +250,16 @@ function AdminSMS() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Message (optional)</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Message (optional, ≤ 160 chars)</label>
                 <textarea
                   rows={3}
                   value={testMessage}
                   onChange={(e) => setTestMessage(e.target.value)}
                   placeholder="Leave empty to use default test message…"
-                  style={{ width: "100%", resize: "none", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  maxLength={160}
+                  style={{ width: "100%", resize: "none", borderRadius: 10, border: `1px solid ${testMessage.length > 160 ? "#DC2626" : "var(--border)"}`, background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
                 />
+                <span style={{ fontSize: 11, color: testMessage.length > 150 ? "#DC2626" : "var(--ink-l)", float: "right", marginTop: 2 }}>{testMessage.length}/160</span>
               </div>
               <button type="submit" className="btn btn-primary" disabled={testLoading}>
                 {testLoading ? <span className="btn-spin" /> : <RiSendPlaneLine />} Send Test SMS
@@ -292,14 +293,16 @@ function AdminSMS() {
                 <p style={{ marginTop: 4, fontSize: 12, color: "var(--ink-l)" }}>Tip: use Campaign Targeting to get the IDs of available donors, then paste here.</p>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Message</label>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>Message * (≤ 160 chars)</label>
                 <textarea
                   rows={3}
                   value={bulkMessage}
                   onChange={(e) => setBulkMessage(e.target.value)}
                   placeholder="Dear donor, UBTS urgently needs your blood donation…"
-                  style={{ width: "100%", resize: "none", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  maxLength={160}
+                  style={{ width: "100%", resize: "none", borderRadius: 10, border: `1px solid ${bulkMessage.length > 160 ? "#DC2626" : "var(--border)"}`, background: "var(--canvas)", padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box" }}
                 />
+                <span style={{ fontSize: 11, color: bulkMessage.length > 150 ? "#DC2626" : "var(--ink-l)", float: "right", marginTop: 2 }}>{bulkMessage.length}/160</span>
               </div>
               <button type="submit" className="btn btn-primary" disabled={bulkLoading}>
                 {bulkLoading ? <span className="btn-spin" /> : <RiSendPlaneLine />} Send Bulk SMS

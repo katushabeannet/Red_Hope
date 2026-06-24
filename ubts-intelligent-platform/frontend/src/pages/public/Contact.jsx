@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { v } from "../../utils/validators";
 import reddyHero from "../../assets/wallpapers/reddy.jpeg";
 import { useTheme } from "../../context/ThemeContext";
 import { motion } from "framer-motion";
@@ -38,12 +39,45 @@ const SUBJECTS = ["General Inquiry", "Blood Donation", "Partnership", "Technical
 function ContactForm() {
   const { dark } = useTheme();
   const [form, setForm]       = useState({ name: "", email: "", subject: "", message: "" });
+  const [errors, setErrors]   = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const handleChange  = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const FE = (f) => errors[f]
+    ? <span style={{ fontSize: 11, color: "#DC2626", marginTop: 4, display: "block" }}>{errors[f]}</span>
+    : null;
+
+  const validate = () => {
+    const e = {
+      name:    v.name(form.name, "Full name"),
+      email:   v.email(form.email),
+      subject: form.subject ? null : "Please select a subject.",
+      message: form.message.trim().length < 10
+        ? "Message must be at least 10 characters."
+        : v.maxLen(form.message, 1000, "Message"),
+    };
+    setErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
+
+  const handleChange  = (e) => {
+    const { name, value } = e.target;
+    setForm((p) => ({ ...p, [name]: value }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: null }));
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    let err = null;
+    if (name === "name")    err = v.name(value, "Full name");
+    if (name === "email")   err = v.email(value);
+    if (name === "message" && value) err = value.trim().length < 10 ? "Message must be at least 10 characters." : v.maxLen(value, 1000, "Message");
+    setErrors((p) => ({ ...p, [name]: err }));
+  };
+
   const handleSubmit  = (e) => {
     e.preventDefault();
+    if (!validate()) return;
     setSending(true);
     setTimeout(() => { setSending(false); setSubmitted(true); }, 1000);
   };
@@ -89,26 +123,28 @@ function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="rh-form-two-col">
         <div>
           <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--ink)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".04em" }}>
             Full Name <span style={{ color: "var(--cr)" }}>*</span>
           </label>
-          <input type="text" name="name" required value={form.name} onChange={handleChange} placeholder="John Doe"
-            style={fieldStyle}
+          <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="John Doe"
+            style={{ ...fieldStyle, ...(errors.name ? { borderColor: "#DC2626" } : {}) }}
             onFocus={e => (e.target.style.borderColor = "var(--cr)")}
-            onBlur={e => (e.target.style.borderColor = "var(--rh-border)")}
+            onBlur={handleBlur}
           />
+          {FE("name")}
         </div>
         <div>
           <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--ink)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".04em" }}>
             Email Address <span style={{ color: "var(--cr)" }}>*</span>
           </label>
-          <input type="email" name="email" required value={form.email} onChange={handleChange} placeholder="john@example.com"
-            style={fieldStyle}
+          <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="john@example.com"
+            style={{ ...fieldStyle, ...(errors.email ? { borderColor: "#DC2626" } : {}) }}
             onFocus={e => (e.target.style.borderColor = "var(--cr)")}
-            onBlur={e => (e.target.style.borderColor = "var(--rh-border)")}
+            onBlur={handleBlur}
           />
+          {FE("email")}
         </div>
       </div>
 
@@ -116,26 +152,34 @@ function ContactForm() {
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--ink)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".04em" }}>
           Subject <span style={{ color: "var(--cr)" }}>*</span>
         </label>
-        <select name="subject" required value={form.subject} onChange={handleChange}
-          style={{ ...fieldStyle, appearance: "auto" }}
+        <select name="subject" value={form.subject} onChange={handleChange}
+          style={{ ...fieldStyle, appearance: "auto", ...(errors.subject ? { borderColor: "#DC2626" } : {}) }}
           onFocus={e => (e.target.style.borderColor = "var(--cr)")}
           onBlur={e => (e.target.style.borderColor = "var(--rh-border)")}
         >
           <option value="" disabled>Select a subject…</option>
           {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
+        {FE("subject")}
       </div>
 
       <div>
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--ink)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".04em" }}>
           Message <span style={{ color: "var(--cr)" }}>*</span>
         </label>
-        <textarea name="message" required rows={5} value={form.message} onChange={handleChange}
-          placeholder="Write your message here…"
-          style={{ ...fieldStyle, resize: "none" }}
+        <textarea name="message" rows={5} value={form.message} onChange={handleChange}
+          placeholder="Write your message here… (10–1000 characters)"
+          maxLength={1000}
+          style={{ ...fieldStyle, resize: "none", ...(errors.message ? { borderColor: "#DC2626" } : {}) }}
           onFocus={e => (e.target.style.borderColor = "var(--cr)")}
-          onBlur={e => (e.target.style.borderColor = "var(--rh-border)")}
+          onBlur={handleBlur}
         />
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          {FE("message")}
+          <span style={{ fontSize: 10, color: form.message.length > 900 ? "#DC2626" : "var(--ink-l)", marginLeft: "auto" }}>
+            {form.message.length}/1000
+          </span>
+        </div>
       </div>
 
       <button type="submit" disabled={sending}
@@ -157,8 +201,9 @@ function Contact() {
     <div style={{ fontFamily: "'Poppins', sans-serif", background: dark ? "#0F172A" : "#fff" }}>
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section style={{ position: "relative", minHeight: "55vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      <section style={{ position: "relative", height: "100vh", minHeight: 620, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${reddyHero})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="rh-hero-overlay" />
         <div style={{ position: "relative", zIndex: 10, maxWidth: 720, padding: "96px 28px", textAlign: "center" }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 50, border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#fff", backdropFilter: "blur(8px)", marginBottom: 22 }}>
@@ -203,13 +248,14 @@ function Contact() {
       {/* ── MAP + FORM ───────────────────────────────────────────────────────── */}
       <section style={{ padding: "60px 0 88px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 28px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "stretch" }}>
+          <div className="rh-two-col" style={{ gap: 32, alignItems: "stretch" }}>
 
             {/* Map */}
             <motion.div
               initial={{ opacity: 0, x: -24 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              className="rh-map-box"
               style={{ borderRadius: 20, overflow: "hidden", border: "1px solid var(--rh-border)", minHeight: 480, boxShadow: "0 8px 32px rgba(0,0,0,.08)" }}
             >
               <MapContainer center={UBTS_POS} zoom={15} style={{ height: "100%", width: "100%", minHeight: 480 }} scrollWheelZoom={false}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import {
   RiArrowLeftLine,
@@ -8,6 +8,7 @@ import {
   RiCalendarLine,
   RiCheckboxCircleLine,
   RiDownloadLine,
+  RiFileImageLine,
   RiDropLine,
   RiHeartPulseLine,
   RiHistoryLine,
@@ -70,7 +71,6 @@ function DonorDashboard() {
   const [donationPage, setDonationPage] = useState(1);
   const [donationsVisible, setDonationsVisible] = useState(false);
   const [donationsLoading, setDonationsLoading] = useState(false);
-  const [downloadingId, setDownloadingId] = useState(null);
 
   const [campCalendarVisible, setCampCalendarVisible] = useState(false);
   const [campEvents, setCampEvents] = useState([]);
@@ -112,11 +112,6 @@ function DonorDashboard() {
     finally { setDonationsLoading(false); }
   };
 
-  const handleDownloadCertificate = async (donationId) => {
-    try { setDownloadingId(donationId); await downloadCertificate(donationId); }
-    catch { setError("Could not generate certificate. Ensure reportlab is installed on the server."); }
-    finally { setDownloadingId(null); }
-  };
 
   const handleLoadCampCalendar = async () => {
     if (campCalendarVisible) { setCampCalendarVisible(false); setActiveTool(null); return; }
@@ -618,8 +613,6 @@ function DonorDashboard() {
           donorName={profile?.full_name || "Donor"}
           bloodGroup={profile?.blood_group || "N/A"}
           onClose={() => setCertModal(null)}
-          onDownload={() => handleDownloadCertificate(certModal.donation.id)}
-          downloadingId={downloadingId}
         />
       )}
     </>
@@ -672,19 +665,64 @@ const COUNT_WORDS = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eig
 function toCountWord(n) { return n < COUNT_WORDS.length ? COUNT_WORDS[n] : n.toString(); }
 
 /* ── Certificate modal ── */
-function CertificateModal({ donation, totalDonations, donorName, bloodGroup, onClose, onDownload, downloadingId }) {
+function CertificateModal({ donation, totalDonations, donorName, bloodGroup, onClose }) {
   const donationDate = new Date(donation.donation_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const certNo = `RH-${new Date().getFullYear()}-${String(donation.id).padStart(4, "0")}`;
   const donorId = `RH-DNR-${String(donation.id).padStart(4, "0")}`;
   const countWord = toCountWord(totalDonations);
 
-  /* Corner SVG blob shared between TL and BR (mirrored via transform) */
-  const CornerBlob = ({ style }) => (
-    <svg viewBox="0 0 220 180" style={{ position: "absolute", pointerEvents: "none", ...style }}>
-      <ellipse cx="220" cy="0" rx="170" ry="130" fill="#8B0000" opacity="0.92" />
-      <ellipse cx="220" cy="0" rx="210" ry="100" fill="#1B6CA8" opacity="0.55" />
-      <ellipse cx="220" cy="0" rx="145" ry="85" fill="#C0162C" opacity="0.7" />
-    </svg>
+  const certRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+  const [dlFmt, setDlFmt] = useState(null); // "pdf" | "image"
+
+  const handleDownload = async (fmt) => {
+    if (!certRef.current || downloading) return;
+    setDownloading(true);
+    setDlFmt(fmt);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(certRef.current, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      if (fmt === "pdf") {
+        const { jsPDF } = await import("jspdf");
+        const cssW = certRef.current.offsetWidth;
+        const cssH = certRef.current.offsetHeight;
+        const pdf = new jsPDF({ orientation: cssW > cssH ? "landscape" : "portrait", unit: "px", format: [cssW, cssH] });
+        pdf.addImage(canvas.toDataURL("image/jpeg", 1.0), "JPEG", 0, 0, cssW, cssH);
+        pdf.save(`RedHope_Certificate_${donation.id}.pdf`);
+      } else {
+        const link = document.createElement("a");
+        link.download = `RedHope_Certificate_${donation.id}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+    } finally {
+      setDownloading(false);
+      setDlFmt(null);
+    }
+  };
+
+  /* Corner CSS blobs — div ellipses are html2canvas-safe unlike SVG viewBox edge elements */
+  const blobBase = { position: "absolute", borderRadius: "50%", pointerEvents: "none" };
+  const TopRightBlob = () => (
+    <>
+      <div style={{ ...blobBase, top: 0, right: 0, width: 340, height: 260, background: "#8B0000", opacity: 0.92, transform: "translate(50%,-50%)" }} />
+      <div style={{ ...blobBase, top: 0, right: 0, width: 420, height: 200, background: "#1B6CA8", opacity: 0.55, transform: "translate(50%,-50%)" }} />
+      <div style={{ ...blobBase, top: 0, right: 0, width: 290, height: 170, background: "#C0162C", opacity: 0.70, transform: "translate(50%,-50%)" }} />
+    </>
+  );
+  const BottomLeftBlob = () => (
+    <>
+      <div style={{ ...blobBase, bottom: 0, left: 0, width: 340, height: 260, background: "#8B0000", opacity: 0.92, transform: "translate(-50%,50%)" }} />
+      <div style={{ ...blobBase, bottom: 0, left: 0, width: 420, height: 200, background: "#1B6CA8", opacity: 0.55, transform: "translate(-50%,50%)" }} />
+      <div style={{ ...blobBase, bottom: 0, left: 0, width: 290, height: 170, background: "#C0162C", opacity: 0.70, transform: "translate(-50%,50%)" }} />
+    </>
   );
 
   return (
@@ -696,17 +734,17 @@ function CertificateModal({ donation, totalDonations, donorName, bloodGroup, onC
         onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 900, maxHeight: "96vh", overflowY: "auto", borderRadius: 6, background: "#fff", boxShadow: "0 32px 80px rgba(0,0,0,.45)" }}
       >
-        {/* ── Certificate body ── */}
-        <div style={{ position: "relative", background: "#fff", padding: "44px 56px 36px", overflow: "hidden" }}>
+        {/* ── Certificate body (captured by html2canvas) ── */}
+        <div ref={certRef} style={{ position: "relative", background: "#fff", padding: "44px 56px 36px", overflow: "hidden" }}>
 
           {/* Outer thin red border */}
           <div style={{ position: "absolute", inset: 10, border: "1.5px solid #C0162C", borderRadius: 3, pointerEvents: "none", zIndex: 1 }} />
 
           {/* Top-right corner decoration */}
-          <CornerBlob style={{ top: 0, right: 0, width: 220, height: 180 }} />
+          <TopRightBlob />
 
-          {/* Bottom-left corner decoration (mirrored) */}
-          <CornerBlob style={{ bottom: 0, left: 0, width: 220, height: 180, transform: "rotate(180deg)" }} />
+          {/* Bottom-left corner decoration */}
+          <BottomLeftBlob />
 
           {/* ── Header row: logo left | title right ── */}
           <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 28 }}>
@@ -819,13 +857,23 @@ function CertificateModal({ donation, totalDonations, donorName, bloodGroup, onC
         </div>
 
         {/* ── Action buttons (outside certificate area) ── */}
-        <div style={{ padding: "14px 40px", display: "flex", gap: 12, justifyContent: "center", borderTop: "1px solid #E2E8F0", background: "#F8FAFC" }}>
+        <div style={{ padding: "14px 40px", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", borderTop: "1px solid #E2E8F0", background: "#F8FAFC" }}>
           <button
             className="btn btn-primary"
-            disabled={downloadingId === donation.id}
-            onClick={onDownload}
+            disabled={downloading}
+            onClick={() => handleDownload("pdf")}
           >
-            <RiDownloadLine /> {downloadingId === donation.id ? "Generating PDF…" : "Download PDF"}
+            <RiDownloadLine />
+            {downloading && dlFmt === "pdf" ? "Generating PDF…" : "Download PDF"}
+          </button>
+          <button
+            className="btn btn-outline"
+            disabled={downloading}
+            onClick={() => handleDownload("image")}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <RiFileImageLine />
+            {downloading && dlFmt === "image" ? "Saving Image…" : "Download as Image"}
           </button>
           <button className="btn btn-outline" onClick={onClose}>Close</button>
         </div>

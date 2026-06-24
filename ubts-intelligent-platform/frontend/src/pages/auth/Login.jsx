@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { RiSunLine, RiMoonLine } from "react-icons/ri";
 
 import { loginUser } from "../../services/authService";
+import { v } from "../../utils/validators";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -52,8 +53,9 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrMsg("");
-    if (!formData.email || !formData.email.includes("@")) { setErrMsg("Please enter a valid email address."); return; }
-    if (formData.password.length < 6) { setErrMsg("Password must be at least 6 characters."); return; }
+    const emailErr = v.email(formData.email);
+    if (emailErr) { setErrMsg(emailErr); return; }
+    if (!formData.password || formData.password.length < 8) { setErrMsg("Password must be at least 8 characters."); return; }
     try {
       setLoading(true);
       const data = await loginUser(formData);

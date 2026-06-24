@@ -942,20 +942,28 @@ def admin_lapsed_donors_view(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def platinum_donors_view(request):
-    """Return donors with 20+ donations (Platinum level) for public About page."""
-    donors = DonorProfile.objects.select_related("user").filter(total_donations__gte=20).order_by("-total_donations")[:20]
+    """Return Silver-and-above donors (5+ donations) for the public About page."""
+    donors = (
+        DonorProfile.objects
+        .select_related("user")
+        .filter(total_donations__gte=5)
+        .order_by("-total_donations")[:30]
+    )
     results = []
     for d in donors:
         name = d.user.full_name or "Anonymous"
         parts = name.split()
         initials = (parts[0][0] + parts[-1][0]).upper() if len(parts) >= 2 else name[:2].upper()
+        n = d.total_donations
+        tier = "Platinum" if n >= 20 else ("Gold" if n >= 10 else "Silver")
         results.append({
-            "name": name,
-            "initials": initials,
-            "group": d.blood_group or "—",
-            "donations": d.total_donations,
-            "district": d.address or "Uganda",
-            "role": "Platinum Donor",
+            "name":      name,
+            "initials":  initials,
+            "group":     d.blood_group or "—",
+            "donations": n,
+            "district":  d.address or "Uganda",
+            "tier":      tier,
+            "role":      f"{tier} Donor",
         })
     return Response({"donors": results})
 

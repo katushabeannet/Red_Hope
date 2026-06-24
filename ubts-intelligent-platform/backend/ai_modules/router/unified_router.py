@@ -24,6 +24,9 @@ _ILLNESS_MARKER = "past 2 weeks"
 def _extract_illness_from_history(conversation_history):
     """
     Returns True (had illness), False (no illness), or None (not yet asked/answered).
+
+    IMPORTANT: negation is checked FIRST to avoid substrings like "i have" matching
+    inside "i haven't", which would incorrectly flag a healthy user as ill.
     """
     if not conversation_history:
         return None
@@ -32,11 +35,33 @@ def _extract_illness_from_history(conversation_history):
             for j in range(i + 1, len(conversation_history)):
                 if conversation_history[j].get("role") == "user":
                     reply = conversation_history[j].get("content", "").lower().strip()
-                    positive = any(w in reply for w in [
-                        "yes", "yeah", "yep", "yah", "i have", "i had",
-                        "been sick", "sick", "ill", "fever", "cold", "infection", "flu"
-                    ])
+
+                    # ── Negation check FIRST ──────────────────────────────────────
+                    # Must precede positive check; "i have" is a substring of "i haven't".
+                    negative = reply in {"no", "nope", "nah", "n"} or any(
+                        w in reply for w in [
+                            "haven't", "have not", "didn't", "did not",
+                            "not sick", "not ill", "not been", "no fever",
+                            "no illness", "no infection", "feeling fine",
+                            "feeling well", "i'm fine", "i am fine",
+                            "all good", "i'm okay", "i am okay",
+                        ]
+                    )
+                    if negative:
+                        return False
+
+                    # ── Positive check ────────────────────────────────────────────
+                    positive = reply in {"yes", "yep", "yeah", "yah"} or any(
+                        w in reply for w in [
+                            "yes,", "yes.", "yes!", "yeah", "yep", "yah",
+                            "i've been", "i have been", "i had", "i have had",
+                            "been sick", "been ill", "was sick", "was ill",
+                            "got sick", "had a fever", "had fever",
+                            "sick", "ill", "fever", "cold", "flu", "infection",
+                        ]
+                    )
                     return positive
+
             return None  # asked but not yet answered
     return None  # never asked
 

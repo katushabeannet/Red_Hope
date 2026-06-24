@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { RiSunLine, RiMoonLine, RiCheckLine } from "react-icons/ri";
 
 import { forgotPassword } from "../../services/authService";
+import { v } from "../../utils/validators";
 import { useTheme } from "../../context/ThemeContext";
 import redHopeLogo from "../../assets/logo/redhope.png";
 
@@ -41,7 +42,8 @@ function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrMsg("");
-    if (!email || !email.includes("@")) { setErrMsg("Please enter a valid email address."); return; }
+    const emailErr = v.email(email);
+    if (emailErr) { setErrMsg(emailErr); return; }
     try {
       setLoading(true);
       await forgotPassword(email);

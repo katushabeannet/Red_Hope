@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { RiSunLine, RiMoonLine } from "react-icons/ri";
 
 import { registerUser } from "../../services/authService";
+import { v } from "../../utils/validators";
 import { createDonorProfile } from "../../services/donorService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -43,6 +44,7 @@ function Register() {
   const [step, setStep]             = useState(1);
   const [loading, setLoading]       = useState(false);
   const [errMsg, setErrMsg]         = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [termsOk, setTermsOk]       = useState(false);
   const [showPw, setShowPw]         = useState(false);
   const [showPw2, setShowPw2]       = useState(false);
@@ -54,10 +56,30 @@ function Register() {
     password: "", confirm_password: "",
   });
 
+  const FE = (field) => fieldErrors[field]
+    ? <span style={{ fontSize: 11, color: "#DC2626", marginTop: 4, display: "block" }}>{fieldErrors[field]}</span>
+    : null;
+
+  const setFE = (field, err) => setFieldErrors((p) => ({ ...p, [field]: err }));
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    let err = null;
+    if (name === "full_name")      err = v.name(value, "Full name");
+    if (name === "email")          err = v.email(value);
+    if (name === "phone_number")   err = v.phone(value);
+    if (name === "date_of_birth")  err = v.minAge(value, 18);
+    if (name === "address" && value) err = v.maxLen(value, 200, "Address");
+    if (name === "password")       err = v.password(value);
+    if (name === "confirm_password") err = value !== formData.password ? "Passwords do not match." : null;
+    setFE(name, err);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
     setErrMsg("");
+    if (fieldErrors[name]) setFE(name, null);
     if (name === "password") {
       let score = 0;
       if (value.length >= 8) score++;
@@ -69,12 +91,16 @@ function Register() {
   };
 
   const validateStep1 = () => {
-    if (!formData.full_name.trim()) { setErrMsg("Full name is required."); return false; }
-    if (!formData.email || !formData.email.includes("@")) { setErrMsg("A valid email address is required."); return false; }
-    if (!formData.phone_number.trim()) { setErrMsg("Phone number is required."); return false; }
-    if (!formData.date_of_birth) { setErrMsg("Date of birth is required."); return false; }
-    if (!formData.gender) { setErrMsg("Please select your gender."); return false; }
-    return true;
+    const errs = {
+      full_name:    v.name(formData.full_name, "Full name"),
+      email:        v.email(formData.email),
+      phone_number: v.phone(formData.phone_number),
+      date_of_birth: v.minAge(formData.date_of_birth, 18),
+      gender:       formData.gender ? null : "Please select your gender.",
+      address:      formData.address ? v.maxLen(formData.address, 200, "Address") : null,
+    };
+    setFieldErrors((p) => ({ ...p, ...errs }));
+    return !Object.values(errs).some(Boolean);
   };
 
   const handleNext = () => {
@@ -86,8 +112,12 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrMsg("");
-    if (formData.password.length < 8) { setErrMsg("Password must be at least 8 characters."); return; }
-    if (formData.password !== formData.confirm_password) { setErrMsg("Passwords do not match."); return; }
+    const pwErr = v.password(formData.password);
+    const cpErr = formData.password !== formData.confirm_password ? "Passwords do not match." : null;
+    if (pwErr || cpErr) {
+      setFieldErrors((p) => ({ ...p, password: pwErr, confirm_password: cpErr }));
+      return;
+    }
     if (!termsOk) { setErrMsg("Please accept the Terms of Service to continue."); return; }
     try {
       setLoading(true);
@@ -213,32 +243,38 @@ function Register() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                   <label>Full Name *</label>
-                  <input name="full_name" value={formData.full_name} onChange={handleChange} placeholder="Aisha Namukwaya" />
+                  <input name="full_name" value={formData.full_name} onChange={handleChange} onBlur={handleBlur} placeholder="Aisha Namukwaya" style={fieldErrors.full_name ? { borderColor: "#DC2626" } : {}} />
+                  {FE("full_name")}
                 </div>
                 <div className="auth-field">
                   <label>Date of Birth *</label>
-                  <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} />
+                  <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} onBlur={handleBlur} max={new Date(new Date().setFullYear(new Date().getFullYear()-18)).toISOString().split("T")[0]} style={fieldErrors.date_of_birth ? { borderColor: "#DC2626" } : {}} />
+                  {FE("date_of_birth")}
                 </div>
                 <div className="auth-field">
                   <label>Gender *</label>
-                  <select name="gender" value={formData.gender} onChange={handleChange}>
+                  <select name="gender" value={formData.gender} onChange={handleChange} onBlur={handleBlur} style={fieldErrors.gender ? { borderColor: "#DC2626" } : {}}>
                     <option value="">Select gender</option>
                     <option>Male</option>
                     <option>Female</option>
                     <option>Other</option>
                   </select>
+                  {FE("gender")}
                 </div>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                   <label>Phone Number *</label>
-                  <input name="phone_number" value={formData.phone_number} onChange={handleChange} placeholder="+256 700 000 000" />
+                  <input name="phone_number" value={formData.phone_number} onChange={handleChange} onBlur={handleBlur} placeholder="+256700000000 or 0700000000" style={fieldErrors.phone_number ? { borderColor: "#DC2626" } : {}} />
+                  {FE("phone_number")}
                 </div>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
                   <label>Email Address *</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="aisha@email.com" autoComplete="email" />
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur} placeholder="aisha@email.com" autoComplete="email" style={fieldErrors.email ? { borderColor: "#DC2626" } : {}} />
+                  {FE("email")}
                 </div>
                 <div className="auth-field" style={{ gridColumn: "1 / -1" }}>
-                  <label>Address</label>
-                  <input name="address" value={formData.address} onChange={handleChange} placeholder="Kampala, Uganda" />
+                  <label>Address <span style={{ color: "var(--ink-l)", fontWeight: 400 }}>(optional)</span></label>
+                  <input name="address" value={formData.address} onChange={handleChange} onBlur={handleBlur} placeholder="Kampala, Uganda" maxLength={200} style={fieldErrors.address ? { borderColor: "#DC2626" } : {}} />
+                  {FE("address")}
                 </div>
               </div>
 
@@ -259,7 +295,7 @@ function Register() {
 
               <div className="auth-field">
                 <label>Password *</label>
-                <input type={showPw ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} placeholder="Minimum 8 characters" style={{ paddingRight: 64 }} />
+                <input type={showPw ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} onBlur={handleBlur} placeholder="Min 8 chars, 1 uppercase, 1 number" style={{ paddingRight: 64, ...(fieldErrors.password ? { borderColor: "#DC2626" } : {}) }} />
                 <button type="button" className="auth-toggle-pw" onClick={() => setShowPw((p) => !p)}>{showPw ? "Hide" : "Show"}</button>
                 {formData.password && (
                   <>
@@ -271,12 +307,14 @@ function Register() {
                     <p style={{ fontSize: 11, fontWeight: 600, marginTop: 5, color: STRENGTH_CLR[pwStrength] }}>{STRENGTH_LABEL[pwStrength]}</p>
                   </>
                 )}
+                {FE("password")}
               </div>
 
               <div className="auth-field">
                 <label>Confirm Password *</label>
-                <input type={showPw2 ? "text" : "password"} name="confirm_password" value={formData.confirm_password} onChange={handleChange} placeholder="Re-enter your password" style={{ paddingRight: 64 }} />
+                <input type={showPw2 ? "text" : "password"} name="confirm_password" value={formData.confirm_password} onChange={handleChange} onBlur={handleBlur} placeholder="Re-enter your password" style={{ paddingRight: 64, ...(fieldErrors.confirm_password ? { borderColor: "#DC2626" } : {}) }} />
                 <button type="button" className="auth-toggle-pw" onClick={() => setShowPw2((p) => !p)}>{showPw2 ? "Hide" : "Show"}</button>
+                {FE("confirm_password")}
               </div>
 
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 20, fontSize: 13, color: "var(--ink-s)" }}>

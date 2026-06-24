@@ -240,7 +240,7 @@ function Home() {
       {/* ── 2. STATS ────────────────────────────────────────────────────────── */}
       <section style={{ background: "#fff", borderTop: "4px solid var(--cr)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderBottom: "1px solid var(--rh-border)" }}>
+          <div className="rh-stats-grid">
             {[
               { icon: RiGroupLine,       value: stats.total_donors  ? stats.total_donors.toLocaleString()  : "5,000+",  label: "Registered Donors" },
               { icon: RiHeartPulseLine,  value: stats.active_donors ? stats.active_donors.toLocaleString() : "3,200+",  label: "Active Donors" },
@@ -361,7 +361,7 @@ function Home() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "start" }}>
+          <div className="rh-two-col" style={{ gap: 40, alignItems: "start" }}>
             {/* Controls */}
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <button
@@ -518,7 +518,7 @@ function Home() {
                 key={i}
                 className="rh-faq-card"
                 style={{ cursor: "pointer" }}
-                onClick={() => window.dispatchEvent(new CustomEvent("open-chatbot"))}
+                onClick={() => window.dispatchEvent(new CustomEvent("open-chatbot", { detail: { question: faq.q } }))}
               >
                 <div style={{ padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16 }}>
                   {/* Number badge */}
@@ -530,7 +530,7 @@ function Home() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "var(--cr-xl)", border: "1px solid #FFD0DA" }}>
                       <RiBrainLine size={16} style={{ color: "var(--cr)", flexShrink: 0 }} />
                       <p style={{ fontSize: 12.5, color: "var(--cr-dk)", lineHeight: 1.5, fontWeight: 500 }}>
-                        Click to ask the <strong style={{ color: "var(--cr)" }}>RedHope AI Chatbot</strong> for the best answer!
+                        Click to get an <strong style={{ color: "var(--cr)" }}>instant AI answer</strong> from RedHope AI!
                       </p>
                     </div>
                   </div>

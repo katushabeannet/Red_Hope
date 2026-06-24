@@ -22,6 +22,7 @@ import { useToast } from "../../context/ToastContext";
 import { useTheme } from "../../context/ThemeContext";
 import AdminLoader from "../../components/common/AdminLoader";
 import DeleteBtn from "../../components/common/DeleteBtn";
+import { v } from "../../utils/validators";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -160,8 +161,12 @@ function AdminBloodDemand() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.message.trim()) {
-      showToast({ type: "warning", title: "Validation", message: "Title and message are required." });
+    const unitsErr = v.minNum(form.units_needed, 1, "Units needed") || v.maxNum(form.units_needed, 500, "Units needed");
+    const titleErr = v.minLen(form.title.trim(), 5, "Title") || v.maxLen(form.title, 200, "Title");
+    const hospErr  = form.hospital_name ? v.maxLen(form.hospital_name, 200, "Hospital name") : null;
+    const msgErr   = v.minLen(form.message.trim(), 10, "Message") || v.maxLen(form.message, 1000, "Message");
+    if (unitsErr || titleErr || hospErr || msgErr) {
+      showToast({ type: "warning", title: "Validation Error", message: unitsErr || titleErr || hospErr || msgErr });
       return;
     }
     try {
@@ -410,22 +415,22 @@ function AdminBloodDemand() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Units Needed</label>
-                  <input type="number" min={1} value={form.units_needed} onChange={fld("units_needed")} style={inputStyle} />
+                  <input type="number" min={1} max={500} value={form.units_needed} onChange={fld("units_needed")} style={inputStyle} />
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Hospital / Facility</label>
-                  <input type="text" value={form.hospital_name} onChange={fld("hospital_name")} placeholder="e.g. Mulago National Referral" style={inputStyle} />
+                  <input type="text" value={form.hospital_name} onChange={fld("hospital_name")} placeholder="e.g. Mulago National Referral" maxLength={200} style={inputStyle} />
                 </div>
               </div>
 
               <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Title *</label>
-                <input type="text" required value={form.title} onChange={fld("title")} placeholder="e.g. Urgent: O+ Blood Needed" style={inputStyle} />
+                <input type="text" required value={form.title} onChange={fld("title")} placeholder="e.g. Urgent: O+ Blood Needed" minLength={5} maxLength={200} style={inputStyle} />
               </div>
 
               <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-s)", marginBottom: 4 }}>Message *</label>
-                <textarea rows={4} required value={form.message} onChange={fld("message")} placeholder="Describe the urgency and appeal to donors…" style={{ ...inputStyle, resize: "vertical" }} />
+                <textarea rows={4} required value={form.message} onChange={fld("message")} placeholder="Describe the urgency and appeal to donors… (10–1000 chars)" minLength={10} maxLength={1000} style={{ ...inputStyle, resize: "vertical" }} />
                 {!editAlert && (
                   <p style={{ marginTop: 4, fontSize: 12, color: "var(--ink-l)" }}>
                     All eligible {form.blood_group || "matching"} donors will be notified in-app automatically.
