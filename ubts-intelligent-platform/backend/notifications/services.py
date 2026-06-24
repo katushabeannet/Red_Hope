@@ -377,3 +377,207 @@ def send_email_notification(recipient, title, message):
     except Exception as error:
         print("Email notification failed:", error)
         return False
+
+
+def _send_welcome_email(user, first_name):
+    """Send a branded HTML welcome email with inline logo to a newly registered donor."""
+    if not getattr(settings, "SEND_EMAIL_NOTIFICATIONS", False):
+        return False
+    if not user or not user.email:
+        return False
+
+    from django.core.mail import EmailMultiAlternatives
+    from email.mime.image import MIMEImage
+    from pathlib import Path
+
+    subject = "Welcome to Red Hope — Thank You for Joining the Mission!"
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:5173")
+
+    # Try to load the logo for inline embedding
+    logo_path = settings.BASE_DIR.parent / "frontend" / "src" / "assets" / "logo" / "redhope.png"
+    logo_available = logo_path.exists()
+
+    # Header block: logo image when available, text fallback otherwise
+    if logo_available:
+        logo_block = (
+            '<img src="cid:redhope_logo" alt="Red Hope" '
+            'style="height:80px;width:auto;display:block;margin:0 auto 10px;" />'
+        )
+    else:
+        logo_block = (
+            '<div style="font-size:30px;font-weight:900;color:#fff;letter-spacing:3px;">'
+            'Red<span style="color:#ffaaaa;">&#9829;</span>Hope</div>'
+        )
+
+    plain_text = (
+        f"Hi {first_name},\n\n"
+        "Welcome to the Red Hope Blood Donor Programme!\n\n"
+        "Thank you for deciding to join our mission of saving lives through voluntary "
+        "blood donation. Your account is now active and ready.\n\n"
+        "WHAT HAPPENS NEXT?\n"
+        "  - Your Red Hope account is now active and ready.\n"
+        "  - Our UBTS medical staff will review and add your medical information after your first donation.\n"
+        "  - You will earn recognition badges and certificates as you continue donating.\n"
+        "  - We will notify you of nearby blood donation camps and urgent blood requests.\n\n"
+        "Find your nearest donation camp:\n"
+        f"  {frontend_url}/donor-dashboard\n\n"
+        "Once your medical record has been reviewed and completed by our UBTS staff, "
+        "you will be fully activated as a donor in our system.\n\n"
+        "Remember: Every drop counts. Every life matters.\n\n"
+        "With gratitude,\n"
+        "The Red Hope Team\n"
+        "Uganda Blood Transfusion Services (UBTS)"
+    )
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Welcome to Red Hope</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:30px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.1);max-width:600px;">
+
+        <!-- ── Header with logo ── -->
+        <tr>
+          <td style="background:#8B0000;padding:32px 40px 24px;text-align:center;">
+            {logo_block}
+            <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:6px;letter-spacing:2px;text-transform:uppercase;">Every Drop Counts. Every Life Matters.</div>
+          </td>
+        </tr>
+
+        <!-- ── Welcome banner ── -->
+        <tr>
+          <td style="background:#C0162C;padding:18px 40px;text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:#fff;">Welcome to the Family, {first_name}!</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.85);margin-top:5px;">You have just taken the first step toward saving lives.</div>
+          </td>
+        </tr>
+
+        <!-- ── Body ── -->
+        <tr>
+          <td style="padding:36px 40px;">
+            <p style="font-size:15px;color:#374151;line-height:1.75;margin:0 0 16px;">Dear <strong>{first_name}</strong>,</p>
+            <p style="font-size:15px;color:#374151;line-height:1.75;margin:0 0 16px;">
+              Thank you for deciding to join <strong style="color:#C0162C;">Red Hope</strong> &mdash; Uganda&rsquo;s blood donor retention and recognition platform powered by the Uganda Blood Transfusion Services (UBTS).
+            </p>
+            <p style="font-size:15px;color:#374151;line-height:1.75;margin:0 0 24px;">
+              Your decision to become a blood donor is one of the most generous and life-changing acts a person can make. A single donation can save up to <strong>three lives</strong>.
+            </p>
+
+            <!-- What happens next box -->
+            <div style="background:#FFF5F5;border-left:4px solid #C0162C;border-radius:4px;padding:20px 24px;margin-bottom:24px;">
+              <div style="font-weight:800;color:#C0162C;font-size:13px;margin-bottom:12px;letter-spacing:.5px;">WHAT HAPPENS NEXT?</div>
+              <div style="font-size:14px;color:#374151;line-height:2.1;">
+                &#10003;&nbsp; Your Red Hope account is now <strong>active and ready</strong>.<br>
+                &#10010;&nbsp; Our UBTS medical staff will review and add your medical information <strong>after your first donation</strong>.<br>
+                &#127941;&nbsp; You will earn recognition badges and certificates as you continue donating.<br>
+                &#128205;&nbsp; We will notify you of nearby blood donation camps and urgent blood requests.
+              </div>
+            </div>
+
+            <p style="font-size:15px;color:#374151;line-height:1.75;margin:0 0 28px;">
+              Once your medical record has been reviewed and completed by our UBTS staff, you will be fully activated as a donor and ready to save lives.
+            </p>
+
+            <!-- CTA buttons -->
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
+              <tr>
+                <td style="padding-right:12px;">
+                  <a href="{frontend_url}/donor-dashboard"
+                     style="display:inline-block;background:#C0162C;color:#fff;text-decoration:none;padding:13px 26px;border-radius:6px;font-weight:700;font-size:14px;letter-spacing:.3px;">
+                    View My Dashboard
+                  </a>
+                </td>
+                <td>
+                  <a href="{frontend_url}/donor-dashboard"
+                     style="display:inline-block;background:#1B6CA8;color:#fff;text-decoration:none;padding:13px 26px;border-radius:6px;font-weight:700;font-size:14px;letter-spacing:.3px;">
+                    &#128205; Find Nearest Donation Camp
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="font-size:13px;color:#6B7280;line-height:1.7;margin:0;font-style:italic;text-align:center;">
+              &ldquo;A single donation can save multiple lives. Thank you for choosing to make a difference.&rdquo;
+            </p>
+          </td>
+        </tr>
+
+        <!-- ── Footer ── -->
+        <tr>
+          <td style="background:#1B6CA8;padding:22px 40px;text-align:center;">
+            <div style="font-size:13px;color:rgba(255,255,255,.95);font-weight:700;">The Red Hope Team</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;">Uganda Blood Transfusion Services (UBTS)</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;">Every Drop Counts. Every Life Matters.</div>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    try:
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=plain_text,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[user.email],
+        )
+        # multipart/related allows inline CID images alongside the HTML
+        msg.mixed_subtype = "related"
+        msg.attach_alternative(html_content, "text/html")
+
+        if logo_available:
+            with open(logo_path, "rb") as f:
+                logo_mime = MIMEImage(f.read(), _subtype="png")
+                logo_mime.add_header("Content-ID", "<redhope_logo>")
+                logo_mime.add_header("Content-Disposition", "inline", filename="redhope.png")
+                msg.attach(logo_mime)
+
+        msg.send(fail_silently=True)
+        return True
+    except Exception as e:
+        print("Welcome email failed:", e)
+        return False
+
+
+def send_welcome_notification(profile):
+    """
+    Send a welcome in-app notification, styled HTML email, and SMS
+    to a donor immediately after their profile is created.
+    """
+    user = profile.user
+    name_parts = (user.full_name or "").strip().split()
+    first_name = name_parts[0] if name_parts else "Friend"
+
+    title = "Welcome to Red Hope — Thank You for Joining!"
+    in_app_message = (
+        f"Hi {first_name}, welcome to Red Hope! Thank you for deciding to join our "
+        "blood donation mission. Your account is now active. Our UBTS staff will add "
+        "your medical information after your first donation. Every drop counts and "
+        "every life matters — thank you for being a true hero!"
+    )
+
+    # In-app notification
+    Notification.objects.create(
+        recipient=user,
+        title=title,
+        message=in_app_message,
+        notification_type="SYSTEM",
+        action_label="View Dashboard",
+        action_url="/donor-dashboard",
+    )
+
+    # Styled HTML welcome email
+    _send_welcome_email(user=user, first_name=first_name)
+
+    # SMS (only if phone number provided at registration)
+    if profile.phone_number:
+        sms_text = (
+            f"Welcome to Red Hope, {first_name}! Thank you for joining our life-saving mission. "
+            "Your account is now active. Medical info will be added by UBTS staff after your "
+            "first donation. Every drop counts. Every life matters! - Red Hope"
+        )
+        send_sms_notification(phone_number=profile.phone_number, message=sms_text)

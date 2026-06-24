@@ -54,7 +54,12 @@ def donor_profile_view(request):
 
         serializer = DonorProfileSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            new_profile = serializer.save(user=request.user)
+            try:
+                from notifications.services import send_welcome_notification
+                send_welcome_notification(new_profile)
+            except Exception:
+                pass
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -603,7 +608,7 @@ def donor_donation_history_view(request):
 def donor_certificate_view(request, donation_id):
     try:
         from reportlab.pdfgen import canvas as rl_canvas
-        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib.colors import HexColor
         from django.http import HttpResponse
         import io
@@ -632,93 +637,194 @@ def donor_certificate_view(request, donation_id):
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
+    COUNT_WORDS = ["Zero","One","Two","Three","Four","Five","Six","Seven",
+                   "Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen",
+                   "Fifteen","Sixteen","Seventeen","Eighteen","Nineteen","Twenty"]
+    total = profile.total_donations or 0
+    count_word = COUNT_WORDS[total] if total < len(COUNT_WORDS) else str(total)
+
+    page_size = landscape(A4)
     buffer = io.BytesIO()
-    p = rl_canvas.Canvas(buffer, pagesize=A4)
-    w, h = A4
+    p = rl_canvas.Canvas(buffer, pagesize=page_size)
+    w, h = page_size
 
-    crimson = HexColor("#C0162C")
-    dark = HexColor("#1e293b")
-    muted = HexColor("#64748b")
-    white = HexColor("#ffffff")
-    light_gray = HexColor("#e2e8f0")
+    crimson    = HexColor("#C0162C")
+    dark_red   = HexColor("#8B0000")
+    sky_blue   = HexColor("#1B6CA8")
+    dark       = HexColor("#374151")
+    muted      = HexColor("#64748b")
+    light_gray = HexColor("#E2E8F0")
+    white      = HexColor("#ffffff")
+    gold       = HexColor("#7C2D12")
 
-    # Outer border
-    p.setStrokeColor(crimson)
-    p.setLineWidth(3)
-    p.rect(30, 30, w - 60, h - 60, stroke=1, fill=0)
-    p.setLineWidth(1)
-    p.rect(40, 40, w - 80, h - 80, stroke=1, fill=0)
-
-    # Header band
-    p.setFillColor(crimson)
-    p.rect(30, h - 130, w - 60, 100, stroke=0, fill=1)
+    # ── Background white ──
     p.setFillColor(white)
-    p.setFont("Helvetica-Bold", 26)
-    p.drawCentredString(w / 2, h - 80, "BLOOD DONATION CERTIFICATE")
-    p.setFont("Helvetica", 13)
-    p.drawCentredString(w / 2, h - 105, "Uganda Blood Transfusion Service — UBTS Platform")
+    p.rect(0, 0, w, h, stroke=0, fill=1)
 
-    # Body
-    p.setFillColor(dark)
-    p.setFont("Helvetica", 14)
-    p.drawCentredString(w / 2, h - 165, "This is to certify that")
-
-    # Donor name
-    p.setFont("Helvetica-Bold", 28)
-    p.setFillColor(crimson)
-    p.drawCentredString(w / 2, h - 205, profile.user.full_name)
-    nw = p.stringWidth(profile.user.full_name, "Helvetica-Bold", 28)
+    # ── Outer thin red border ──
     p.setStrokeColor(crimson)
     p.setLineWidth(1.5)
-    p.line(w / 2 - nw / 2, h - 215, w / 2 + nw / 2, h - 215)
+    p.rect(12, 12, w - 24, h - 24, stroke=1, fill=0)
+
+    # ── Top-right decorative blobs ──
+    p.setFillColor(dark_red)
+    p.ellipse(w - 180, h - 140, w + 60, h + 60, stroke=0, fill=1)
+    p.setFillColor(HexColor("#1B6CA8"))
+    p.ellipse(w - 220, h - 110, w + 80, h + 40, stroke=0, fill=1)
+    p.setFillColor(crimson)
+    p.ellipse(w - 155, h - 100, w + 45, h + 30, stroke=0, fill=1)
+
+    # ── Bottom-left decorative blobs (mirrored) ──
+    p.setFillColor(dark_red)
+    p.ellipse(-60, -60, 180, 140, stroke=0, fill=1)
+    p.setFillColor(HexColor("#1B6CA8"))
+    p.ellipse(-80, -40, 220, 110, stroke=0, fill=1)
+    p.setFillColor(crimson)
+    p.ellipse(-45, -30, 155, 100, stroke=0, fill=1)
+
+    # ── Logo area (top-left) ──
+    logo_x, logo_y = 40, h - 130
+    p.setFillColor(crimson)
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(logo_x, logo_y + 10, "Red")
+    rw = p.stringWidth("Red", "Helvetica-Bold", 18)
+    # Small heart drawn as a filled circle (reportlab safe)
+    p.setFillColor(crimson)
+    p.circle(logo_x + rw + 5, logo_y + 17, 4, stroke=0, fill=1)
+    p.setFillColor(sky_blue)
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(logo_x + rw + 11, logo_y + 10, "Hope")
+    p.setFillColor(muted)
+    p.setFont("Helvetica-Oblique", 8)
+    p.drawString(logo_x, logo_y - 4, "Every Drop Counts. Every Life Matters.")
+
+    # ── Certificate title (centered) ──
+    p.setFillColor(crimson)
+    p.setFont("Helvetica-Bold", 46)
+    p.drawCentredString(w / 2, h - 80, "CERTIFICATE")
+
+    # Decorative lines + "OF APPRECIATION"
+    p.setStrokeColor(sky_blue)
+    p.setLineWidth(1.5)
+    line_y = h - 100
+    p.line(w / 2 - 230, line_y, w / 2 - 90, line_y)
+    p.line(w / 2 + 90, line_y, w / 2 + 230, line_y)
+    p.setFillColor(sky_blue)
+    p.setFont("Helvetica-Bold", 13)
+    p.drawCentredString(w / 2, line_y - 3, "OF APPRECIATION")
+    # Small red circle as heart divider
+    p.setFillColor(crimson)
+    p.circle(w / 2, line_y - 18, 4, stroke=0, fill=1)
+
+    # Thin separator line
+    p.setStrokeColor(light_gray)
+    p.setLineWidth(0.75)
+    p.line(60, h - 140, w - 60, h - 140)
+
+    # ── Body text ──
+    body_top = h - 170
+    p.setFillColor(dark)
+    p.setFont("Helvetica-Oblique", 13)
+    p.drawCentredString(w / 2, body_top, "This is to proudly certify that")
+
+    # Donor name
+    p.setFillColor(gold)
+    p.setFont("Helvetica-BoldOblique", 32)
+    p.drawCentredString(w / 2, body_top - 42, profile.user.full_name)
+    nw = p.stringWidth(profile.user.full_name, "Helvetica-BoldOblique", 32)
+
+    # Name underline with small diamond (drawn as rotated square)
+    line_left  = w / 2 - nw / 2 - 20
+    line_right = w / 2 + nw / 2 + 20
+    underline_y = body_top - 55
+    p.setStrokeColor(sky_blue)
+    p.setLineWidth(1)
+    p.line(line_left, underline_y, w / 2 - 7, underline_y)
+    p.line(w / 2 + 7, underline_y, line_right, underline_y)
+    # Small diamond shape at center (rotated square)
+    p.saveState()
+    p.translate(w / 2, underline_y)
+    p.rotate(45)
+    p.setFillColor(crimson)
+    p.rect(-4, -4, 8, 8, stroke=0, fill=1)
+    p.restoreState()
 
     p.setFillColor(dark)
-    p.setFont("Helvetica", 14)
-    p.drawCentredString(w / 2, h - 250, "has successfully donated blood on")
-
-    p.setFont("Helvetica-Bold", 17)
-    p.setFillColor(crimson)
-    p.drawCentredString(w / 2, h - 280, record.donation_date.strftime("%d %B %Y"))
-
-    if record.camp_name:
-        p.setFillColor(dark)
-        p.setFont("Helvetica", 14)
-        p.drawCentredString(w / 2, h - 315, "at")
-        p.setFont("Helvetica-Bold", 15)
-        p.drawCentredString(w / 2, h - 340, record.camp_name)
-
-    # Stats row
-    p.setFillColor(muted)
     p.setFont("Helvetica", 13)
-    stats_y = h - 385
+    p.drawCentredString(w / 2, body_top - 80, "has selflessly given the gift of life through")
+
+    p.setFillColor(crimson)
+    p.setFont("Helvetica-Bold", 15)
     p.drawCentredString(
         w / 2,
-        stats_y,
-        f"Lifetime Donations: {profile.total_donations}   |   Blood Group: {profile.blood_group or 'N/A'}",
+        body_top - 102,
+        f"{count_word} ({total}) Successful Donation{'s' if total != 1 else ''}.",
     )
 
-    # Quote
-    p.setFont("Helvetica-Oblique", 12)
-    p.setFillColor(HexColor("#94a3b8"))
-    p.drawCentredString(
-        w / 2,
-        h - 425,
-        '"Every drop counts. Your gift is someone\'s second chance at life."',
-    )
+    p.setFillColor(dark)
+    p.setFont("Helvetica", 12)
+    p.drawCentredString(w / 2, body_top - 128, "Your generosity, compassion, and commitment have made a real difference in the lives of others.")
+    p.drawCentredString(w / 2, body_top - 146, "Thank you for being a true hero.")
 
-    # Divider
-    p.setStrokeColor(light_gray)
+    # ── Signature section ──
+    sig_y = 90
+    sig_left  = 110
+    sig_right = w - 110
+
+    # Left signature line
+    p.setStrokeColor(dark)
     p.setLineWidth(1)
-    p.line(80, h - 445, w - 80, h - 445)
-
-    # Footer
+    p.line(sig_left - 60, sig_y, sig_left + 60, sig_y)
+    p.setFillColor(dark)
+    p.setFont("Helvetica-Bold", 10)
+    p.drawCentredString(sig_left, sig_y - 14, "Program Coordinator")
     p.setFillColor(muted)
-    p.setFont("Helvetica", 11)
-    p.drawCentredString(w / 2, h - 465, "Uganda Blood Transfusion Service (UBTS)")
-    p.drawCentredString(w / 2, h - 485, "Intelligent Blood Donation Assistance Platform")
-    p.setFont("Helvetica", 10)
-    p.setFillColor(HexColor("#94a3b8"))
-    p.drawCentredString(w / 2, h - 510, f"Certificate Ref: UBTS-CERT-{donation_id:06d}")
+    p.setFont("Helvetica", 9)
+    p.drawCentredString(sig_left, sig_y - 26, "Red Hope")
+
+    # Right signature line
+    p.setStrokeColor(dark)
+    p.line(sig_right - 60, sig_y, sig_right + 60, sig_y)
+    p.setFillColor(dark)
+    p.setFont("Helvetica-Bold", 10)
+    p.drawCentredString(sig_right, sig_y - 14, "Executive Director")
+    p.setFillColor(muted)
+    p.setFont("Helvetica", 9)
+    p.drawCentredString(sig_right, sig_y - 26, "Red Hope")
+
+    # Center seal circle
+    seal_x, seal_y = w / 2, sig_y + 4
+    p.setStrokeColor(crimson)
+    p.setLineWidth(2.5)
+    p.circle(seal_x, seal_y, 40, stroke=1, fill=0)
+    p.setLineWidth(0.75)
+    p.circle(seal_x, seal_y, 34, stroke=1, fill=0)
+    # Heart drawn as two filled circles + rotated square
+    p.setFillColor(crimson)
+    p.circle(seal_x - 5, seal_y + 3, 6, stroke=0, fill=1)
+    p.circle(seal_x + 5, seal_y + 3, 6, stroke=0, fill=1)
+    p.saveState()
+    p.translate(seal_x, seal_y - 2)
+    p.rotate(45)
+    p.rect(-6, -8, 12, 12, stroke=0, fill=1)
+    p.restoreState()
+    p.setFillColor(crimson)
+    p.setFont("Helvetica-Bold", 6)
+    p.drawCentredString(seal_x, seal_y + 20, "THANK YOU")
+    p.drawCentredString(seal_x, seal_y - 28, "FOR SAVING LIVES")
+
+    # ── Certificate meta footer ──
+    p.setStrokeColor(light_gray)
+    p.setLineWidth(0.5)
+    p.line(60, 44, w - 60, 44)
+    p.setFillColor(muted)
+    p.setFont("Helvetica", 8)
+    issued = record.donation_date.strftime("%d %B %Y")
+    cert_no = f"RH-{record.donation_date.year}-{donation_id:04d}"
+    donor_id = f"RH-DNR-{donation_id:04d}"
+    p.drawString(60, 32, f"Certificate No: {cert_no}")
+    p.drawCentredString(w / 2, 32, f"Date Issued: {issued}")
+    p.drawRightString(w - 60, 32, f"Donor ID: {donor_id}")
 
     p.save()
     buffer.seek(0)
@@ -726,7 +832,7 @@ def donor_certificate_view(request, donation_id):
     from django.http import HttpResponse
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
     response["Content-Disposition"] = (
-        f'attachment; filename="UBTS_Certificate_{donation_id}.pdf"'
+        f'attachment; filename="RedHope_Certificate_{donation_id}.pdf"'
     )
     return response
 
@@ -997,6 +1103,12 @@ def admin_walkin_donor_register_view(request):
             is_pregnant=bool(data.get("is_pregnant", False)),
             is_on_medication=bool(data.get("is_on_medication", False)),
         )
+
+    try:
+        from notifications.services import send_welcome_notification
+        send_welcome_notification(profile)
+    except Exception:
+        pass
 
     return Response(
         {

@@ -37,6 +37,7 @@ import {
   getActiveCamps,
 } from "../../services/donorService";
 
+import redhopeLogo from "../../assets/logo/redhope.png";
 import AdminLoader from "../../components/common/AdminLoader";
 import NearestCampMap from "../../components/NearestCampMap";
 import DonorLevelCard from "../../components/donor/DonorLevelCard";
@@ -666,93 +667,167 @@ function CalendarToolbar({ label, onNavigate, onView, view, views }) {
 }
 
 /* ── Certificate tier helper ── */
-function getCertTier(totalDonations) {
-  if (totalDonations >= 20) return { tier: "Gold", color: "#D97706", bg: "linear-gradient(135deg,#92400e,#D97706,#FCD34D)", border: "#D97706", label: "Gold Certificate", badge: "GOLD" };
-  if (totalDonations >= 10) return { tier: "Silver", color: "#6B7280", bg: "linear-gradient(135deg,#374151,#6B7280,#D1D5DB)", border: "#9CA3AF", label: "Silver Certificate", badge: "SILVER" };
-  if (totalDonations >= 5)  return { tier: "Bronze", color: "#92400E", bg: "linear-gradient(135deg,#78350F,#B45309,#FDE68A)", border: "#B45309", label: "Bronze Certificate", badge: "BRONZE" };
-  return { tier: "Regular", color: "#C41E3A", bg: "linear-gradient(135deg,#C41E3A,#991B1B)", border: "#C41E3A", label: "Certificate of Donation", badge: "REGULAR" };
-}
+const COUNT_WORDS = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten",
+  "Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen","Twenty"];
+function toCountWord(n) { return n < COUNT_WORDS.length ? COUNT_WORDS[n] : n.toString(); }
 
 /* ── Certificate modal ── */
 function CertificateModal({ donation, totalDonations, donorName, bloodGroup, onClose, onDownload, downloadingId }) {
-  const cert = getCertTier(totalDonations);
   const donationDate = new Date(donation.donation_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const certNo = `RH-${new Date().getFullYear()}-${String(donation.id).padStart(4, "0")}`;
+  const donorId = `RH-DNR-${String(donation.id).padStart(4, "0")}`;
+  const countWord = toCountWord(totalDonations);
+
+  /* Corner SVG blob shared between TL and BR (mirrored via transform) */
+  const CornerBlob = ({ style }) => (
+    <svg viewBox="0 0 220 180" style={{ position: "absolute", pointerEvents: "none", ...style }}>
+      <ellipse cx="220" cy="0" rx="170" ry="130" fill="#8B0000" opacity="0.92" />
+      <ellipse cx="220" cy="0" rx="210" ry="100" fill="#1B6CA8" opacity="0.55" />
+      <ellipse cx="220" cy="0" rx="145" ry="85" fill="#C0162C" opacity="0.7" />
+    </svg>
+  );
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.65)", padding: 20 }}
+      style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.75)", padding: "16px" }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 620, maxHeight: "92vh", overflowY: "auto", borderRadius: 20, background: "#fff", boxShadow: "0 32px 80px rgba(0,0,0,.35)" }}
+        style={{ width: "100%", maxWidth: 900, maxHeight: "96vh", overflowY: "auto", borderRadius: 6, background: "#fff", boxShadow: "0 32px 80px rgba(0,0,0,.45)" }}
       >
-        {/* Certificate design */}
-        <div style={{ background: cert.bg, padding: "36px 40px 28px", textAlign: "center", position: "relative" }}>
-          {/* Decorative corners */}
-          <div style={{ position: "absolute", top: 12, left: 12, width: 40, height: 40, borderTop: `3px solid rgba(255,255,255,.5)`, borderLeft: `3px solid rgba(255,255,255,.5)`, borderRadius: "4px 0 0 0" }} />
-          <div style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, borderTop: `3px solid rgba(255,255,255,.5)`, borderRight: `3px solid rgba(255,255,255,.5)`, borderRadius: "0 4px 0 0" }} />
-          <div style={{ position: "absolute", bottom: 12, left: 12, width: 40, height: 40, borderBottom: `3px solid rgba(255,255,255,.5)`, borderLeft: `3px solid rgba(255,255,255,.5)`, borderRadius: "0 0 0 4px" }} />
-          <div style={{ position: "absolute", bottom: 12, right: 12, width: 40, height: 40, borderBottom: `3px solid rgba(255,255,255,.5)`, borderRight: `3px solid rgba(255,255,255,.5)`, borderRadius: "0 0 4px 0" }} />
+        {/* ── Certificate body ── */}
+        <div style={{ position: "relative", background: "#fff", padding: "44px 56px 36px", overflow: "hidden" }}>
 
-          <div style={{ display: "inline-block", background: "rgba(255,255,255,.15)", borderRadius: 999, border: "1px solid rgba(255,255,255,.4)", padding: "4px 16px", fontSize: 11, fontWeight: 800, letterSpacing: ".12em", color: "#fff", marginBottom: 16, textTransform: "uppercase" }}>
-            {cert.badge} — Uganda Blood Transfusion Service
+          {/* Outer thin red border */}
+          <div style={{ position: "absolute", inset: 10, border: "1.5px solid #C0162C", borderRadius: 3, pointerEvents: "none", zIndex: 1 }} />
+
+          {/* Top-right corner decoration */}
+          <CornerBlob style={{ top: 0, right: 0, width: 220, height: 180 }} />
+
+          {/* Bottom-left corner decoration (mirrored) */}
+          <CornerBlob style={{ bottom: 0, left: 0, width: 220, height: 180, transform: "rotate(180deg)" }} />
+
+          {/* ── Header row: logo left | title right ── */}
+          <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 28 }}>
+
+            {/* Logo block */}
+            <div style={{ minWidth: 120, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <img src={redhopeLogo} alt="Red Hope" style={{ width: 90, height: 90, objectFit: "contain" }} />
+              <div style={{ marginTop: 6, textAlign: "center" }}>
+                <span style={{ fontWeight: 800, fontSize: 16, color: "#C0162C", fontFamily: "Poppins, sans-serif" }}>Red</span>
+                <span style={{ color: "#C0162C", fontSize: 16 }}>♥</span>
+                <span style={{ fontWeight: 800, fontSize: 16, color: "#1B6CA8", fontFamily: "Poppins, sans-serif" }}>Hope</span>
+              </div>
+              <div style={{ fontSize: 8, color: "#64748b", textAlign: "center", marginTop: 2, fontStyle: "italic" }}>
+                Every Drop Counts. Every Life Matters.
+              </div>
+            </div>
+
+            {/* Title block */}
+            <div style={{ flex: 1, textAlign: "center", paddingTop: 8 }}>
+              <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 52, fontWeight: 800, color: "#C0162C", lineHeight: 1, letterSpacing: 3 }}>
+                CERTIFICATE
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0 0" }}>
+                <div style={{ flex: 1, height: 1.5, background: "#1B6CA8" }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1B6CA8", letterSpacing: 4, whiteSpace: "nowrap", fontFamily: "Poppins, sans-serif" }}>OF APPRECIATION</span>
+                <div style={{ flex: 1, height: 1.5, background: "#1B6CA8" }} />
+              </div>
+              <div style={{ fontSize: 18, color: "#C0162C", marginTop: 4, lineHeight: 1 }}>♥</div>
+            </div>
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.75)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>
-            {cert.label}
+          {/* ── Certificate body text ── */}
+          <div style={{ position: "relative", zIndex: 2, textAlign: "center" }}>
+
+            <p style={{ fontFamily: "Georgia, serif", fontSize: 14, color: "#4B5563", margin: "0 0 10px", fontStyle: "italic" }}>
+              This is to proudly certify that
+            </p>
+
+            {/* Donor name in calligraphy */}
+            <div style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", fontSize: 46, color: "#7C2D12", lineHeight: 1.2, margin: "0 0 2px" }}>
+              {donorName}
+            </div>
+
+            {/* Decorative divider */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "6px 0 16px" }}>
+              <div style={{ flex: 1, maxWidth: 220, height: 1, background: "#1B6CA8" }} />
+              <span style={{ color: "#C0162C", fontSize: 12 }}>✦</span>
+              <div style={{ flex: 1, maxWidth: 220, height: 1, background: "#1B6CA8" }} />
+            </div>
+
+            <p style={{ fontFamily: "Georgia, serif", fontSize: 13.5, color: "#374151", margin: "0 0 6px" }}>
+              has selflessly given the gift of life through
+            </p>
+
+            <p style={{ fontSize: 15, fontWeight: 700, color: "#C0162C", margin: "0 0 14px", fontFamily: "Poppins, sans-serif" }}>
+              {countWord} ({totalDonations}) Successful Donation{totalDonations !== 1 ? "s" : ""}.
+            </p>
+
+            <p style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "#374151", lineHeight: 1.8, margin: "0 auto 6px", maxWidth: 520 }}>
+              Your generosity, compassion, and commitment<br />
+              have made a real difference in the lives of others.
+            </p>
+
+            <p style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "#374151", margin: "0 0 28px" }}>
+              Thank you for being a true hero.
+            </p>
+
+            {/* ── Signature row ── */}
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 16px" }}>
+
+              {/* Left signature */}
+              <div style={{ textAlign: "center", minWidth: 150 }}>
+                <div style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", fontSize: 28, color: "#374151", height: 44, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                  O. Yakub
+                </div>
+                <div style={{ height: 1.5, background: "#374151", margin: "4px 0 6px" }} />
+                <div style={{ fontWeight: 700, fontSize: 11, color: "#374151", fontFamily: "Poppins, sans-serif" }}>Program Coordinator</div>
+                <div style={{ fontSize: 10, color: "#64748b", fontFamily: "Poppins, sans-serif" }}>Red Hope</div>
+              </div>
+
+              {/* Center seal */}
+              <div style={{ position: "relative", width: 100, height: 100 }}>
+                <div style={{ width: 100, height: 100, borderRadius: "50%", border: "3px solid #C0162C", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fff", position: "relative" }}>
+                  <div style={{ position: "absolute", inset: 5, borderRadius: "50%", border: "1.5px dashed #C0162C", opacity: 0.35 }} />
+                  <span style={{ fontSize: 22, color: "#C0162C", lineHeight: 1 }}>♥</span>
+                  <span style={{ fontSize: 6.5, fontWeight: 800, color: "#C0162C", letterSpacing: 0.5, textAlign: "center", lineHeight: 1.5, fontFamily: "Poppins, sans-serif" }}>
+                    THANK YOU<br />FOR SAVING<br />LIVES
+                  </span>
+                </div>
+              </div>
+
+              {/* Right signature */}
+              <div style={{ textAlign: "center", minWidth: 150 }}>
+                <div style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", fontSize: 28, color: "#374151", height: 44, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                  A. Katushabe
+                </div>
+                <div style={{ height: 1.5, background: "#374151", margin: "4px 0 6px" }} />
+                <div style={{ fontWeight: 700, fontSize: 11, color: "#374151", fontFamily: "Poppins, sans-serif" }}>Executive Director</div>
+                <div style={{ fontSize: 10, color: "#64748b", fontFamily: "Poppins, sans-serif" }}>Red Hope</div>
+              </div>
+            </div>
+
+            {/* Certificate meta */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, fontSize: 9, color: "#94A3B8", borderTop: "1px solid #E2E8F0", paddingTop: 10, fontFamily: "Poppins, sans-serif" }}>
+              <span>Certificate No: {certNo}</span>
+              <span>Date Issued: {donationDate}</span>
+              <span>Donor ID: {donorId}</span>
+            </div>
           </div>
-          <h2 style={{ fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 0 6px", lineHeight: 1.1 }}>
-            Blood Donation Certificate
-          </h2>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,.75)", margin: 0 }}>
-            Uganda Blood Transfusion Service — Intelligent Platform
-          </p>
         </div>
 
-        <div style={{ padding: "28px 40px", background: "#fff", textAlign: "center" }}>
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>This is to certify that</p>
-          <h3 style={{ fontSize: 26, fontWeight: 900, color: cert.color, margin: "0 0 4px" }}>{donorName}</h3>
-          <div style={{ height: 2, background: cert.color, width: 200, margin: "6px auto 18px", opacity: 0.6, borderRadius: 2 }} />
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>has successfully donated blood on</p>
-          <p style={{ fontSize: 18, fontWeight: 800, color: cert.color, marginBottom: donation.camp_name ? 8 : 20 }}>{donationDate}</p>
-          {donation.camp_name && (
-            <>
-              <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>at</p>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", marginBottom: 20 }}>{donation.camp_name}</p>
-            </>
-          )}
-
-          <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 24 }}>
-            <div style={{ textAlign: "center", background: "#F8FAFF", borderRadius: 12, padding: "12px 20px", border: "1px solid #E2E8F0" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: cert.color }}>{totalDonations}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Total Donations</div>
-            </div>
-            <div style={{ textAlign: "center", background: "#F8FAFF", borderRadius: 12, padding: "12px 20px", border: "1px solid #E2E8F0" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: cert.color }}>{bloodGroup}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Blood Group</div>
-            </div>
-            <div style={{ textAlign: "center", background: "#F8FAFF", borderRadius: 12, padding: "12px 20px", border: "1px solid #E2E8F0" }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: cert.color }}>{cert.tier}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>Tier</div>
-            </div>
-          </div>
-
-          <p style={{ fontSize: 11, color: "#94A3B8", fontStyle: "italic", marginBottom: 24 }}>
-            "Every drop counts. Your gift is someone's second chance at life."
-          </p>
-
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button
-              className="btn btn-primary"
-              disabled={downloadingId === donation.id}
-              onClick={onDownload}
-            >
-              <RiDownloadLine /> {downloadingId === donation.id ? "Generating PDF…" : "Download PDF"}
-            </button>
-            <button className="btn btn-outline" onClick={onClose}>Close</button>
-          </div>
-          <p style={{ fontSize: 10, color: "#CBD5E1", marginTop: 16 }}>Ref: UBTS-CERT-{String(donation.id).padStart(6, "0")}</p>
+        {/* ── Action buttons (outside certificate area) ── */}
+        <div style={{ padding: "14px 40px", display: "flex", gap: 12, justifyContent: "center", borderTop: "1px solid #E2E8F0", background: "#F8FAFC" }}>
+          <button
+            className="btn btn-primary"
+            disabled={downloadingId === donation.id}
+            onClick={onDownload}
+          >
+            <RiDownloadLine /> {downloadingId === donation.id ? "Generating PDF…" : "Download PDF"}
+          </button>
+          <button className="btn btn-outline" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
