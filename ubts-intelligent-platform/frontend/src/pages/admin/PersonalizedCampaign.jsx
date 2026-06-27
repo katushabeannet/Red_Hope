@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import {
+  RiArrowLeftLine,
+  RiArrowRightLine,
   RiCheckboxCircleLine,
   RiCloseCircleLine,
   RiCloseLine,
@@ -18,6 +20,8 @@ import {
 import { blastCampaignNotification } from "../../services/notificationService";
 import { useToast } from "../../context/ToastContext";
 import AdminLoader from "../../components/common/AdminLoader";
+
+const PAGE_SIZE = 5;
 
 const initialFilters = {
   blood_group: "",
@@ -44,6 +48,7 @@ function PersonalizedCampaign() {
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [campsLoading, setCampsLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [blastTitle, setBlastTitle] = useState("UBTS Campaign — Blood Donation Alert");
   const [blastMessage, setBlastMessage] = useState("");
@@ -141,12 +146,17 @@ function PersonalizedCampaign() {
     };
   }, [result, availableDonors, unavailableDonors]);
 
+  useEffect(() => { setPage(1); }, [activeTab]);
+
   const activeRows = useMemo(() => {
     if (!result) return [];
     if (activeTab === "available_donors") return availableDonors;
     if (activeTab === "unavailable_donors") return unavailableDonors;
     return result?.[activeTab] || [];
   }, [result, activeTab, availableDonors, unavailableDonors]);
+
+  const totalPages    = Math.ceil(activeRows.length / PAGE_SIZE);
+  const paginatedRows = activeRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const inputStyle = { width: "100%", borderRadius: 10, border: "1px solid var(--border)", background: "var(--canvas)", padding: "10px 12px", fontSize: 13, color: "var(--ink)", outline: "none", boxSizing: "border-box" };
 
@@ -269,47 +279,76 @@ function PersonalizedCampaign() {
               </div>
 
               {activeRows.length > 0 ? (
-                <div className="table-wrap">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Donor</th>
-                        <th>Contact</th>
-                        <th>Blood Group</th>
-                        <th>Distance</th>
-                        <th>Summary</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeRows.map((donor, index) => (
-                        <tr key={`${donor.donor_id || donor.full_name}-${index}`}>
-                          <td>
-                            <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{donor.full_name}</p>
-                            <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{donor.email || "No email"}</p>
-                          </td>
-                          <td style={{ color: "var(--ink-s)" }}>{donor.phone_number || "Not available"}</td>
-                          <td>
-                            {donor.blood_group
-                              ? <span className="badge badge-red">{donor.blood_group}</span>
-                              : "N/A"}
-                          </td>
-                          <td style={{ color: "var(--ink-s)" }}>
-                            {donor.distance_km !== null && donor.distance_km !== undefined
-                              ? `${donor.distance_km} km`
-                              : "Not filtered"}
-                          </td>
-                          <td style={{ fontSize: 12, color: "var(--ink-s)" }}>
-                            {getShortReason(donor, activeTab)}
-                          </td>
-                          <td>
-                            <button className="btn btn-outline btn-sm" onClick={() => setSelectedDonor(donor)}>View Details</button>
-                          </td>
+                <>
+                  <div className="table-wrap">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Donor</th>
+                          <th>Contact</th>
+                          <th>Blood Group</th>
+                          <th>Distance</th>
+                          <th>Summary</th>
+                          <th>Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {paginatedRows.map((donor, index) => (
+                          <tr key={`${donor.donor_id || donor.full_name}-${index}`}>
+                            <td>
+                              <p style={{ fontWeight: 600, color: "var(--ink)", margin: 0 }}>{donor.full_name}</p>
+                              <p style={{ fontSize: 12, color: "var(--ink-l)", margin: 0 }}>{donor.email || "No email"}</p>
+                            </td>
+                            <td style={{ color: "var(--ink-s)" }}>{donor.phone_number || "Not available"}</td>
+                            <td>
+                              {donor.blood_group
+                                ? <span className="badge badge-red">{donor.blood_group}</span>
+                                : "N/A"}
+                            </td>
+                            <td style={{ color: "var(--ink-s)" }}>
+                              {donor.distance_km !== null && donor.distance_km !== undefined
+                                ? `${donor.distance_km} km`
+                                : "Not filtered"}
+                            </td>
+                            <td style={{ fontSize: 12, color: "var(--ink-s)" }}>
+                              {getShortReason(donor, activeTab)}
+                            </td>
+                            <td>
+                              <button className="btn btn-outline btn-sm" onClick={() => setSelectedDonor(donor)}>View Details</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: 13, color: "var(--ink-s)" }}>
+                        Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, activeRows.length)} of {activeRows.length} donors
+                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => setPage((p) => p - 1)}
+                          disabled={page === 1}
+                        >
+                          <RiArrowLeftLine size={14} /> Prev
+                        </button>
+                        <span style={{ fontSize: 13, color: "var(--ink-s)", padding: "0 4px" }}>
+                          {page} / {totalPages}
+                        </span>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => setPage((p) => p + 1)}
+                          disabled={page === totalPages}
+                        >
+                          Next <RiArrowRightLine size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="empty-state"><RiSearchEyeLine size={28} /><p>No records found in this section.</p></div>
               )}

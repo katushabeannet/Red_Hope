@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import albertPhoto from "../../assets/team/Albert.jpeg";
 import annetPhoto  from "../../assets/team/Annet-cropped.jpeg";
-import yakubPhoto  from "../../assets/team/kubi.jpg";
-import wilfredPhoto from "../../assets/team/wilfred1.jpg";
+import yakubPhoto  from "../../assets/team/kubi.jpeg";
+import wilfredPhoto from "../../assets/team/wilfred.jpeg";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
@@ -527,9 +527,9 @@ function Home() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)", lineHeight: 1.4, marginBottom: 12 }}>{faq.q}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "var(--cr-xl)", border: "1px solid #FFD0DA" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: dark ? "rgba(220,38,38,.15)" : "var(--cr-xl)", border: dark ? "1px solid rgba(220,38,38,.4)" : "1px solid #FFD0DA" }}>
                       <RiBrainLine size={16} style={{ color: "var(--cr)", flexShrink: 0 }} />
-                      <p style={{ fontSize: 12.5, color: "var(--cr-dk)", lineHeight: 1.5, fontWeight: 500 }}>
+                      <p style={{ fontSize: 12.5, color: dark ? "rgba(255,255,255,.8)" : "var(--cr-dk)", lineHeight: 1.5, fontWeight: 500 }}>
                         Click to get an <strong style={{ color: "var(--cr)" }}>instant AI answer</strong> from RedHope AI!
                       </p>
                     </div>

@@ -4,8 +4,8 @@ import reddyHero    from "../../assets/wallpapers/reddy.jpeg";
 import { useTheme } from "../../context/ThemeContext";
 import albertPhoto  from "../../assets/team/Albert.jpeg";
 import annetPhoto   from "../../assets/team/Annet-cropped.jpeg";
-import yakubPhoto   from "../../assets/team/kubi.jpg";
-import wilfredPhoto from "../../assets/team/wilfred1.jpg";
+import yakubPhoto   from "../../assets/team/kubi.jpeg";
+import wilfredPhoto from "../../assets/team/wilfred.jpeg";
 import { motion } from "framer-motion";
 import {
   RiArrowRightLine,
@@ -20,9 +20,9 @@ import { getPlatinumDonors } from "../../services/donorService";
 // ── Data ────────────────────────────────────────────────────────────────────────
 const TEAM = [
   { name: "Nuwarinda Albert",   photo: albertPhoto,  role: "Developer",                  dept: "Lead Developer & AI Engineer", color: "#C41E3A" },
-  { name: "Okwii Yakub",        photo: yakubPhoto,   role: "Developer",                  dept: "Backend Engineering",          color: "#8B1A1A" },
-  { name: "Katswamba Wilfred",  photo: wilfredPhoto, role: "Developer",                  dept: "Frontend & UI Design",         color: "#2c3e50" },
-  { name: "Katushabe Annet",    photo: annetPhoto,   role: "Developer & System Analyst", dept: "Systems Analysis",             color: "#D97706" },
+  { name: "Okwii Yakub",        photo: yakubPhoto,   role: "Developer",                  dept: "Backend Engineering & AI Engineer",          color: "#8B1A1A" },
+  { name: "Katswamba Wilfred",  photo: wilfredPhoto, role: "Developer",                  dept: "Frontend & UI Design & AI Engineer",         color: "#2c3e50" },
+  { name: "Katushabe Annet",    photo: annetPhoto,   role: "Developer & System Analyst", dept: "Systems Analysis & AI Engineer",             color: "#D97706" },
 ];
 
 const TIERS = {

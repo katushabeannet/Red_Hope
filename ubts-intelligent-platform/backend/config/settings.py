@@ -172,4 +172,9 @@ UGSMS_SENDER_ID = config("UGSMS_SENDER_ID", default="UBTS")
 UGSMS_SANDBOX = config("UGSMS_SANDBOX", default=True, cast=bool)
 SEND_SMS_NOTIFICATIONS = config("SEND_SMS_NOTIFICATIONS", default=False, cast=bool)
 
+# ── WhatsApp (Meta Business Cloud API) ──────────────────────────────────────
+WHATSAPP_ACCESS_TOKEN     = config("WHATSAPP_ACCESS_TOKEN",     default="")
+WHATSAPP_PHONE_NUMBER_ID  = config("WHATSAPP_PHONE_NUMBER_ID",  default="")
+SEND_WHATSAPP_NOTIFICATIONS = config("SEND_WHATSAPP_NOTIFICATIONS", default=False, cast=bool)
+
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")

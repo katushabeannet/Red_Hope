@@ -4,7 +4,6 @@ import {
   RiCloseLine,
   RiMapPinLine,
   RiMessage3Line,
-  RiRobot2Line,
   RiSendPlaneLine,
   RiUser3Line,
 } from "react-icons/ri";
@@ -227,24 +226,53 @@ function FloatingChatbot() {
       {/* ── FAB ── */}
       <AnimatePresence>
         {!open && (
-          <motion.button
+          <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.93 }}
-            onClick={() => setOpen(true)}
             style={{
-              position: "fixed", bottom: 24, right: 24, zIndex: 50,
-              width: 58, height: 58, borderRadius: "50%", border: "none",
-              background: "linear-gradient(135deg, var(--cr), var(--cr-dk))",
-              color: "#fff", cursor: "pointer",
+              position: "fixed", bottom: 10, right: 10, zIndex: 9999,
+              width: 100, height: 100,
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 8px 32px rgba(185,28,28,.35), 0 2px 8px rgba(0,0,0,.15)",
             }}
           >
-            <RiMessage3Line size={26} />
-          </motion.button>
+            {/* Rotating circular text ring */}
+            <svg
+              width="100" height="100"
+              viewBox="0 0 100 100"
+              style={{
+                position: "absolute", top: 0, left: 0,
+                animation: "spin 8s linear infinite",
+                pointerEvents: "none",
+              }}
+            >
+              <defs>
+                <path id="fab-ring" d="M 50 6 A 44 44 0 1 1 49.999 6" />
+              </defs>
+              <text fontSize="10.5" fontWeight="800" fill={dark ? "#ffffff" : "var(--cr)"} fontFamily="inherit">
+                <textPath href="#fab-ring" textLength="261" lengthAdjust="spacing">
+                  For Help, Ask RedHope ◆
+                </textPath>
+              </text>
+            </svg>
+
+            {/* FAB button */}
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.93 }}
+              onClick={() => setOpen(true)}
+              style={{
+                position: "relative", zIndex: 1,
+                width: 58, height: 58, borderRadius: "50%", border: "none",
+                background: "linear-gradient(135deg, var(--cr), var(--cr-dk))",
+                color: "#fff", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 8px 32px rgba(185,28,28,.35), 0 2px 8px rgba(0,0,0,.15)",
+              }}
+            >
+              <RiMessage3Line size={26} />
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -257,7 +285,7 @@ function FloatingChatbot() {
             exit={{ opacity: 0, scale: 0.88, y: 24 }}
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             style={{
-              position: "fixed", bottom: 24, right: 24, zIndex: 50,
+              position: "fixed", bottom: 24, right: 24, zIndex: 9999,
               width: 420, height: "75vh", maxHeight: 720, minHeight: 480,
               display: "flex", flexDirection: "column",
               borderRadius: 22, overflow: "hidden",
@@ -273,11 +301,13 @@ function FloatingChatbot() {
               display: "flex", alignItems: "center", gap: 12,
             }}>
               <div style={{
-                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-                background: "rgba(255,255,255,.2)",
+                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                background: "#fff",
                 display: "flex", alignItems: "center", justifyContent: "center",
+                padding: 5, overflow: "hidden",
+                boxShadow: "0 2px 8px rgba(0,0,0,.15)",
               }}>
-                <RiRobot2Line size={20} style={{ color: "#fff" }} />
+                <img src={redHopeLogo} alt="RedHope" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 700, fontSize: 13, color: "#fff", margin: 0 }}>
@@ -303,9 +333,11 @@ function FloatingChatbot() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: "auto", background: dark ? "#0F172A" : "#F8F9FB", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
-              {/* Logo watermark */}
-              <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "60%", maxWidth: 180, opacity: 0.06, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
+            <div style={{ flex: 1, position: "relative", overflow: "hidden", background: dark ? "#0F172A" : "#F8F9FB" }}>
+              {/* Static watermark — outside the scroll layer so it never moves */}
+              <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "65%", maxWidth: 190, opacity: 0.13, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
+              {/* Scrollable messages layer */}
+              <div style={{ position: "absolute", inset: 0, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12, zIndex: 1 }}>
               {messages.map((msg, i) => (
                 <ChatBubble key={i} msg={msg} onQuickReply={i === messages.length - 1 ? send : null} />
               ))}
@@ -317,7 +349,7 @@ function FloatingChatbot() {
                     background: dark ? "rgba(196,30,58,.2)" : "#FDEEF1", color: "var(--cr)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    {locationLoading ? <RiMapPinLine size={13} /> : <RiRobot2Line size={13} />}
+                    {locationLoading ? <RiMapPinLine size={13} /> : <img src={redHopeLogo} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} />}
                   </div>
                   <div style={{
                     background: dark ? "#1E293B" : "#fff", border: dark ? "1.5px solid #334155" : "1.5px solid #E8EAF0",
@@ -340,7 +372,8 @@ function FloatingChatbot() {
               )}
 
               <div ref={endRef} />
-            </div>
+              </div>{/* end scrollable layer */}
+            </div>{/* end messages wrapper */}
 
             {/* Quick replies */}
             {messages.length <= 1 && !isTyping && (
@@ -426,10 +459,11 @@ function ChatBubble({ msg, onQuickReply }) {
       {!isUser && (
         <div style={{
           width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-          background: dark ? "rgba(196,30,58,.2)" : "#FDEEF1", color: "var(--cr)",
+          background: dark ? "rgba(196,30,58,.2)" : "#FDEEF1",
           display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 4, overflow: "hidden",
         }}>
-          <RiRobot2Line size={13} />
+          <img src={redHopeLogo} alt="RedHope" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       )}
 
