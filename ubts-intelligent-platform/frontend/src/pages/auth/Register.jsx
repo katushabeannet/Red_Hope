@@ -204,7 +204,7 @@ function Register() {
       {/* ── RIGHT PANEL ── */}
       <div className="auth-right">
         {/* Logo watermark */}
-        <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "55%", maxWidth: 320, opacity: 0.055, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
+        <img src={redHopeLogo} alt="" aria-hidden="true" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "72%", maxWidth: 400, opacity: 0.14, pointerEvents: "none", userSelect: "none", zIndex: 0 }} />
 
         <button onClick={toggle} style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: 10, border: "1.5px solid var(--rh-border)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink-s)", zIndex: 2 }} aria-label="Toggle dark mode">
           {dark ? <RiSunLine size={16} /> : <RiMoonLine size={16} />}

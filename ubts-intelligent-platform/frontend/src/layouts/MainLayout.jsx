@@ -365,7 +365,15 @@ function MainLayout() {
           </div>
         </header>
 
-        {/* Mobile nav overlay */}
+        {/* Click-outside backdrop */}
+        {mobileOpen && (
+          <div
+            style={{ position: "fixed", inset: 0, top: 72, zIndex: 997 }}
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+
+        {/* Mobile dropdown nav */}
         <div className={`rh-mobile-nav${mobileOpen ? " open" : ""}`}>
           {GUEST_NAV.map(({ to, label, end }) => (
             <NavLink
@@ -373,29 +381,15 @@ function MainLayout() {
               to={to}
               end={end}
               onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                isActive
-                  ? "rh-display"
-                  : "rh-display"
-              }
-              style={({ isActive }) => ({
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 20,
-                fontWeight: 800,
-                textDecoration: "none",
-                color: isActive ? "var(--cr)" : "var(--ink)",
-              })}
+              className={({ isActive }) => `rh-mobile-link${isActive ? " active" : ""}`}
             >
               {label}
             </NavLink>
           ))}
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <NavLink to="/login" className="rh-btn-login" onClick={() => setMobileOpen(false)}>
-              Log In
-            </NavLink>
-            <NavLink to="/register" className="rh-btn-signup" onClick={() => setMobileOpen(false)}>
-              Sign Up
-            </NavLink>
+          <hr className="rh-mobile-divider" />
+          <div className="rh-mobile-actions">
+            <NavLink to="/login" className="rh-btn-login" onClick={() => setMobileOpen(false)}>Log In</NavLink>
+            <NavLink to="/register" className="rh-btn-signup" onClick={() => setMobileOpen(false)}>Sign Up</NavLink>
           </div>
         </div>
 
