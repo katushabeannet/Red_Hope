@@ -451,6 +451,7 @@ def admin_medical_record_manage_view(request):
                 "has_chronic_condition",
                 False,
             ),
+            "medical_condition": request.data.get("medical_condition", "None"),
             "last_donation_date": request.data.get("last_donation_date") or None,
             "is_pregnant": request.data.get("is_pregnant", False),
             "is_on_medication": request.data.get("is_on_medication", False),
@@ -472,6 +473,7 @@ def admin_medical_record_manage_view(request):
                 "hemoglobin_level": medical_record.hemoglobin_level,
                 "has_recent_illness": medical_record.has_recent_illness,
                 "has_chronic_condition": medical_record.has_chronic_condition,
+                "medical_condition": medical_record.medical_condition,
                 "last_donation_date": medical_record.last_donation_date,
                 "is_pregnant": medical_record.is_pregnant,
                 "is_on_medication": medical_record.is_on_medication,
@@ -1097,7 +1099,7 @@ def admin_walkin_donor_register_view(request):
 
     medical_fields = ["weight_kg", "hemoglobin_level", "last_donation_date",
                       "has_recent_illness", "has_chronic_condition",
-                      "is_pregnant", "is_on_medication"]
+                      "medical_condition", "is_pregnant", "is_on_medication"]
     has_medical = any(data.get(f) for f in medical_fields)
 
     if has_medical:
@@ -1107,6 +1109,7 @@ def admin_walkin_donor_register_view(request):
             hemoglobin_level=float(data["hemoglobin_level"]) if data.get("hemoglobin_level") else None,
             has_recent_illness=bool(data.get("has_recent_illness", False)),
             has_chronic_condition=bool(data.get("has_chronic_condition", False)),
+            medical_condition=data.get("medical_condition") or "None",
             last_donation_date=data.get("last_donation_date") or None,
             is_pregnant=bool(data.get("is_pregnant", False)),
             is_on_medication=bool(data.get("is_on_medication", False)),

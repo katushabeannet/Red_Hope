@@ -23,10 +23,11 @@ class DonorMedicalRecordAdmin(admin.ModelAdmin):
         "hemoglobin_level",
         "has_recent_illness",
         "has_chronic_condition",
+        "medical_condition",
         "last_donation_date",
         "updated_at",
     ]
-    search_fields = ["donor__user__email"]
+    search_fields = ["donor__user__email", "medical_condition"]
     list_filter = [
         "has_recent_illness",
         "has_chronic_condition",

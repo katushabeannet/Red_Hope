@@ -48,6 +48,7 @@ class DonorMedicalRecord(models.Model):
     hemoglobin_level = models.FloatField(null=True, blank=True)
     has_recent_illness = models.BooleanField(default=False)
     has_chronic_condition = models.BooleanField(default=False)
+    medical_condition = models.CharField(max_length=100, blank=True, default="None")
     last_donation_date = models.DateField(null=True, blank=True)
 
     is_pregnant = models.BooleanField(default=False)

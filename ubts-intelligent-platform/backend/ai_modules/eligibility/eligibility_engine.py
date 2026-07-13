@@ -50,6 +50,10 @@ def run_eligibility_rules(profile, medical_record):
     max_age = rules.get("max_age", 65)
     min_weight = rules.get("min_weight_kg", 50)
     min_hemoglobin = rules.get("min_hemoglobin_g_dl", 12.5)
+    min_donation_interval_days = rules.get(
+        "min_donation_interval_days", MIN_DONATION_INTERVAL_DAYS
+    )
+    disallowed_conditions = rules.get("disallowed_conditions", [])
 
     age = calculate_age(profile.date_of_birth)
 
@@ -90,13 +94,20 @@ def run_eligibility_rules(profile, medical_record):
     )
 
     if days_since_last_donation is not None:
-        if days_since_last_donation < MIN_DONATION_INTERVAL_DAYS:
-            remaining_days = MIN_DONATION_INTERVAL_DAYS - days_since_last_donation
+        if days_since_last_donation < min_donation_interval_days:
+            remaining_days = min_donation_interval_days - days_since_last_donation
             is_eligible = False
             reasons.append(
                 f"Only {days_since_last_donation} day(s) have passed since the last donation. "
                 f"The donor should wait about {remaining_days} more day(s) before donating again."
             )
+
+    medical_condition = getattr(medical_record, "medical_condition", "None") or "None"
+    if medical_condition in disallowed_conditions:
+        is_eligible = False
+        reasons.append(
+            f"Medical condition '{medical_condition}' currently prevents blood donation."
+        )
 
     if getattr(medical_record, "has_recent_illness", False):
         is_eligible = False

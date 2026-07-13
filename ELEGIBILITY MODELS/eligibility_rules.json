@@ -1,12 +1,22 @@
 {
+  "min_age": 17,
+  "max_age": 65,
   "min_weight_kg": 50,
   "min_hemoglobin_g_dl": 12.5,
+  "min_donation_interval_days": 90,
   "disallowed_conditions": [
     "HIV",
     "Hepatitis B",
     "Hepatitis C",
     "Tuberculosis",
     "Malaria",
-    "Cancer"
+    "Cancer",
+    "Hypertension",
+    "Diabetes",
+    "Cardiac issues",
+    "Recent Surgery",
+    "Asthma",
+    "Anemia",
+    "Infection (resolved)"
   ]
 }
